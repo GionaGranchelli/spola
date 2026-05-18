@@ -79,7 +79,7 @@ android {
 sqldelight {
     databases {
         create("OpenClawDb") {
-            packageName.set("it.openclaw.db")
+            packageName.set("dev.spola.app.db")
         }
     }
 }

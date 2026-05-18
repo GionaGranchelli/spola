@@ -1,0 +1,11 @@
+1. **Most likely remaining root cause**  
+A JVM/AWT/XWayland bug path on **Wayland + NVIDIA (driver 580.126.09)** where an initial paint happens before a valid window size is negotiated, so Swing’s `BufferStrategyPaintManager` tries to allocate a volatile buffer at `0x0`. This is below Compose/Skiko and matches your stack (`SunVolatileImage`/`RepaintManager`).
+
+2. **Single best next test**  
+Run the exact same app in a **real Xorg session** (login chooser: “Ubuntu on Xorg”), then confirm `echo $XDG_SESSION_TYPE` is `x11` before launch.
+
+3. **Most plausible fix if that test succeeds**  
+Treat Wayland+NVIDIA as unsupported for now and enforce/document **Xorg session launch** as the workaround (launcher guard + user-facing message). This is the highest-confidence practical fix until upstream AWT/Compose runtime behavior changes.
+
+4. **Does app code still look suspicious?**  
+Low suspicion. Your desktop window setup is straightforward with explicit non-zero size in [Main.kt](/home/gionag/Development/openclaw-app/composeApp/src/desktopMain/kotlin/it/openclaw/app/Main.kt), no unusual undecorated/transparent/pack sequence, and nothing obvious that should produce a `0x0` startup buffer by itself.

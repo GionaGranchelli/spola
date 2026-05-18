@@ -1,0 +1,37 @@
+{
+  "models": {
+    "providers": {
+      "ollama": {
+        "models": [
+          { "id": "gemma4:e2b" },
+          { "id": "qwen3:8b" }
+        ]
+      },
+      "openai-codex": {
+        "models": [
+          { "id": "gpt-5.4" }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "list": [
+      {
+        "id": "main",
+        "name": "Main",
+        "model": "openai-codex/gpt-5.4"
+      },
+      {
+        "id": "coder-local",
+        "name": "Coder Local",
+        "model": "ollama/qwen3:8b"
+      }
+    ],
+    "defaults": {
+      "models": {
+        "ollama/gemma4:e2b": {},
+        "openai-codex/gpt-5.4": {}
+      }
+    }
+  }
+}

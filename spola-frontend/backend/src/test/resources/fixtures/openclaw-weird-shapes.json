@@ -1,0 +1,30 @@
+{
+  "models": {
+    "providers": {
+      "ollama": "unexpected",
+      "openai-codex": {
+        "models": [
+          { "id": "gpt-5.4" },
+          "junk"
+        ]
+      },
+      "broken-provider": {
+        "models": "not-array"
+      }
+    }
+  },
+  "agents": {
+    "list": [
+      { "id": "main", "name": "Main", "model": "openai-codex/gpt-5.4" },
+      { "id": "reviewer", "name": "Reviewer", "model": "ollama/qwen3:8b" },
+      "bad-entry"
+    ],
+    "defaults": {
+      "models": "not-an-object",
+      "model": {
+        "primary": "ollama/qwen3:8b",
+        "fallbacks": ["openai-codex/gpt-5.4", 123]
+      }
+    }
+  }
+}

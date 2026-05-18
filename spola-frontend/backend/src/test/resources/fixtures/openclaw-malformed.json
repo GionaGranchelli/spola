@@ -1,0 +1,8 @@
+{
+  "models": {
+    "providers": {
+      "ollama": [
+        { "id": "gemma4:e2b" }
+      ]
+    }
+  },

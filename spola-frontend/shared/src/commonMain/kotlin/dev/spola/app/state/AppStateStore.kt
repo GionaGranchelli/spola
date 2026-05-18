@@ -1,6 +1,6 @@
 package dev.spola.app.state
 
-import it.openclaw.db.OpenClawDb
+import dev.spola.app.db.OpenClawDb
 import dev.spola.app.models.AuditEvent
 import dev.spola.app.models.OpenClawSessionSettings
 import dev.spola.app.models.SelectedSessionState

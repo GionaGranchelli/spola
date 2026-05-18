@@ -1,0 +1,46 @@
+plugins {
+    alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.ktor)
+    alias(libs.plugins.kotlinSerialization)
+}
+
+group = "dev.spola"
+version = "0.0.1"
+
+application {
+    mainClass.set("dev.spola.app.backend.MainKt")
+}
+
+dependencies {
+    implementation(project(":shared"))
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.sse)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlin.reflect)
+    
+    // Ktor Client (for Ollama and Gateway integration)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.websockets)
+    implementation(libs.ktor.client.logging)
+    
+    // SQLDelight Drivers for JVM
+    implementation(libs.sqldelight.sqlite.driver)
+    implementation(libs.sqldelight.runtime)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.serialization.kotlinx.json)
+}
+
+ktor {
+    fatJar {
+        archiveFileName.set("golem-backend.jar")
+    }
+}

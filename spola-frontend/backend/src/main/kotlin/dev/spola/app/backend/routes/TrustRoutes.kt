@@ -1,14 +1,14 @@
-package it.openclaw.backend.routes
+package dev.spola.app.backend.routes
 
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import it.openclaw.backend.BackendServices
-import it.openclaw.backend.TrustAuth
-import it.openclaw.models.PairingInfo
-import it.openclaw.models.TrustRotationResponse
+import dev.spola.app.backend.BackendServices
+import dev.spola.app.backend.TrustAuth
+import dev.spola.app.models.PairingInfo
+import dev.spola.app.models.TrustRotationResponse
 import java.util.*
 
 fun Route.trustRoutes(services: BackendServices) {

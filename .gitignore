@@ -21,3 +21,6 @@ spola-frontend/roadmap.md
 spola-frontend/improvement_proposal.md
 spola-frontend/technical-debt.md
 spola-frontend/file_upload.md
+
+# Codex CLI temp directory
+spola-frontend/$TMP

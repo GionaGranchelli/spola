@@ -69,7 +69,7 @@ kotlin {
 }
 
 android {
-    namespace = "dev.golem.shared"
+    namespace = "dev.spola.shared"
     compileSdk = 35
     defaultConfig {
         minSdk = 24

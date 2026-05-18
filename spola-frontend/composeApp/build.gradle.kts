@@ -65,11 +65,11 @@ kotlin {
 }
 
 android {
-    namespace = "dev.golem.app"
+    namespace = "dev.spola.app"
     compileSdk = 35
     
     defaultConfig {
-        applicationId = "dev.golem.app"
+        applicationId = "dev.spola.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 7
@@ -100,7 +100,7 @@ android {
 
 compose.desktop {
     application {
-        mainClass = "dev.golem.app.app.MainKt"
+        mainClass = "dev.spola.app.app.MainKt"
         
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)

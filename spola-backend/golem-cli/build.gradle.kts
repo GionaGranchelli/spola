@@ -33,7 +33,7 @@ tasks.test {
 }
 
 application {
-    mainClass = "dev.golem.cli.MainKt"
+    mainClass = "dev.spola.cli.MainKt"
 }
 
 // Build a runnable distribution: ./gradlew installDist

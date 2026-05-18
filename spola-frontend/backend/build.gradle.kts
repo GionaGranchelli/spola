@@ -4,11 +4,11 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
 }
 
-group = "dev.golem"
+group = "dev.spola"
 version = "0.0.1"
 
 application {
-    mainClass.set("dev.golem.app.backend.MainKt")
+    mainClass.set("dev.spola.app.backend.MainKt")
 }
 
 dependencies {

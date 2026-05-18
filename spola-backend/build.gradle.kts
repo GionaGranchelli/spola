@@ -2,5 +2,5 @@ plugins {
     base
 }
 
-group = "dev.golem"
+group = "dev.spola"
 version = "0.1.0"

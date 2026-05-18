@@ -44,3 +44,7 @@ ktor {
         archiveFileName.set("golem-backend.jar")
     }
 }
+
+kotlin {
+    jvmToolchain(21)
+}

@@ -1,4 +1,4 @@
-package it.openclaw.backend
+package dev.spola.app.backend
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.ktor.client.request.get
@@ -7,11 +7,13 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
-import it.openclaw.db.OpenClawDb
-import it.openclaw.models.ModelInfo
-import it.openclaw.models.OpenClawOptions
-import it.openclaw.models.TrustState
-import it.openclaw.state.AppStateStore
+import dev.spola.app.backend.network.OpenAiModel
+import dev.spola.app.backend.network.OpenClawRestGatewayClient
+import dev.spola.app.db.OpenClawDb
+import dev.spola.app.models.ModelInfo
+import dev.spola.app.models.OpenClawOptions
+import dev.spola.app.models.TrustState
+import dev.spola.app.state.AppStateStore
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,11 +37,11 @@ class ModelEndpointsIntegrationTest {
                         ModelInfo(id = "qwen3:8b", name = "qwen3:8b", provider = "ollama"),
                     ),
                     openClawModels = listOf(
-                        it.openclaw.backend.network.OpenAiModel(id = "openclaw/main", owned_by = "openclaw"),
-                        it.openclaw.backend.network.OpenAiModel(id = "openclaw/reviewer", owned_by = "openclaw")
+                        OpenAiModel(id = "openclaw/main", ownedBy = "openclaw"),
+                        OpenAiModel(id = "openclaw/reviewer", ownedBy = "openclaw"),
                     )
                 ),
-                backendMetaService = BackendMetaService(version = "test", buildTime = "test")
+                backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
             )
             module(db = db, servicesOverride = services)
         }
@@ -65,9 +67,9 @@ class ModelEndpointsIntegrationTest {
                 ollamaClient = ollamaClient,
                 modelCatalogService = createCatalogService(
                     ollamaError = IllegalStateException("Ollama down"),
-                    openClawError = RuntimeException("Daemon down")
+                    openClawError = RuntimeException("Daemon down"),
                 ),
-                backendMetaService = BackendMetaService(version = "test", buildTime = "test")
+                backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
             )
             module(db = db, servicesOverride = services)
         }
@@ -91,11 +93,11 @@ class ModelEndpointsIntegrationTest {
                 modelCatalogService = createCatalogService(
                     ollamaModels = emptyList(),
                     openClawModels = listOf(
-                        it.openclaw.backend.network.OpenAiModel(id = "openclaw/main", owned_by = "openclaw"),
-                        it.openclaw.backend.network.OpenAiModel(id = "openclaw/reviewer", owned_by = "openclaw")
-                    )
+                        OpenAiModel(id = "openclaw/main", ownedBy = "openclaw"),
+                        OpenAiModel(id = "openclaw/reviewer", ownedBy = "openclaw"),
+                    ),
                 ),
-                backendMetaService = BackendMetaService(version = "test", buildTime = "test")
+                backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
             )
             module(db = db, servicesOverride = services)
         }
@@ -125,7 +127,7 @@ class ModelEndpointsIntegrationTest {
                         error("unexpected options crash")
                     }
                 },
-                backendMetaService = BackendMetaService(version = "test", buildTime = "test")
+                backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
             )
             module(db = db, servicesOverride = services)
         }
@@ -142,17 +144,17 @@ class ModelEndpointsIntegrationTest {
     private fun createCatalogService(
         ollamaModels: List<ModelInfo> = emptyList(),
         ollamaError: Throwable? = null,
-        openClawModels: List<it.openclaw.backend.network.OpenAiModel> = emptyList(),
+        openClawModels: List<OpenAiModel> = emptyList(),
         openClawError: Throwable? = null,
     ): ModelCatalogService {
         val ollamaSource = OllamaModelSource {
             if (ollamaError != null) throw ollamaError
             ollamaModels
         }
-        val restGatewayClient = object : it.openclaw.backend.network.OpenClawRestGatewayClient(
+        val restGatewayClient = object : OpenClawRestGatewayClient(
             io.ktor.client.HttpClient(), "http://localhost:18789", "test-token"
         ) {
-            override suspend fun getModels(): List<it.openclaw.backend.network.OpenAiModel> {
+            override suspend fun getModels(): List<OpenAiModel> {
                 if (openClawError != null) throw openClawError
                 return openClawModels
             }

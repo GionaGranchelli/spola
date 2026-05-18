@@ -59,6 +59,12 @@ data class TranscriptionResponse(
 )
 
 @Serializable
+data class SynthesizeRequest(
+    val text: String,
+    val voice: String? = null,
+)
+
+@Serializable
 data class ModelInfo(
     val id: String,
     val name: String,

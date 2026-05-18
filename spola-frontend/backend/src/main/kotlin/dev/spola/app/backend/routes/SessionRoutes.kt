@@ -108,11 +108,11 @@ fun Route.sessionRoutes(services: BackendServices) {
                 services.chatRoutingService.generateAssistantReply(
                     sessionId = sessionId,
                     prompt = content,
-                    onStatus = { status -> flow.tryEmit(StreamEvent(EventType.STATUS_UPDATE, status)) },
-                    onToken = { token -> flow.tryEmit(StreamEvent(EventType.TOKEN, token)) }
+                    onStatus = { status -> flow.tryEmit(StreamEvent(StreamEventType.status, status)) },
+                    onToken = { token -> flow.tryEmit(StreamEvent(StreamEventType.token, token)) }
                 )
             } catch (e: Exception) {
-                flow.tryEmit(StreamEvent(EventType.ERROR, e.message))
+                flow.tryEmit(StreamEvent(StreamEventType.error, e.message))
             }
         }
         call.respond(userMsg)

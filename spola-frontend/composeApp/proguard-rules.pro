@@ -8,15 +8,17 @@
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
--keep,includedescriptorclasses class dev.golem.**$$serializer { *; }
--keepclassmembers class dev.golem.** { *** Companion; }
--keepclasseswithmembers class dev.golem.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class dev.spola.**$$serializer { *; }
+-keepclassmembers class dev.spola.** { *** Companion; }
+-keepclasseswithmembers class dev.spola.** { kotlinx.serialization.KSerializer serializer(...); }
 
 # Keep Decompose
 -keep class com.arkivanov.decompose.** { *; }
 
 # Keep Ktor
 -keep class io.ktor.** { *; }
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
 
 # Keep SQLDelight
 -keep class app.cash.sqldelight.** { *; }

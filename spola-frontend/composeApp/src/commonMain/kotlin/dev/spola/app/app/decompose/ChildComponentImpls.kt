@@ -12,6 +12,7 @@ import dev.spola.app.models.MessageRole
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
 import dev.spola.app.network.GolemClient
+import dev.spola.app.state.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -93,7 +94,7 @@ class DefaultAgentRunComponent(
                 sessionId = currentSessionId,
                 role = MessageRole.USER,
                 content = trimmedGoal,
-                timestamp = System.currentTimeMillis(),
+                timestamp = currentTimeMillis(),
             )
         )
 
@@ -116,7 +117,7 @@ class DefaultAgentRunComponent(
                                         sessionId = currentSessionId,
                                         role = MessageRole.ASSISTANT,
                                         content = event.content.orEmpty(),
-                                        timestamp = System.currentTimeMillis(),
+                                        timestamp = currentTimeMillis(),
                                     )
                                 )
                             }

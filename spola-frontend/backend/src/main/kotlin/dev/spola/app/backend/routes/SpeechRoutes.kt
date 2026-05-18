@@ -1,4 +1,4 @@
-package it.openclaw.backend.routes
+package dev.spola.app.backend.routes
 
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -8,9 +8,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.*
-import it.openclaw.backend.TrustAuth
-import it.openclaw.backend.BackendServices
-import it.openclaw.models.SynthesizeRequest
+import dev.spola.app.backend.TrustAuth
+import dev.spola.app.backend.BackendServices
+import dev.spola.app.models.SynthesizeRequest
 import java.io.ByteArrayOutputStream
 
 fun Route.speechRoutes(services: BackendServices) {

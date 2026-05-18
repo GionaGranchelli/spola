@@ -13,7 +13,7 @@ import dev.spola.app.models.TrustState
 import dev.spola.app.network.GolemClient
 import dev.spola.app.state.AppStateStore
 import io.ktor.client.HttpClient
-import it.openclaw.db.OpenClawDb
+import dev.spola.app.db.OpenClawDb
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -289,4 +289,3 @@ class DefaultDashboardComponent(
         _errorMessage.value = status ?: error.message
     }
 }
-

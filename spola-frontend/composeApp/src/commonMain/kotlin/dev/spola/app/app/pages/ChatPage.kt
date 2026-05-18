@@ -51,6 +51,7 @@ import dev.spola.app.models.MessageRole
 import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
+import dev.spola.app.state.currentTimeMillis
 
 /**
  * Modern Slack-like ChatPage with session sidebar, message bubbles, streaming, and model selection.
@@ -97,7 +98,7 @@ fun ChatPage(
                     sessionId = selectedSessionId,
                     role = MessageRole.ASSISTANT,
                     content = it,
-                    timestamp = System.currentTimeMillis(),
+                    timestamp = currentTimeMillis(),
                 )
             }
         }

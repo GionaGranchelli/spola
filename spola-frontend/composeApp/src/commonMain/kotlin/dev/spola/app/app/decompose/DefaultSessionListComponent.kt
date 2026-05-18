@@ -10,6 +10,7 @@ import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.SelectedSessionState
 import dev.spola.app.network.GolemClient
 import dev.spola.app.state.AppStateStore
+import dev.spola.app.state.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -146,7 +147,7 @@ class DefaultSessionListComponent(
             val newSession = ChatSession(
                 id = randomUUID(),
                 title = name,
-                createdAt = System.currentTimeMillis(),
+                createdAt = currentTimeMillis(),
                 modelId = modelId,
                 providerId = providerId,
             )

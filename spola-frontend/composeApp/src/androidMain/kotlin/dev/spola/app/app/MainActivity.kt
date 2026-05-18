@@ -8,7 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.arkivanov.decompose.defaultComponentContext
 import dev.spola.app.app.decompose.DefaultRootComponent
 import dev.spola.app.db.DriverFactory
-import it.openclaw.db.OpenClawDb
+import dev.spola.app.db.OpenClawDb
 
 class MainActivity : ComponentActivity() {
     private val pickFileLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->

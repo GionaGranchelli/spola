@@ -1,4 +1,4 @@
-package it.openclaw.backend
+package dev.spola.app.backend
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -16,7 +16,7 @@ to run, and what went wrong when it fails.
 
 ## 1. Overview
 
-The JVM intelligence system lives in the `dev.golem.jvm` package and covers seven capability
+The JVM intelligence system lives in the `dev.spola.jvm` package and covers seven capability
 areas, all accessible via LLM tools, CLI commands, and programmatic API:
 
 | Area | Purpose |
@@ -538,7 +538,7 @@ updated_at LONG
 
 ## 10. LLM-Accessible Tools — Complete Reference
 
-All tools are registered via `registerJvmTools(registry, index, coordinator)` in the `dev.golem.tools` package. Each tool automatically ensures index freshness before executing.
+All tools are registered via `registerJvmTools(registry, index, coordinator)` in the `dev.spola.tools` package. Each tool automatically ensures index freshness before executing.
 
 ---
 

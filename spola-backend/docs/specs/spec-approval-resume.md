@@ -67,13 +67,13 @@ gateStep(name = step.id) { state, _ ->
 }
 ```
 
-**Import needed:** Remove `import dev.golem.workflow.TeamWorkflowSteps` (no longer needed for human_approval, but check if still used for other steps). Keep `import dev.tramai.orchestration.GateDecision`.
+**Import needed:** Remove `import dev.spola.workflow.TeamWorkflowSteps` (no longer needed for human_approval, but check if still used for other steps). Keep `import dev.tramai.orchestration.GateDecision`.
 
 ### 2. `WorkflowExecutionService.kt` — Add persistence + approval resume
 
 **New imports:**
 ```kotlin
-import dev.golem.GolemFactory
+import dev.spola.GolemFactory
 import dev.tramai.orchestration.WorkflowGateRejectedException
 import dev.tramai.orchestration.WorkflowCheckpoint
 import dev.tramai.orchestration.WorkflowContext
@@ -112,8 +112,8 @@ suspend fun runExecution(record: WorkflowExecutionRecord): String {
 
     // Create context so we can capture workflowId for resume
     val workflowContext = WorkflowContext()
-    val metrics = dev.golem.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
-    val tracer = dev.golem.GolemTracer(
+    val metrics = dev.spola.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
+    val tracer = dev.spola.GolemTracer(
         otelEnabled = config.otelEnabled,
         otelEndpoint = config.otelEndpoint,
         otelServiceName = config.otelServiceName,
@@ -226,8 +226,8 @@ suspend fun approveExecution(executionId: String): Boolean {
             expectedRevision = checkpoint.revision,
         )
 
-        val metrics = dev.golem.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
-        val tracer = dev.golem.GolemTracer(
+        val metrics = dev.spola.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
+        val tracer = dev.spola.GolemTracer(
             otelEnabled = config.otelEnabled,
             otelEndpoint = config.otelEndpoint,
             otelServiceName = config.otelServiceName,
@@ -348,7 +348,7 @@ class WorkflowApproveCommand : Callable<Int> {
 }
 ```
 
-**Import:** `import dev.golem.workflow.yaml.YamlWorkflowLoader`
+**Import:** `import dev.spola.workflow.yaml.YamlWorkflowLoader`
 
 ## Tests
 

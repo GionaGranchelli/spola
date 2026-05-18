@@ -18,7 +18,7 @@ Replace the current flat-YAML skill system with Hermes-compatible SKILL.md files
 Replace the current data class with:
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 /**
  * A skill definition parsed from a SKILL.md file.
@@ -76,7 +76,7 @@ data class SkillToolParam(
 Parses SKILL.md files by splitting YAML frontmatter from Markdown body.
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 object SkillParser {
     /**
@@ -133,7 +133,7 @@ Guidance for working with Docker Compose in development...
 In-memory index of all available skills, built at startup.
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 /**
  * In-memory catalog of installed skills.
@@ -198,7 +198,7 @@ Call `search_skills(query)` to find relevant skills (when search tool is availab
 Replace file scanning with recursive directory walk for SKILL.md files.
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 object SkillLoader {
     val defaultSkillsDir: Path = Path.of(home, ".golem", "skills")
@@ -270,7 +270,7 @@ persona = if (skillBlock.isNotBlank()) {
 }
 ```
 
-Add import for `java.nio.file.Path` and `dev.golem.skill.SkillCatalog`.
+Add import for `java.nio.file.Path` and `dev.spola.skill.SkillCatalog`.
 
 ### 7. GolemConfig.kt — MODIFY
 **Path**: `golem-core/src/main/kotlin/dev/golem/GolemConfig.kt`

@@ -495,8 +495,8 @@ Create a custom workflow using the `workflow` DSL:
 
 ```kotlin
 import dev.tramai.orchestration.workflow
-import dev.golem.workflow.GolemState
-import dev.golem.workflow.golemAgentStep
+import dev.spola.workflow.GolemState
+import dev.spola.workflow.golemAgentStep
 
 val myWorkflow = workflow<GolemState>("my-custom-pipeline", "1.0") {
     golemAgentStep(

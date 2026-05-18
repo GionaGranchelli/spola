@@ -15,7 +15,7 @@ SQLite-backed repository using Exposed (same pattern as SqliteMemoryStore).
 Follow the existing patterns in `golem-core/src/main/kotlin/dev/golem/memory/SqliteMemoryStore.kt`.
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 class SkillRepository(dbPath: String) : AutoCloseable {
     // Schema:
@@ -82,7 +82,7 @@ data class UsageStats(useCount: Int, lastUsed: String?, pinned: Boolean)
 One-way sync from files → SQLite. Uses hash-based change detection.
 
 ```kotlin
-package dev.golem.skill
+package dev.spola.skill
 
 class SkillIndexer(
     private val skillsDir: Path,
@@ -228,6 +228,6 @@ Tests:
 source ~/.sdkman/bin/sdkman-init.sh && sdk use java 21.0.7-tem
 cd /home/gionag/Development/golem
 ./gradlew compileKotlin
-./gradlew test --tests "dev.golem.skill.*"
+./gradlew test --tests "dev.spola.skill.*"
 ./gradlew test
 ```

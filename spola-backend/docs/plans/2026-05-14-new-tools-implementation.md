@@ -92,7 +92,7 @@ Notes:
 ### Interfaces
 
 ```kotlin
-package dev.golem.browser
+package dev.spola.browser
 
 data class BrowserAutomationConfig(
     val enabled: Boolean = true,
@@ -107,7 +107,7 @@ data class BrowserAutomationConfig(
 ```
 
 ```kotlin
-package dev.golem.browser
+package dev.spola.browser
 
 interface BrowserSession : AutoCloseable {
     suspend fun navigate(url: String): String
@@ -122,7 +122,7 @@ interface BrowserSession : AutoCloseable {
 ```
 
 ```kotlin
-package dev.golem.tools
+package dev.spola.tools
 
 fun registerBrowserTools(
     registry: ToolRegistry,
@@ -290,7 +290,7 @@ Recommended refinement:
 ### Interfaces
 
 ```kotlin
-package dev.golem.image
+package dev.spola.image
 
 data class ImageGenRequest(
     val prompt: String,
@@ -313,7 +313,7 @@ class ImageGenException(message: String, cause: Throwable? = null) : Exception(m
 ```
 
 ```kotlin
-package dev.golem.image
+package dev.spola.image
 
 object ImageGenProviderFactory {
     fun create(config: GolemConfig): ImageGenProvider
@@ -321,7 +321,7 @@ object ImageGenProviderFactory {
 ```
 
 ```kotlin
-package dev.golem.tools
+package dev.spola.tools
 
 fun registerImageGenTool(
     registry: ToolRegistry,
@@ -479,7 +479,7 @@ Important implementation note:
 ### Interfaces
 
 ```kotlin
-package dev.golem.codeexec
+package dev.spola.codeexec
 
 data class CodeExecConfig(
     val enabled: Boolean = true,
@@ -492,7 +492,7 @@ data class CodeExecConfig(
 ```
 
 ```kotlin
-package dev.golem.codeexec
+package dev.spola.codeexec
 
 data class CodeExecRequest(
     val language: String,
@@ -515,7 +515,7 @@ class CodeExecSandbox(
 ```
 
 ```kotlin
-package dev.golem.tools
+package dev.spola.tools
 
 fun registerCodeExecTool(
     registry: ToolRegistry,
@@ -690,7 +690,7 @@ Important integration note:
 ### Interfaces
 
 ```kotlin
-package dev.golem.clarify
+package dev.spola.clarify
 
 data class PendingClarification(
     val id: String,
@@ -716,11 +716,11 @@ interface ClarifyStore {
 ```
 
 ```kotlin
-package dev.golem.tools
+package dev.spola.tools
 
 fun registerClarifyTool(
     registry: ToolRegistry,
-    clarifyStore: dev.golem.clarify.ClarifyStore,
+    clarifyStore: dev.spola.clarify.ClarifyStore,
     sessionIdProvider: () -> String?,
 )
 ```

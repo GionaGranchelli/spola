@@ -27,7 +27,7 @@ Clean up openclaw-app and rewire it as a dashboard for Golem.
 - Mirror Golem's backend ApiModels.kt
 
 ### 4. Update Decompose components (composeApp/.../decompose/)
-- Rename package from `it.openclaw` to `dev.golem.app`
+- Rename package from `it.openclaw` to `dev.spola.app`
 - Remove OpenClaw-specific logic from DefaultDashboardComponent, DefaultChatComponent
 - Add Golem-native logic: agent runs, tool list, scheduler jobs view
 
@@ -38,7 +38,7 @@ Clean up openclaw-app and rewire it as a dashboard for Golem.
 - Add job list pane
 
 ### 6. Update build files
-- Rename group from `it.openclaw` to `dev.golem`
+- Rename group from `it.openclaw` to `dev.spola`
 - Update AGENTS.md
 
 ### 7. Compilation

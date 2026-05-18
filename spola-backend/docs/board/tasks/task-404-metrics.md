@@ -9,7 +9,7 @@ Golem already has OpenTelemetry tracing (GolemTracer) but zero metrics. This tas
 ## Requirements
 
 ### 1. Metrics registry
-- Create `GolemMetrics` class in `dev.golem.metrics` package
+- Create `GolemMetrics` class in `dev.spola.metrics` package
 - Uses `io.prometheus:simpleclient` (no OpenTelemetry metrics API — Prometheus is lighter for self-hosted agents)
 - SimpleCounter, SimpleGauge, SimpleHistogram wrappers
 - Default labels: `service="golem"`

@@ -754,14 +754,14 @@ Use `snakeyaml` (already available via Jackson YAMLFactory) with `DumperOptions`
 
 | File | Package | Purpose |
 |------|---------|---------|
-| `YamlWorkflowParser.kt` | `dev.golem.workflow.dsl` | Parse YAML → intermediate IR |
-| `YamlWorkflowDefinition.kt` | `dev.golem.workflow.dsl` | IR data classes (StepDef hierarchy) |
-| `WorkflowDagCompiler.kt` | `dev.golem.workflow.dsl` | IR → TramAI Workflow |
-| `ParamResolver.kt` | `dev.golem.workflow.dsl` | `{{param}}` template resolution |
-| `DoneEvaluator.kt` | `dev.golem.workflow.dsl` | Definition-of-done verification |
-| `DagTopologicalSort.kt` | `dev.golem.workflow.dsl` | Dependency resolution + cycle detection |
-| `YamlWorkflowTemplate.kt` | `dev.golem.workflow.dsl` | WorkflowTemplate impl for YAML |
-| `YamlWorkflowLoader.kt` | `dev.golem.workflow.dsl` | Directory scanning + registration |
+| `YamlWorkflowParser.kt` | `dev.spola.workflow.dsl` | Parse YAML → intermediate IR |
+| `YamlWorkflowDefinition.kt` | `dev.spola.workflow.dsl` | IR data classes (StepDef hierarchy) |
+| `WorkflowDagCompiler.kt` | `dev.spola.workflow.dsl` | IR → TramAI Workflow |
+| `ParamResolver.kt` | `dev.spola.workflow.dsl` | `{{param}}` template resolution |
+| `DoneEvaluator.kt` | `dev.spola.workflow.dsl` | Definition-of-done verification |
+| `DagTopologicalSort.kt` | `dev.spola.workflow.dsl` | Dependency resolution + cycle detection |
+| `YamlWorkflowTemplate.kt` | `dev.spola.workflow.dsl` | WorkflowTemplate impl for YAML |
+| `YamlWorkflowLoader.kt` | `dev.spola.workflow.dsl` | Directory scanning + registration |
 
 ### 11.2 Extensions to Existing Files
 

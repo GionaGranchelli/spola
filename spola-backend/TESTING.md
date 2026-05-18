@@ -314,7 +314,7 @@ export OPENAI_API_KEY="sk-..."
 ./gradlew :golem-cli:run --args="'listami i tool disponibili'"
 ```
 
-I plugin devono implementare `GolemPlugin` e avere `META-INF/services/dev.golem.plugin.GolemPlugin`.
+I plugin devono implementare `GolemPlugin` e avere `META-INF/services/dev.spola.plugin.GolemPlugin`.
 
 **Cosa testa:** PluginLoader, ServiceLoader, tool conflict detection, shutdown lifecycle
 

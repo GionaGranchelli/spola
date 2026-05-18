@@ -112,7 +112,7 @@ git commit -m "feat: merge Golem + OpenClaw into Spola monorepo"
 
 ## Phase 2: Rename Backend (spola-core + spola-cli) (3-4 sessions)
 
-### Task 2.1: Package rename `dev.golem` → `dev.spola`
+### Task 2.1: Package rename `dev.spola` → `dev.spola`
 
 All packages in `spola-core` and `spola-cli`:
 
@@ -126,7 +126,7 @@ All packages in `spola-core` and `spola-cli`:
 **Files to change:**
 - ~15 directory moves: `golem-core/src/main/kotlin/dev/golem/` → `spola-core/...`
 - Package declarations in ~200 .kt files
-- All `import dev.golem.*` references
+- All `import dev.spola.*` references
 
 ### Task 2.2: Rename Gradle modules
 
@@ -162,7 +162,7 @@ All packages in `spola-core` and `spola-cli`:
 
 ## Phase 3: Rename Frontend (spola-client) (2-3 sessions)
 
-### Task 3.1: Package rename `dev.golem.app` → `dev.spola.client`
+### Task 3.1: Package rename `dev.spola.app` → `dev.spola.client`
 
 Same as backend: directory moves + package declarations + imports.
 
@@ -170,7 +170,7 @@ Same as backend: directory moves + package declarations + imports.
 
 - Android: `strings.xml` app_name → "Spola"
 - Desktop: window title → "Spola"
-- Application ID: `dev.golem.app` → `dev.spola.client`
+- Application ID: `dev.spola.app` → `dev.spola.client`
 
 ### Task 3.3: SQLDelight schema
 

@@ -9,7 +9,7 @@ Golem already has multi-platform delivery tools (telegram_send, email_send). A T
 ## Requirements
 
 ### 1. GolemTtsProvider interface
-- Create `dev.golem.tts.TtsProvider` interface
+- Create `dev.spola.tts.TtsProvider` interface
 - Method: `suspend fun synthesize(text: String): ByteArray`
 - Returns WAV or MP3 audio bytes
 

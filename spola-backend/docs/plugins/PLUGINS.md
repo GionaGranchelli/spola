@@ -72,7 +72,7 @@ plugins {
 }
 
 dependencies {
-    implementation("dev.golem:golem-core:0.1.0")
+    implementation("dev.spola:golem-core:0.1.0")
     // Your own dependencies here
 }
 ```
@@ -82,11 +82,11 @@ dependencies {
 ```kotlin
 package com.example.golemplugin
 
-import dev.golem.GolemPlugin
-import dev.golem.Tool
-import dev.golem.ToolParameter
-import dev.golem.ToolParameterType
-import dev.golem.ToolRegistry
+import dev.spola.GolemPlugin
+import dev.spola.Tool
+import dev.spola.ToolParameter
+import dev.spola.ToolParameterType
+import dev.spola.ToolRegistry
 
 class MyPlugin : GolemPlugin {
     override val pluginName = "my-plugin"
@@ -116,7 +116,7 @@ class MyPlugin : GolemPlugin {
 
 ### Step 3: Create ServiceLoader configuration
 
-Create `META-INF/services/dev.golem.plugin.GolemPlugin` with the fully-qualified class name:
+Create `META-INF/services/dev.spola.plugin.GolemPlugin` with the fully-qualified class name:
 
 ```
 com.example.golemplugin.MyPlugin
@@ -158,12 +158,12 @@ Plugins can:
 // src/main/kotlin/com/example/weather/WeatherPlugin.kt
 package com.example.weather
 
-import dev.golem.GolemPlugin
-import dev.golem.Tool
-import dev.golem.ToolParameter
-import dev.golem.ToolParameterType
-import dev.golem.ToolRegistry
-import dev.golem.ToolResult
+import dev.spola.GolemPlugin
+import dev.spola.Tool
+import dev.spola.ToolParameter
+import dev.spola.ToolParameterType
+import dev.spola.ToolRegistry
+import dev.spola.ToolResult
 import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.http.HttpClient
@@ -206,6 +206,6 @@ class WeatherPlugin : GolemPlugin {
 ```
 
 ```
-# META-INF/services/dev.golem.plugin.GolemPlugin
+# META-INF/services/dev.spola.plugin.GolemPlugin
 com.example.weather.WeatherPlugin
 ```

@@ -1,0 +1,69 @@
+[versions]
+kotlin = "2.3.0"
+coroutines = "1.10.2"
+junit = "5.12.2"
+opentelemetry = "1.49.0"
+assertj = "3.27.7"
+jackson = "2.18.3"
+jackson-yaml = "2.18.3"
+tramai = "0.3.0"
+sqlite = "3.49.1.0"
+exposed = "0.60.0"
+logback = "1.5.18"
+picocli = "4.7.7"
+mcp-sdk = "0.11.1"
+ktor = "3.3.3"
+okio = "3.10.2"
+prometheus = "0.16.0"
+angus-mail = "2.0.3"
+zxing-core = "3.5.3"
+zxing-javase = "3.5.3"
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson-yaml" }
+tramai-bom = { module = "dev.tramai:tramai-bom", version.ref = "tramai" }
+tramai-standalone = { module = "dev.tramai:tramai-standalone" }
+tramai-observability = { module = "dev.tramai:tramai-observability" }
+tramai-orchestration = { module = "dev.tramai:tramai-orchestration" }
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-sdk-trace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
+opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
+opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
+opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
+tramai-openai = { module = "dev.tramai:tramai-openai" }
+tramai-anthropic = { module = "dev.tramai:tramai-anthropic" }
+tramai-core = { module = "dev.tramai:tramai-core" }
+tramai-scheduler = { module = "dev.tramai:tramai-scheduler", version.ref = "tramai" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+mcp-sdk-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp-sdk" }
+mcp-sdk-client = { module = "io.modelcontextprotocol:kotlin-sdk-client-jvm", version.ref = "mcp-sdk" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio-jvm", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
+ktor-server-sse = { module = "io.ktor:ktor-server-sse", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation-jvm", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core-jvm", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio-jvm", version.ref = "ktor" }
+ktor-client-websockets = { module = "io.ktor:ktor-client-websockets-jvm", version.ref = "ktor" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.3" }
+prometheus-simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus" }
+angus-mail = { module = "org.eclipse.angus:angus-mail", version.ref = "angus-mail" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+zxing-javase = { module = "com.google.zxing:javase", version.ref = "zxing-javase" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

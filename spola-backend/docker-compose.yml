@@ -1,0 +1,66 @@
+services:
+  golem-api:
+    image: golem:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /golem
+    environment:
+      GOLEM_API_KEY: ${GOLEM_API_KEY}
+    command:
+      [
+        "./golem-cli/build/install/golem-cli/bin/golem-cli",
+        "--api",
+        "--api-port",
+        "8082",
+        "--dir",
+        "/golem/workspace",
+      ]
+    env_file:
+      - .env
+    volumes:
+      - ./.golem:/golem/.golem
+      - ./workspace:/golem/workspace
+    ports:
+      - "127.0.0.1:8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  golem-mcp:
+    image: golem:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /golem
+    environment:
+      GOLEM_API_KEY: ${GOLEM_API_KEY}
+    command:
+      [
+        "./golem-cli/build/install/golem-cli/bin/golem-cli",
+        "--mcp",
+        "--mcp-transport",
+        "sse",
+        "--mcp-host",
+        "0.0.0.0",
+        "--mcp-port",
+        "8091",
+        "--dir",
+        "/golem/workspace",
+      ]
+    env_file:
+      - .env
+    volumes:
+      - ./.golem:/golem/.golem
+      - ./workspace:/golem/workspace
+    ports:
+      - "127.0.0.1:8091:8091"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8091/mcp || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

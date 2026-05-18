@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golem Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --bg-primary: #0D0D0D;
+    --bg-secondary: #1A1A1A;
+    --bg-tertiary: #252525;
+    --bg-card: #1E1E1E;
+    --text-primary: #E8E8E8;
+    --text-secondary: #9E9E9E;
+    --text-muted: #666666;
+    --accent: #6C63FF;
+    --accent-hover: #5A52E0;
+    --accent-subtle: rgba(108, 99, 255, 0.12);
+    --accent-glow: rgba(108, 99, 255, 0.25);
+    --success: #4CAF50;
+    --warning: #FF9800;
+    --error: #F44336;
+    --border: #333333;
+    --border-light: #3A3A3A;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --sidebar-width: 220px;
+    --header-height: 48px;
+}
+[data-theme="light"] {
+    --bg-primary: #F5F5F5;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #E8E8E8;
+    --bg-card: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #555555;
+    --text-muted: #666666;
+    --border: #DDDDDD;
+    --border-light: #E5E5E5;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+[data-theme="light"] .pairing-card { box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #CCCCCC; }
+html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font); font-size: 14px; line-height: 1.5; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Pairing/Landing Screen ── */
+#pairing-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+}
+.pairing-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 40px 36px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.pairing-card h1 {
+    font-size: 24px; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+}
+.pairing-card h1 span { color: var(--accent); }
+.pairing-card .subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 28px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text-primary);
+    font-size: 14px; font-family: var(--font); outline: none; transition: border-color 0.2s;
+}
+.form-group textarea { resize: vertical; min-height: 96px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); }
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 20px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 600; font-family: var(--font);
+    cursor: pointer; border: none; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; width: 100%; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); }
+.btn-secondary:hover { background: var(--border); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 6px; font-size: 16px; }
+.btn-danger { background: var(--error); color: #fff; }
+.btn-danger:hover { background: #d32f2f; }
+.pairing-error { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
+.connect-status { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+.status-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(76,175,80,0.4); }
+.status-dot.offline { background: var(--error); }
+.status-dot.running { background: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ── Main Dashboard ── */
+#dashboard { display: none; height: 100vh; }
+
+/* Header */
+#header {
+    height: var(--header-height); display: flex; align-items: center;
+    padding: 0 16px; background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+}
+#header .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+#header .brand span { color: var(--accent); }
+#header .spacer { flex: 1; }
+#header .status-bar { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-secondary); }
+#header .status-bar .model-badge {
+    background: var(--accent-subtle); color: var(--accent);
+    padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+}
+
+/* ├┤ Layout */
+#layout { display: flex; height: 100vh; padding-top: var(--header-height); }
+
+/* Sidebar */
+#sidebar {
+    width: var(--sidebar-width); background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+    overflow-y: auto;
+}
+.sidebar-tabs { list-style: none; padding: 8px; }
+.sidebar-tabs li { margin-bottom: 2px; }
+.sidebar-tabs a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius);
+    color: var(--text-secondary); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; text-decoration: none;
+}
+.sidebar-tabs a:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.sidebar-tabs a.active { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
+.sidebar-tabs a .icon { font-size: 16px; }
+.sidebar-footer {
+    margin-top: auto; padding: 8px;
+    border-top: 1px solid var(--border);
+}
+.sidebar-footer .connection-info { padding: 8px 12px; font-size: 11px; color: var(--text-muted); word-break: break-all; }
+
+/* Main Content */
+#main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.tab-content { display: none; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex; flex-direction: column; }
+
+/* ── Chat View ── */
+#chat-header {
+    padding: 12px 16px; background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+}
+#chat-header select {
+    background: var(--bg-tertiary); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text-primary);
+    padding: 6px 10px; font-size: 13px; font-family: var(--font);
+    outline: none; cursor: pointer;
+}
+#chat-header select:focus { border-color: var(--accent); }
+#chat-header .session-label { font-size: 12px; color: var(--text-muted); }
+#chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.message { max-width: 80%; padding: 10px 14px; border-radius: var(--radius-lg); line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+.message.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.message.assistant { align-self: flex-start; background: var(--bg-tertiary); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.message.system { align-self: center; background: transparent; color: var(--text-muted); font-size: 12px; text-align: center; max-width: 100%; }
+.message .msg-time { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 4px; text-align: right; }
+.message.assistant .msg-time { color: var(--text-muted); }
+.thinking-indicator {
+    align-self: flex-start; display: flex; align-items: center;
+    gap: 8px; padding: 8px 14px; background: var(--bg-tertiary);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    border-bottom-left-radius: 4px; font-size: 13px; color: var(--text-secondary);
+}
+.thinking-dots { display: flex; gap: 3px; }
+.thinking-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: thinking-bounce 1.4s ease-in-out infinite both;
+}
+.thinking-dots span:nth-child(1) { animation-delay: 0s; }
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes thinking-bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+.tool-timeline {
+    align-self: flex-start; width: 100%; max-width: 80%;
+    padding: 8px 12px; background: var(--bg-tertiary);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-top: -8px; font-size: 12px;
+}
+.tool-timeline .tool-step { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.tool-timeline .tool-step .tool-icon { color: var(--accent); font-size: 14px; flex-shrink: 0; }
+.tool-timeline .tool-step .tool-info { flex: 1; min-width: 0; }
+.tool-timeline .tool-step .tool-name { color: var(--accent); font-weight: 600; }
+.tool-timeline .tool-step .tool-args { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tool-timeline .tool-step .tool-result { color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
+.tool-timeline .tool-step .tool-result.success { color: var(--success); }
+.tool-timeline .tool-step .tool-result.error { color: var(--error); }
+.timeline-toggle { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; padding: 2px 0; }
+.timeline-toggle:hover { text-decoration: underline; }
+
+/* Chat input */
+#chat-input-area {
+    padding: 12px 16px; background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: flex-end;
+}
+#chat-input {
+    flex: 1; resize: none; min-height: 44px; max-height: 150px;
+    padding: 10px 14px; background: var(--bg-tertiary);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    color: var(--text-primary); font-size: 14px; font-family: var(--font);
+    outline: none; transition: border-color 0.2s; line-height: 1.4;
+}
+#chat-input:focus { border-color: var(--accent); }
+#chat-input::placeholder { color: var(--text-muted); }
+#send-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.2s; font-size: 18px;
+}
+#send-btn:hover { background: var(--accent-hover); }
+#send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Tools Tab ── */
+.tools-list { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.tool-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+    transition: border-color 0.2s;
+}
+.tool-card:hover { border-color: var(--border-light); }
+.tool-card .tool-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.tool-card .tool-name { font-weight: 600; font-size: 13px; }
+.tool-card .tool-name code { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+.tool-card .tool-desc { color: var(--text-secondary); font-size: 12px; }
+.tool-card .tool-params { margin-top: 6px; font-size: 11px; color: var(--text-muted); }
+.tool-card .tool-params span { background: var(--bg-tertiary); padding: 1px 5px; border-radius: 3px; margin-right: 4px; }
+.toggle-switch { position: relative; width: 36px; height: 20px; margin-left: auto; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-switch .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--border); border-radius: 20px; transition: 0.2s;
+}
+.toggle-switch .slider::before {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    left: 2px; bottom: 2px; background: var(--text-primary);
+    border-radius: 50%; transition: 0.2s;
+}
+.toggle-switch input:checked + .slider { background: var(--accent); }
+.toggle-switch input:checked + .slider::before { transform: translateX(16px); }
+
+/* ── Memory Tab ── */
+.memory-view { padding: 16px; overflow-y: auto; }
+.memory-search { display: flex; gap: 8px; margin-bottom: 16px; }
+.memory-search input {
+    flex: 1; padding: 8px 12px; background: var(--bg-tertiary);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text-primary); font-size: 13px; font-family: var(--font);
+    outline: none;
+}
+.memory-search input:focus { border-color: var(--accent); }
+.memory-entries { display: flex; flex-direction: column; gap: 8px; }
+.mem-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+}
+.mem-card .mem-key { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.mem-card .mem-val { color: var(--text-secondary); font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
+.mem-card .mem-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.memory-empty { text-align: center; color: var(--text-muted); padding: 40px 0; }
+
+/* ── Scheduler Tab ── */
+.scheduler-view { padding: 16px; overflow-y: auto; }
+.job-form {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+}
+.job-form-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.job-form-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: 16px;
+}
+.job-form-checkbox {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-secondary);
+}
+.job-form-checkbox input { margin: 0; }
+.jobs-container { display: flex; flex-direction: column; gap: 8px; }
+.job-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+}
+.job-card .job-header { display: flex; align-items: center; gap: 8px; }
+.job-card .job-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.job-card .job-name { font-weight: 600; font-size: 13px; }
+.job-card .job-cron { font-size: 11px; color: var(--text-secondary); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; }
+.job-card .job-goal { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
+.job-card .job-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.job-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+.job-badge.enabled { background: rgba(76,175,80,0.15); color: var(--success); }
+.job-badge.disabled { background: rgba(158,158,158,0.15); color: var(--text-muted); }
+
+/* ── Metrics Tab ── */
+.metrics-view { padding: 16px; overflow-y: auto; }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.metric-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; text-align: center;
+}
+.metric-card .metric-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+.metric-card .metric-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-card .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.metrics-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.metrics-chart h3 { font-size: 14px; margin-bottom: 12px; }
+.metrics-raw { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.metrics-raw h3 { font-size: 14px; margin-bottom: 8px; }
+.metrics-raw pre {
+    background: var(--bg-primary); padding: 12px; border-radius: var(--radius);
+    font-size: 11px; overflow-x: auto; color: var(--text-secondary);
+    max-height: 300px; overflow-y: auto;
+}
+
+/* ── Workflows Tab ── */
+.workflows-view { padding: 16px; overflow-y: auto; flex: 1; }
+.workflows-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px;
+}
+.workflows-list { display: flex; flex-direction: column; gap: 12px; }
+.workflow-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+}
+.workflow-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 8px;
+}
+.workflow-card-title { font-size: 15px; font-weight: 600; }
+.workflow-card-desc { color: var(--text-secondary); font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
+.workflow-actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 14px;
+}
+
+/* ── Checkpoints Tab ── */
+.checkpoints-view { padding: 16px; overflow-y: auto; flex: 1; }
+.checkpoints-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.checkpoints-filter {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.checkpoints-filter label {
+    font-size: 12px; color: var(--text-secondary); font-weight: 600;
+}
+.checkpoints-filter select {
+    min-width: 240px; padding: 8px 10px;
+    background: var(--bg-tertiary); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text-primary);
+    font-size: 13px; font-family: var(--font); outline: none;
+}
+.checkpoints-filter select:focus { border-color: var(--accent); }
+.checkpoints-list { display: flex; flex-direction: column; gap: 12px; }
+.checkpoint-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+}
+.checkpoint-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.checkpoint-card-title { font-size: 15px; font-weight: 600; }
+.checkpoint-card-id { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.checkpoint-meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-size: 12px; color: var(--text-secondary);
+}
+.checkpoint-chip {
+    background: var(--bg-tertiary); border-radius: 999px;
+    padding: 3px 8px;
+}
+.checkpoint-actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 14px;
+}
+.checkpoint-result {
+    margin-bottom: 16px; padding: 12px 14px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); font-size: 13px;
+}
+.checkpoint-diff {
+    margin-top: 16px; background: var(--bg-primary);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; font-size: 12px; line-height: 1.5;
+    overflow: auto; max-height: 60vh; white-space: pre-wrap;
+    word-break: break-word; color: var(--text-secondary);
+}
+
+/* ── Agents Tab ── */
+.agents-view { padding: 16px; overflow-y: auto; flex: 1; }
+.agents-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px;
+}
+.agents-list { display: flex; flex-direction: column; gap: 12px; }
+.agent-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+}
+.agent-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 8px;
+}
+.agent-card-title { font-size: 15px; font-weight: 600; }
+.agent-card-id { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.agent-card-desc { color: var(--text-secondary); font-size: 13px; white-space: pre-wrap; word-wrap: break-word; }
+.agent-meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 12px; font-size: 12px; color: var(--text-secondary);
+}
+.agent-chip {
+    background: var(--bg-tertiary); border-radius: 999px;
+    padding: 3px 8px;
+}
+.agent-badge {
+    font-size: 11px; font-weight: 600; border-radius: 999px;
+    padding: 3px 8px;
+}
+.agent-badge.enabled { background: rgba(76,175,80,0.15); color: var(--success); }
+.agent-badge.disabled { background: rgba(158,158,158,0.15); color: var(--text-muted); }
+.agent-badge.policy { background: var(--accent-subtle); color: var(--accent); }
+.agent-actions {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 14px;
+}
+.modal-card {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 560px; max-width: 92vw; max-height: 90vh; overflow-y: auto;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.modal-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.checkbox-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-secondary);
+}
+.checkbox-row input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--accent);
+}
+.modal-result {
+    margin-top: 12px; font-size: 13px; white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ── Settings Tab ── */
+.settings-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+}
+.settings-section h3 {
+    font-size: 14px; font-weight: 600; margin-bottom: 16px;
+    color: var(--accent); display: flex; align-items: center; gap: 8px;
+}
+.settings-section h3 .count { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+.settings-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+.settings-field { display: flex; flex-direction: column; gap: 4px; }
+.settings-field label {
+    font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.3px;
+}
+.settings-field input, .settings-field select {
+    padding: 8px 10px; background: var(--bg-tertiary);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text-primary); font-size: 13px; font-family: var(--font);
+    outline: none; transition: border-color 0.2s;
+}
+.settings-field input:focus, .settings-field select:focus { border-color: var(--accent); }
+.settings-field input::placeholder { color: var(--text-muted); }
+.settings-field .hint { font-size: 11px; color: var(--text-muted); }
+.settings-field.checkbox-field {
+    flex-direction: row; align-items: center; gap: 10px;
+}
+.settings-field.checkbox-field label { text-transform: none; letter-spacing: 0; cursor: pointer; }
+.settings-field.checkbox-field input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;
+}
+
+/* ── Loading ── */
+.loading-bar {
+    width: 100%; height: 2px; background: var(--bg-tertiary);
+    position: relative; overflow: hidden;
+}
+.loading-bar.active::after {
+    content: ''; position: absolute; top: 0; left: -40%;
+    width: 40%; height: 100%; background: var(--accent);
+    animation: loading-slide 1.5s ease-in-out infinite;
+}
+@keyframes loading-slide { 0% { left: -40%; } 100% { left: 100%; } }
+.loading-spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    #sidebar { position: fixed; left: -100%; top: var(--header-height); bottom: 0; z-index: 90; transition: left 0.3s; }
+    #sidebar.open { left: 0; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 89; background: rgba(0,0,0,0.5); }
+    .sidebar-overlay.show { display: block; }
+    #sidebar-toggle { display: flex !important; }
+    .message { max-width: 90%; }
+}
+#sidebar-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px; }
+#sidebar-toggle:hover { background: var(--bg-tertiary); }
+
+/* ── Misc ── */
+.hidden { display: none !important; }
+.ml-auto { margin-left: auto; }
+.gap-2 { gap: 8px; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.text-center { text-align: center; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-full { width: 100%; }
+.p-4 { padding: 16px; }
+.mb-2 { margin-bottom: 8px; }
+
+/* ── Command Palette ── */
+#command-palette-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5);
+}
+#command-palette-overlay.open { display: block; }
+.command-palette {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    width: 480px; max-width: 90vw;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    z-index: 201; overflow: hidden;
+}
+[data-theme="light"] .command-palette { box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+.command-palette-input {
+    width: 100%; padding: 14px 16px; border: none;
+    background: var(--bg-tertiary); color: var(--text-primary);
+    font-size: 15px; font-family: var(--font); outline: none;
+    border-bottom: 1px solid var(--border);
+}
+.command-palette-input::placeholder { color: var(--text-muted); }
+.command-palette-list { max-height: 280px; overflow-y: auto; padding: 4px; }
+.command-palette-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius);
+    cursor: pointer; color: var(--text-primary); font-size: 13px;
+    transition: background 0.1s;
+}
+.command-palette-item:hover,
+.command-palette-item.selected { background: var(--accent-subtle); }
+.command-palette-item .kbd {
+    margin-left: auto; font-size: 11px;
+    background: var(--bg-tertiary); padding: 2px 6px;
+    border-radius: 4px; color: var(--text-muted);
+    font-family: var(--font);
+}
+.command-palette-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+/* ── Health Indicator ── */
+#health-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+#health-dot.connected { background: #4CAF50; box-shadow: 0 0 4px rgba(76,175,80,0.5); }
+#health-dot.disconnected { background: #F44336; box-shadow: 0 0 4px rgba(244,67,54,0.5); }
+
+/* ── Empty States ── */
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px;
+    padding: 48px 24px; text-align: center;
+}
+.empty-state .empty-icon { font-size: 36px; opacity: 0.4; }
+.empty-state .empty-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.empty-state .empty-desc { font-size: 13px; color: var(--text-muted); max-width: 320px; line-height: 1.5; }
+
+/* ── Keyboard shortcut badge ── */
+.kbd-hint {
+    font-size: 11px; color: var(--text-muted);
+    background: var(--bg-tertiary); padding: 2px 6px;
+    border-radius: 4px; font-family: var(--font);
+}
+</style>
+</head>
+<body>
+
+<!-- ── Pairing Screen ── -->
+<div id="pairing-screen">
+    <div class="pairing-card">
+        <h1><span>G</span>olem Dashboard</h1>
+        <p class="subtitle">Connect to your Golem agent server</p>
+        <div class="form-group">
+            <label for="server-url">Server URL</label>
+            <input id="server-url" type="url" placeholder="http://localhost:8082" autocomplete="url">
+        </div>
+        <div class="form-group">
+            <label for="api-key">API Key</label>
+            <input id="api-key" type="password" placeholder="Enter your API key" autocomplete="current-password">
+        </div>
+        <button id="connect-btn" class="btn btn-primary" onclick="connect()">Connect</button>
+        <div class="pairing-error" id="pairing-error"></div>
+        <div class="connect-status" id="connect-status"><span class="status-dot offline"></span> Not connected</div>
+    </div>
+</div>
+
+<!-- ── Command Palette ── -->
+<div id="command-palette-overlay" onclick="if(event.target===this)closeCommandPalette()">
+    <div class="command-palette">
+        <input class="command-palette-input" id="command-palette-input"
+               placeholder="Type a command..." autocomplete="off"
+               oninput="renderCommandPalette(this.value)"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();const s=document.querySelector('.command-palette-item.selected');if(s){const idx=parseInt(s.dataset.idx);executeCommand(idx);}}">
+        <div class="command-palette-list" id="command-palette-list"></div>
+    </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="dashboard">
+    <!-- Header -->
+    <div id="header">
+        <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+        <div class="brand"><span>G</span>olem <span class="kbd-hint">Ctrl+K</span></div>
+        <div class="spacer"></div>
+        <div class="status-bar">
+            <span id="health-dot" class="connected" title="Connected to server"></span>
+            <span class="status-dot" id="header-status-dot"></span>
+            <span id="header-model" class="model-badge">—</span>
+            <span id="header-status-text">disconnected</span>
+            <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Toggle theme" id="theme-toggle">🌙</button>
+            <button class="btn btn-ghost btn-icon" onclick="disconnect()" title="Disconnect">✕</button>
+        </div>
+    </div>
+
+    <!-- Layout -->
+    <div id="layout">
+        <!-- Sidebar overlay for mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <ul class="sidebar-tabs">
+                <li><a class="active" data-tab="chat" onclick="switchTab('chat')"><span class="icon">💬</span> Chat</a></li>
+                <li><a data-tab="tools" onclick="switchTab('tools')"><span class="icon">🧰</span> Tools</a></li>
+                <li><a data-tab="memory" onclick="switchTab('memory')"><span class="icon">🧠</span> Memory</a></li>
+                <li><a data-tab="scheduler" onclick="switchTab('scheduler')"><span class="icon">⏰</span> Scheduler</a></li>
+                <li><a data-tab="metrics" onclick="switchTab('metrics')"><span class="icon">📊</span> Metrics</a></li>
+                <li><a data-tab="workflows" onclick="switchTab('workflows');loadWorkflows()"><span class="icon">🔀</span> Workflows</a></li>
+                <li><a data-tab="checkpoints" onclick="switchTab('checkpoints');loadCheckpoints()"><span class="icon">📌</span> Checkpoints</a></li>
+                <li><a data-tab="agents" onclick="switchTab('agents');loadAgents()"><span class="icon">🤖</span> Agents</a></li>
+                <li><a data-tab="providers" onclick="switchTab('providers');loadProviders()"><span class="icon">🔌</span> Providers</a></li>
+                <li><a data-tab="delivery" onclick="switchTab('delivery')"><span class="icon">📨</span> Delivery</a></li>
+                <li><a data-tab="settings" onclick="switchTab('settings');loadSettings()"><span class="icon">⚙️</span> Settings</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="connection-info" id="connection-info">Not connected</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <!-- ── Chat Tab ── -->
+            <div class="tab-content active" id="tab-chat">
+                <div id="chat-header">
+                    <span class="session-label">Session:</span>
+                    <select id="session-select" onchange="switchSession(this.value)">
+                        <option value="">Loading sessions...</option>
+                    </select>
+                    <button class="btn btn-ghost" onclick="createSession()" title="New Session" style="font-size:16px;padding:4px 8px;">＋</button>
+                </div>
+                <div id="chat-messages">
+                    <div class="message system">Connected. Type a message to start chatting.</div>
+                </div>
+                <div class="loading-bar" id="loading-bar"></div>
+                <div id="chat-input-area">
+                    <button class="btn btn-ghost btn-icon" onclick="toggleThinkingTimeline()" title="Show/hide thinking timeline" style="font-size:14px;">🔄</button>
+                    <textarea id="chat-input" placeholder="Type a message... (Enter to send, Shift+Enter newline, Ctrl+Enter send)" rows="1"></textarea>
+                    <button id="send-btn" onclick="sendMessage()" disabled>➤</button>
+                </div>
+            </div>
+
+            <!-- ── Tools Tab ── -->
+            <div class="tab-content" id="tab-tools">
+                <div class="tools-list" id="tools-list">
+                    <div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>
+                </div>
+            </div>
+
+            <!-- ── Memory Tab ── -->
+            <div class="tab-content" id="tab-memory">
+                <div class="memory-view" id="memory-view">
+                    <div class="memory-search">
+                        <input id="memory-search-input" type="text" placeholder="Search memory..." onkeydown="if(event.key==='Enter')loadMemory()">
+                        <button class="btn btn-secondary" onclick="loadMemory()">Search</button>
+                        <button class="btn btn-ghost" onclick="document.getElementById('memory-search-input').value='';loadMemory()">Clear</button>
+                    </div>
+                    <div id="memory-entries" class="memory-entries"></div>
+                </div>
+            </div>
+
+            <!-- ── Scheduler Tab ── -->
+            <div class="tab-content" id="tab-scheduler">
+                <div class="scheduler-view" id="scheduler-view">
+                    <div id="jobs-list">
+                        <div class="text-center" style="padding:20px"><span class="loading-spinner"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Metrics Tab ── -->
+            <div class="tab-content" id="tab-metrics">
+                <div class="metrics-view" id="metrics-view"></div>
+            </div>
+
+            <!-- ── Workflows Tab ── -->
+            <div class="tab-content" id="tab-workflows">
+                <div class="workflows-view">
+                    <div class="workflows-header">
+                        <h2 style="font-size:18px;font-weight:600;">Workflows</h2>
+                    </div>
+                    <div id="workflows-list" class="workflows-list">
+                        <div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>
+                    </div>
+                </div>
+
+                <div id="workflow-run-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeRunWorkflowModal()">
+                    <div class="modal-card" style="width:520px;">
+                        <h3 id="workflow-run-title" style="font-size:16px;font-weight:600;margin-bottom:16px;">Run Workflow</h3>
+                        <input id="workflow-run-name" type="hidden">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="workflow-run-goal">Goal</label>
+                            <textarea id="workflow-run-goal" placeholder="What should this workflow do?"></textarea>
+                        </div>
+                        <div id="workflow-run-result" class="modal-result" style="display:none;"></div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+                            <button class="btn btn-secondary" onclick="closeRunWorkflowModal()">Close</button>
+                            <button class="btn btn-primary" id="workflow-run-btn" onclick="submitRunWorkflow()" style="width:auto;">Run Workflow</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Checkpoints Tab ── -->
+            <div class="tab-content" id="tab-checkpoints">
+                <div class="checkpoints-view">
+                    <div class="checkpoints-header">
+                        <h2 style="font-size:18px;font-weight:600;">Checkpoints</h2>
+                        <div class="checkpoints-filter">
+                            <label for="checkpoint-session-filter">Session</label>
+                            <select id="checkpoint-session-filter" onchange="loadCheckpoints(this.value)">
+                                <option value="">All sessions</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="checkpoint-resume-result" class="checkpoint-result" style="display:none;"></div>
+                    <div id="checkpoints-list" class="checkpoints-list">
+                        <div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>
+                    </div>
+                </div>
+
+                <div id="checkpoint-diff-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeCheckpointDiffModal()">
+                    <div class="modal-card" style="width:min(960px,92vw);">
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;">
+                            <div>
+                                <h3 id="checkpoint-diff-title" style="font-size:16px;font-weight:600;">Checkpoint Diff</h3>
+                                <div id="checkpoint-diff-meta" style="font-size:12px;color:var(--text-muted);margin-top:4px;"></div>
+                            </div>
+                            <button class="btn btn-secondary" onclick="closeCheckpointDiffModal()">Close</button>
+                        </div>
+                        <pre id="checkpoint-diff-content" class="checkpoint-diff"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Agents Tab ── -->
+            <div class="tab-content" id="tab-agents">
+                <div class="agents-view">
+                    <div class="agents-header">
+                        <h2 style="font-size:18px;font-weight:600;">Agents</h2>
+                        <button class="btn btn-secondary" onclick="openCreateAgentModal()">＋ Add Agent</button>
+                    </div>
+                    <div id="agents-list" class="agents-list">
+                        <div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>
+                    </div>
+                </div>
+
+                <div id="agent-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeAgentModal()">
+                    <div class="modal-card">
+                        <h3 id="agent-modal-title" style="font-size:16px;font-weight:600;margin-bottom:16px;">Create Agent</h3>
+                        <input id="agent-edit-id" type="hidden">
+                        <div class="modal-grid">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="agent-id">ID</label>
+                                <input id="agent-id" type="text" placeholder="researcher">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="agent-name">Name</label>
+                                <input id="agent-name" type="text" placeholder="Research Agent">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label for="agent-description">Description</label>
+                            <textarea id="agent-description" placeholder="Describe what this agent is for."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-system-prompt">System Prompt</label>
+                            <textarea id="agent-system-prompt" placeholder="You are a focused research agent..."></textarea>
+                        </div>
+                        <div class="modal-grid">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="agent-preferred-model">Preferred Model</label>
+                                <input id="agent-preferred-model" type="text" placeholder="gpt-4o-mini">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="agent-tool-policy">Tool Policy</label>
+                                <select id="agent-tool-policy">
+                                    <option value="ALL">ALL</option>
+                                    <option value="LISTED">LISTED</option>
+                                    <option value="NONE">NONE</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="agent-filesystem-access">Filesystem Access</label>
+                                <select id="agent-filesystem-access">
+                                    <option value="none">none</option>
+                                    <option value="read-write">read-write</option>
+                                    <option value="read-only">read-only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-grid" style="margin-top:12px;">
+                            <label class="checkbox-row"><input id="agent-shell-access" type="checkbox"> Shell access</label>
+                            <label class="checkbox-row"><input id="agent-network-access" type="checkbox"> Network access</label>
+                        </div>
+                        <div class="form-group" style="margin-top:12px;margin-bottom:0;">
+                            <label for="agent-tags">Tags</label>
+                            <input id="agent-tags" type="text" placeholder="research, safe, docs">
+                        </div>
+                        <div id="agent-modal-error" class="modal-result" style="display:none;color:var(--error);"></div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+                            <button class="btn btn-secondary" onclick="closeAgentModal()">Cancel</button>
+                            <button class="btn btn-primary" id="agent-save-btn" onclick="submitAgentForm()" style="width:auto;">Create Agent</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="agent-run-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeRunAgentModal()">
+                    <div class="modal-card" style="width:520px;">
+                        <h3 id="agent-run-title" style="font-size:16px;font-weight:600;margin-bottom:16px;">Run Agent</h3>
+                        <input id="agent-run-id" type="hidden">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="agent-run-goal">Goal</label>
+                            <textarea id="agent-run-goal" placeholder="What should this agent do?"></textarea>
+                        </div>
+                        <div id="agent-run-result" class="modal-result" style="display:none;"></div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;">
+                            <button class="btn btn-secondary" onclick="closeRunAgentModal()">Close</button>
+                            <button class="btn btn-primary" id="agent-run-btn" onclick="submitRunAgent()" style="width:auto;">Run Agent</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Providers Tab ── -->
+            <div class="tab-content" id="tab-providers">
+                <div class="providers-view" id="providers-view" style="padding:16px;overflow-y:auto;flex:1;">
+                    <!-- Header with add button -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <h2 style="font-size:18px;font-weight:600;">Providers</h2>
+                        <button class="btn btn-secondary" onclick="showAddProviderForm()">＋ Add Provider</button>
+                    </div>
+
+                    <!-- Provider cards container -->
+                    <div id="providers-list"></div>
+
+                    <!-- Add/Edit provider modal -->
+                    <div id="provider-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeProviderModal()">
+                        <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:440px;max-width:90vw;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+                            <h3 id="provider-modal-title" style="font-size:16px;font-weight:600;margin-bottom:16px;">Add Provider</h3>
+                            <div class="form-group">
+                                <label for="provider-name">Provider Name</label>
+                                <input id="provider-name" type="text" placeholder="e.g., my-llama, local-groq" style="width:100%;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;">
+                            </div>
+                            <div class="form-group">
+                                <label for="provider-type">Type</label>
+                                <select id="provider-type" style="width:100%;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;">
+                                    <option value="openai-compat">OpenAI Compatible</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                    <option value="google">Google/Gemini</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="provider-base-url">Base URL</label>
+                                <input id="provider-base-url" type="url" placeholder="http://localhost:8090/v1" style="width:100%;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;">
+                            </div>
+                            <div class="form-group">
+                                <label for="provider-api-key">API Key <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
+                                <input id="provider-api-key" type="password" placeholder="sk-... or leave empty" style="width:100%;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;">
+                            </div>
+                            <div class="form-group">
+                                <label for="provider-model">Default Model <span style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
+                                <input id="provider-model" type="text" placeholder="e.g., gpt-4o, claude-sonnet-4" style="width:100%;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-size:14px;font-family:var(--font);outline:none;">
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:20px;">
+                                <button class="btn btn-primary" onclick="saveProvider()" style="flex:1;" id="save-provider-btn">Save Provider</button>
+                                <button class="btn btn-ghost" onclick="testProvider()" id="test-provider-btn">Test</button>
+                                <button class="btn btn-secondary" onclick="closeProviderModal()">Cancel</button>
+                            </div>
+                            <div id="provider-test-result" style="margin-top:12px;font-size:13px;display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Delivery Tab ── -->
+            <div class="tab-content" id="tab-delivery">
+                <div style="padding:16px;overflow-y:auto;flex:1;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <h2 style="font-size:18px;font-weight:600;">Delivery</h2>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>📨 Telegram Test</h3>
+                        <div class="form-group">
+                            <label for="delivery-telegram-chat-id">Chat ID</label>
+                            <input id="delivery-telegram-chat-id" type="text" placeholder="123456789">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="delivery-telegram-text">Message</label>
+                            <textarea id="delivery-telegram-text" placeholder="Test Telegram message"></textarea>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <button class="btn btn-primary" id="delivery-telegram-btn" onclick="sendTelegram()">Send Telegram</button>
+                        </div>
+                        <div id="delivery-telegram-result" class="modal-result" style="display:none;"></div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>📧 Email Test</h3>
+                        <div class="form-group">
+                            <label for="delivery-email-to">To</label>
+                            <input id="delivery-email-to" type="email" placeholder="user@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="delivery-email-subject">Subject</label>
+                            <input id="delivery-email-subject" type="text" placeholder="Test email subject">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="delivery-email-body">Body</label>
+                            <textarea id="delivery-email-body" placeholder="Test email body"></textarea>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <button class="btn btn-primary" id="delivery-email-btn" onclick="sendEmail()">Send Email</button>
+                        </div>
+                        <div id="delivery-email-result" class="modal-result" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Settings Tab ── -->
+        <div class="tab-content" id="tab-settings">
+            <div style="padding:16px;overflow-y:auto;flex:1;" id="settings-view">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                    <h2 style="font-size:18px;font-weight:600;">Settings</h2>
+                    <span style="font-size:12px;color:var(--text-muted);" id="settings-config-path"></span>
+                </div>
+                <div id="settings-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── State ──
+const state = {
+    baseUrl: localStorage.getItem('golem_url') || '',
+    apiKey: localStorage.getItem('golem_key') || '',
+    sessions: [],
+    currentSessionId: null,
+    messages: [],
+    thinkingVisible: true,
+    streaming: false,
+    toolTimeline: [],
+};
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+    const savedUrl = localStorage.getItem('golem_url');
+    const savedKey = localStorage.getItem('golem_key');
+    if (savedUrl && savedKey) {
+        document.getElementById('server-url').value = savedUrl;
+        document.getElementById('api-key').value = savedKey;
+        connect();
+    }
+});
+
+// ── Connection ──
+async function connect() {
+    const url = document.getElementById('server-url').value.replace(/\/+$/, '');
+    const key = document.getElementById('api-key').value;
+    const errorEl = document.getElementById('pairing-error');
+    const statusEl = document.getElementById('connect-status');
+
+    if (!url) { errorEl.textContent = 'Please enter a server URL'; errorEl.style.display = 'block'; return; }
+    if (!key) { errorEl.textContent = 'Please enter an API key'; errorEl.style.display = 'block'; return; }
+
+    document.getElementById('connect-btn').disabled = true;
+    document.getElementById('connect-btn').textContent = 'Connecting...';
+    errorEl.style.display = 'none';
+    statusEl.innerHTML = '<span class="status-dot running"></span> Connecting...';
+
+    try {
+        const resp = await fetch(url + '/api/health', { headers: { 'Authorization': 'Bearer ' + key } });
+        if (!resp.ok) throw new Error('Server returned ' + resp.status);
+        const data = await resp.json();
+        if (data.status !== 'ok') throw new Error('Unexpected response: ' + JSON.stringify(data));
+
+        state.baseUrl = url;
+        state.apiKey = key;
+        localStorage.setItem('golem_url', url);
+        localStorage.setItem('golem_key', key);
+
+        document.getElementById('pairing-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('connection-info').textContent = url;
+        initDashboard();
+    } catch (err) {
+        errorEl.textContent = 'Connection failed: ' + err.message;
+        errorEl.style.display = 'block';
+        statusEl.innerHTML = '<span class="status-dot offline"></span> Not connected';
+    } finally {
+        document.getElementById('connect-btn').disabled = false;
+        document.getElementById('connect-btn').textContent = 'Connect';
+    }
+}
+
+function disconnect() {
+    state.baseUrl = '';
+    state.apiKey = '';
+    localStorage.removeItem('golem_url');
+    localStorage.removeItem('golem_key');
+    if (healthPollInterval) { clearInterval(healthPollInterval); healthPollInterval = null; }
+    if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('pairing-screen').style.display = 'flex';
+    document.getElementById('connect-status').innerHTML = '<span class="status-dot offline"></span> Not connected';
+}
+
+// ── Dashboard Init ──
+async function initDashboard() {
+    loadSessions();
+    loadAgentStatus();
+    startStatusPolling();
+}
+
+// ── Sidebar ──
+function toggleSidebar() {
+    const s = document.getElementById('sidebar');
+    const o = document.getElementById('sidebar-overlay');
+    s.classList.toggle('open');
+    o.classList.toggle('show');
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.sidebar-tabs a').forEach(a => a.classList.remove('active'));
+    document.querySelector(`.sidebar-tabs a[data-tab="${tab}"]`).classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+
+    // Lazy load
+    if (tab === 'tools') loadTools();
+    if (tab === 'memory') loadMemory();
+    if (tab === 'scheduler') loadJobs();
+    if (tab === 'metrics') loadMetrics();
+    if (tab === 'workflows') loadWorkflows();
+    if (tab === 'checkpoints') loadCheckpoints();
+    if (tab === 'agents') loadAgents();
+}
+
+// ── API helper ──
+async function api(path, options = {}) {
+    const url = state.baseUrl + path;
+    const headers = { 'Authorization': 'Bearer ' + state.apiKey, ...options.headers };
+    let body = options.body;
+    if (body && typeof body === 'object' && !(body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(body);
+    }
+    const resp = await fetch(url, { ...options, headers, body });
+    if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(resp.status + ': ' + (text || resp.statusText));
+    }
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return resp.json();
+    return resp.text();
+}
+
+// ── Agent Status ──
+async function loadAgentStatus() {
+    try {
+        const status = await api('/api/agent/status');
+        document.getElementById('header-model').textContent = status.model || status.provider || '—';
+        const dot = document.getElementById('header-status-dot');
+        const text = document.getElementById('header-status-text');
+        if (status.running) {
+            dot.className = 'status-dot running';
+            text.textContent = 'running';
+        } else {
+            dot.className = 'status-dot online';
+            text.textContent = 'idle';
+        }
+    } catch (e) {
+        document.getElementById('header-status-dot').className = 'status-dot offline';
+        document.getElementById('header-status-text').textContent = 'error';
+    }
+}
+
+let statusInterval = null;
+function startStatusPolling() { statusInterval = setInterval(loadAgentStatus, 5000); }
+
+// ── Sessions ──
+async function loadSessions() {
+    try {
+        state.sessions = await api('/api/sessions');
+        renderSessionOptions(document.getElementById('session-select'), {
+            placeholder: 'Select session...',
+            selectedValue: state.currentSessionId || '',
+        });
+        renderSessionOptions(document.getElementById('checkpoint-session-filter'), {
+            placeholder: 'All sessions',
+            selectedValue: document.getElementById('checkpoint-session-filter')?.value || '',
+        });
+        const sel = document.getElementById('session-select');
+        if (state.sessions.length > 0 && !state.currentSessionId) {
+            sel.value = state.sessions[0].id;
+            state.currentSessionId = state.sessions[0].id;
+        }
+    } catch (e) {
+        console.error('Failed to load sessions:', e);
+        const sel = document.getElementById('session-select');
+        sel.innerHTML = '<option value="">Failed to load sessions</option>';
+    }
+}
+
+async function createSession() {
+    try {
+        const title = 'Session ' + new Date().toLocaleString();
+        const session = await api('/api/session', {
+            method: 'POST',
+            body: JSON.stringify({ title }),
+        });
+        state.sessions.unshift(session);
+        renderSessionOptions(document.getElementById('session-select'), {
+            placeholder: 'Select session...',
+            selectedValue: session.id,
+        });
+        renderSessionOptions(document.getElementById('checkpoint-session-filter'), {
+            placeholder: 'All sessions',
+            selectedValue: document.getElementById('checkpoint-session-filter')?.value || '',
+        });
+        const sel = document.getElementById('session-select');
+        sel.value = session.id;
+        state.currentSessionId = session.id;
+        document.getElementById('chat-messages').innerHTML = '<div class="message system">New session created.</div>';
+        state.messages = [];
+    } catch (e) {
+        console.error('Failed to create session:', e);
+    }
+}
+
+async function switchSession(id) {
+    state.currentSessionId = id;
+
+    const container = document.getElementById('chat-messages');
+    if (!id) {
+        container.innerHTML = '<div class="message system">Switched to session ' + (id ? id.slice(0, 8) : '—') + '</div>';
+        state.messages = [];
+        return;
+    }
+
+    try {
+        const messages = await api('/api/session/' + encodeURIComponent(id) + '/messages');
+        container.innerHTML = '';
+        state.messages = [];
+
+        messages.forEach(message => {
+            const msg = document.createElement('div');
+            msg.className = 'message ' + message.role;
+            msg.innerHTML = escapeHtml(message.content);
+
+            const time = document.createElement('div');
+            time.className = 'msg-time';
+            time.textContent = new Date().toLocaleTimeString();
+            msg.appendChild(time);
+
+            container.appendChild(msg);
+            state.messages.push({ role: message.role, content: message.content });
+        });
+
+        container.scrollTop = container.scrollHeight;
+    } catch (e) {
+        console.error('Failed to load session messages:', e);
+        container.innerHTML = '<div class="message system">Failed to load session messages.</div>';
+        state.messages = [];
+    }
+}
+
+// ── Chat ──
+function addMessage(role, content) {
+    const container = document.getElementById('chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'message ' + role;
+    msg.textContent = content;
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = new Date().toLocaleTimeString();
+    msg.appendChild(time);
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+    state.messages.push({ role, content });
+}
+
+function addThinking() {
+    const container = document.getElementById('chat-messages');
+    const el = document.createElement('div');
+    el.className = 'thinking-indicator';
+    el.id = 'thinking-indicator';
+    el.innerHTML = '<span>Thinking</span><div class="thinking-dots"><span></span><span></span><span></span></div>';
+    container.appendChild(el);
+    container.scrollTop = container.scrollHeight;
+}
+
+function removeThinking() {
+    const el = document.getElementById('thinking-indicator');
+    if (el) el.remove();
+}
+
+let currentAssistantMsg = null;
+let currentToolTimeline = null;
+let timelineVisible = false;
+
+function toggleThinkingTimeline() {
+    timelineVisible = !timelineVisible;
+    const el = document.getElementById('tool-timeline-container');
+    if (el) el.style.display = timelineVisible ? 'block' : 'none';
+}
+
+function updateAssistantText(text) {
+    const container = document.getElementById('chat-messages');
+    if (!currentAssistantMsg) {
+        currentAssistantMsg = document.createElement('div');
+        currentAssistantMsg.className = 'message assistant';
+        container.appendChild(currentAssistantMsg);
+        // Tool timeline container
+        if (timelineVisible) {
+            const tlc = document.createElement('div');
+            tlc.id = 'tool-timeline-container';
+            container.appendChild(tlc);
+        }
+    }
+    currentAssistantMsg.textContent += text;
+    container.scrollTop = container.scrollHeight;
+}
+
+function addToolStep(toolCall) {
+    if (!timelineVisible) return;
+    const tlc = document.getElementById('tool-timeline-container');
+    if (!tlc) return;
+    const step = document.createElement('div');
+    step.className = 'tool-step';
+    step.id = 'tool-step-' + toolCall.id;
+    step.innerHTML = '<span class="tool-icon">⚡</span><div class="tool-info"><div class="tool-name">' + escapeHtml(toolCall.name) + '</div><div class="tool-args">' + escapeHtml(JSON.stringify(toolCall.arguments || {})) + '</div></div>';
+    tlc.appendChild(step);
+}
+
+function updateToolResult(toolCall, result) {
+    const step = document.getElementById('tool-step-' + toolCall.id);
+    if (!step) return;
+    const info = step.querySelector('.tool-info');
+    const resDiv = document.createElement('div');
+    resDiv.className = 'tool-result ' + (result.success ? 'success' : 'error');
+    resDiv.textContent = result.success ? '✓ done' : '✗ ' + (result.error || 'failed');
+    info.appendChild(resDiv);
+    document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+}
+
+function finalizeAssistantMessage(result) {
+    if (currentAssistantMsg) {
+        const time = document.createElement('div');
+        time.className = 'msg-time';
+        time.textContent = new Date().toLocaleTimeString();
+        currentAssistantMsg.appendChild(time);
+    }
+    currentAssistantMsg = null;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('chat-input').disabled = false;
+    document.getElementById('chat-input').focus();
+    document.getElementById('loading-bar').classList.remove('active');
+}
+
+// ── Send Message (SSE streaming) ──
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || state.streaming) return;
+
+    input.value = '';
+    addMessage('user', text);
+    document.getElementById('send-btn').disabled = true;
+    document.getElementById('chat-input').disabled = true;
+    document.getElementById('loading-bar').classList.add('active');
+    state.streaming = true;
+    state.toolTimeline = [];
+    currentAssistantMsg = null;
+
+    // Remove old timeline container
+    const old = document.getElementById('tool-timeline-container');
+    if (old) old.remove();
+
+    addThinking();
+
+    try {
+        const resp = await fetch(state.baseUrl + '/api/agent/run/stream', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + state.apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ goal: text, model: '', persona: '' }),
+        });
+
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line
+
+            for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                    state._sseEvent = line.slice(7).trim();
+                    continue;
+                }
+                if (line.startsWith('event:')) {
+                    state._sseEvent = line.slice(6).trim();
+                    continue;
+                }
+                if (line.startsWith('data: ')) {
+                    const rawData = line.slice(6).trim();
+                    const eventType = state._sseEvent || 'message';
+                    state._sseEvent = null;
+
+                    let data;
+                    try { data = JSON.parse(rawData); } catch (e) { continue; }
+
+                    switch (eventType) {
+                        case 'token':
+                            removeThinking();
+                            updateAssistantText(data.text || '');
+                            break;
+                        case 'tool_call':
+                            if (timelineVisible) addToolStep(data);
+                            break;
+                        case 'tool_result':
+                            updateToolResult({ id: data.id, name: data.name }, data);
+                            break;
+                        case 'error':
+                            removeThinking();
+                            addMessage('system', '⚠️ Error: ' + data.error);
+                            break;
+                        case 'complete':
+                            if (!currentAssistantMsg && data.result) {
+                                removeThinking();
+                                addMessage('assistant', data.result);
+                            }
+                            removeThinking();
+                            break;
+                        case 'status':
+                            // Status events — no UI action needed
+                            break;
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        removeThinking();
+        addMessage('system', '⚠️ Stream error: ' + err.message);
+    } finally {
+        state.streaming = false;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('chat-input').disabled = false;
+        document.getElementById('chat-input').focus();
+        document.getElementById('loading-bar').classList.remove('active');
+    }
+}
+
+// ── Tools ──
+async function loadTools() {
+    const el = document.getElementById('tools-list');
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        const data = await api('/api/tools');
+        const tools = data.tools || [];
+        if (tools.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🧰</div><div class="empty-title">No tools registered</div><div class="empty-desc">Tools appear here once the Golem agent registers them.</div></div>';
+            return;
+        }
+        let html = '';
+        tools.forEach(t => {
+            const params = Object.entries(t.parameters?.properties || {});
+            html += '<div class="tool-card">';
+            html += '<div class="tool-header">';
+            html += '<div class="tool-name"><code>' + escapeHtml(t.name) + '</code></div>';
+            html += '<label class="toggle-switch" title="' + (t.enabled ? 'Disable tool' : 'Enable tool') + '">';
+            html += '<input type="checkbox" ' + (t.enabled ? 'checked ' : '') + 'data-tool-name="' + escapeHtml(t.name) + '" onchange="toggleTool(this.dataset.toolName, this.checked)">';
+            html += '<span class="slider"></span>';
+            html += '</label>';
+            html += '</div>';
+            html += '<div class="tool-desc">' + escapeHtml(t.description || 'No description') + '</div>';
+            if (params.length > 0) {
+                html += '<div class="tool-params">' + params.map(([k, v]) => '<span>' + escapeHtml(k) + '</span>').join('') + '</div>';
+            }
+            html += '</div>';
+        });
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load tools: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+async function toggleTool(name, enabled) {
+    try {
+        await api('/api/tools/' + encodeURIComponent(name) + '/toggle', {
+            method: 'PUT',
+            body: { enabled }
+        });
+        await loadTools();
+    } catch (e) {
+        alert('Failed to update tool "' + name + '": ' + e.message);
+        await loadTools();
+    }
+}
+
+// ── Memory ──
+async function loadMemory() {
+    const el = document.getElementById('memory-entries');
+    const q = document.getElementById('memory-search-input').value.trim();
+    el.innerHTML = '<div class="text-center" style="padding:20px"><span class="loading-spinner"></span></div>';
+    try {
+        const path = q ? '/api/memory?q=' + encodeURIComponent(q) : '/api/memory';
+        const data = await api(path);
+        const entries = data.entries || [];
+        if (entries.length === 0) {
+            el.innerHTML = q
+                ? '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div class="empty-desc">Try a different search term.</div></div>'
+                : '<div class="empty-state"><div class="empty-icon">🧠</div><div class="empty-title">No memory entries yet</div><div class="empty-desc">Ask the agent a question and it will save relevant information here.</div></div>';
+            return;
+        }
+        let html = '';
+        entries.forEach(e => {
+            html += '<div class="mem-card">';
+            html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
+            html += '<div class="mem-key">' + escapeHtml(e.key) + '</div>';
+            html += '<button class="btn btn-ghost btn-icon" title="Delete memory entry" data-key="' + escapeHtml(e.key) + '" onclick="deleteMemory(this.dataset.key)">🗑️</button>';
+            html += '</div>';
+            html += '<div class="mem-val">' + escapeHtml(e.value) + '</div>';
+            html += '<div class="mem-meta">Created: ' + escapeHtml(e.createdAt || '—') + '</div>';
+            html += '</div>';
+        });
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load memory: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+async function deleteMemory(key) {
+    if (!confirm('Delete memory entry "' + key + '"?')) return;
+    await api('/api/memory/' + encodeURIComponent(key), { method: 'DELETE' });
+    await loadMemory();
+}
+
+// ── Scheduler ──
+function renderJobsView(jobs = [], options = {}) {
+    const createError = options.createError ? '<div style="margin-top:12px;font-size:12px;color:var(--error);">' + escapeHtml(options.createError) + '</div>' : '';
+    const jobsHtml = jobs.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">⏰</div><div class="empty-title">No scheduled jobs</div><div class="empty-desc">Create your first scheduler job here.</div></div>'
+        : '<div class="jobs-container">' + jobs.map(j => {
+            return '<div class="job-card">'
+                + '<div class="job-header">'
+                + '<span class="job-name">' + escapeHtml(j.name) + '</span>'
+                + '<span class="job-cron">' + escapeHtml(j.cronExpression) + '</span>'
+                + '<div class="job-actions">'
+                + '<span class="job-badge ' + (j.enabled ? 'enabled' : 'disabled') + '">' + (j.enabled ? 'Enabled' : 'Disabled') + '</span>'
+                + '<button class="btn btn-danger" style="font-size:11px;padding:4px 8px;" data-id="' + escapeHtml(j.id) + '" data-name="' + escapeHtml(j.name) + '" onclick="deleteJob(this.dataset.id, this.dataset.name)">Delete</button>'
+                + '</div>'
+                + '</div>'
+                + '<div class="job-goal">' + escapeHtml(j.goal) + '</div>'
+                + '<div class="job-meta">Next: ' + escapeHtml(j.nextRunAt || '—') + '</div>'
+                + '</div>';
+        }).join('') + '</div>';
+
+    return '<div class="job-form">'
+        + '<h2 style="font-size:18px;font-weight:600;margin-bottom:16px;">Create Job</h2>'
+        + '<div class="job-form-grid">'
+        + '<div class="form-group" style="margin-bottom:0;">'
+        + '<label for="job-name">Name</label>'
+        + '<input id="job-name" type="text" required placeholder="Morning summary">'
+        + '</div>'
+        + '<div class="form-group" style="margin-bottom:0;">'
+        + '<label for="job-cron">Cron Expression</label>'
+        + '<input id="job-cron" type="text" required placeholder="0 9 * * *">'
+        + '</div>'
+        + '</div>'
+        + '<div class="form-group" style="margin-top:12px;margin-bottom:0;">'
+        + '<label for="job-goal">Goal</label>'
+        + '<textarea id="job-goal" required placeholder="Summarize repo changes and pending work for today."></textarea>'
+        + '</div>'
+        + '<div class="job-form-actions">'
+        + '<label class="job-form-checkbox"><input id="job-enabled" type="checkbox" checked> Enabled</label>'
+        + '<button class="btn btn-secondary" id="create-job-btn" onclick="createJob()">Create Job</button>'
+        + '</div>'
+        + createError
+        + '</div>'
+        + jobsHtml;
+}
+
+async function loadJobs() {
+    const el = document.getElementById('jobs-list');
+    el.innerHTML = '<div class="text-center" style="padding:20px"><span class="loading-spinner"></span></div>';
+    try {
+        const data = await api('/api/jobs');
+        const jobs = data.jobs || [];
+        el.innerHTML = renderJobsView(jobs);
+    } catch (e) {
+        el.innerHTML = renderJobsView([], { createError: 'Failed to load jobs: ' + e.message });
+    }
+}
+
+async function createJob() {
+    const nameEl = document.getElementById('job-name');
+    const cronEl = document.getElementById('job-cron');
+    const goalEl = document.getElementById('job-goal');
+    const enabledEl = document.getElementById('job-enabled');
+    const buttonEl = document.getElementById('create-job-btn');
+    if (!nameEl || !cronEl || !goalEl || !enabledEl || !buttonEl) return;
+
+    const name = nameEl.value.trim();
+    const cronExpression = cronEl.value.trim();
+    const goal = goalEl.value.trim();
+    const enabled = enabledEl.checked;
+
+    if (!name || !cronExpression || !goal) {
+        const existingJobs = await api('/api/jobs').then(data => data.jobs || []).catch(() => []);
+        document.getElementById('jobs-list').innerHTML = renderJobsView(existingJobs, { createError: 'Name, cron expression, and goal are required.' });
+        document.getElementById('job-name').value = name;
+        document.getElementById('job-cron').value = cronExpression;
+        document.getElementById('job-goal').value = goal;
+        document.getElementById('job-enabled').checked = enabled;
+        return;
+    }
+
+    const originalButtonHtml = buttonEl.innerHTML;
+    buttonEl.disabled = true;
+    buttonEl.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;"></span> Creating...';
+
+    try {
+        await api('/api/jobs', {
+            method: 'POST',
+            body: { name, goal, cronExpression, enabled }
+        });
+        await loadJobs();
+    } catch (e) {
+        const existingJobs = await api('/api/jobs').then(data => data.jobs || []).catch(() => []);
+        document.getElementById('jobs-list').innerHTML = renderJobsView(existingJobs, { createError: 'Failed to create job: ' + e.message });
+        document.getElementById('job-name').value = name;
+        document.getElementById('job-cron').value = cronExpression;
+        document.getElementById('job-goal').value = goal;
+        document.getElementById('job-enabled').checked = enabled;
+    } finally {
+        const currentButton = document.getElementById('create-job-btn');
+        if (currentButton) {
+            currentButton.disabled = false;
+            currentButton.innerHTML = originalButtonHtml;
+        }
+    }
+}
+
+async function deleteJob(id, name) {
+    if (!confirm('Delete scheduled job "' + name + '"?')) return;
+    await api('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' });
+    await loadJobs();
+}
+
+// ── Metrics ──
+async function loadMetrics() {
+    const el = document.getElementById('metrics-view');
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        // Get history
+        let historyData = { metrics: [] };
+        try {
+            historyData = await api('/api/metrics/history');
+        } catch (e) { /* may not exist */ }
+
+        const m = historyData.metrics || [];
+        const latest = m.length > 0 ? m[m.length - 1] : null;
+
+        if (!latest && m.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No metrics available</div><div class="empty-desc">Run the agent first to see usage data.</div></div>';
+            return;
+        }
+
+        let html = '';
+        // Summary cards
+        html += '<div class="metrics-grid">';
+        const cards = [
+            { label: 'Agent Runs', value: latest ? formatNum(latest.agentRunsTotal) : '—', key: 'agentRunsTotal' },
+            { label: 'Agent Turns', value: latest ? formatNum(latest.agentTurnsTotal) : '—', key: 'agentTurnsTotal' },
+            { label: 'Tool Calls', value: latest ? formatNum(latest.toolCallsTotal) : '—', key: 'toolCallsTotal' },
+            { label: 'LLM Calls', value: latest ? formatNum(latest.llmCallsTotal) : '—', key: 'llmCallsTotal' },
+            { label: 'Tokens Used', value: latest ? formatNum(latest.llmTokensTotal) : '—', key: 'llmTokensTotal' },
+        ];
+        cards.forEach(c => {
+            html += '<div class="metric-card">';
+            html += '<div class="metric-value">' + c.value + '</div>';
+            html += '<div class="metric-label">' + c.label + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+
+        // History chart (simple bar chart using divs)
+        if (m.length > 1) {
+            html += '<div class="metrics-chart"><h3>Agent Runs Over Time</h3><div style="display:flex;align-items:flex-end;gap:2px;height:120px;padding:8px 0;">';
+            const values = m.map(x => x.agentRunsTotal || 0);
+            const max = Math.max(...values, 1);
+            values.forEach((v, i) => {
+                const pct = (v / max) * 100;
+                html += '<div style="flex:1;background:var(--accent-subtle);border-radius:4px 4px 0 0;height:' + Math.max(pct, 2) + '%;position:relative;" title="' + v + '"></div>';
+            });
+            html += '</div></div>';
+        }
+
+        // Raw metrics
+        try {
+            const rawText = await api('/api/metrics');
+            html += '<div class="metrics-raw"><h3>Raw Prometheus Metrics</h3><pre>' + escapeHtml(rawText) + '</pre></div>';
+        } catch (e) { /* ignore */ }
+
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load metrics: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+// ── Workflows ──
+async function loadWorkflows() {
+    const el = document.getElementById('workflows-list');
+    if (!el) return;
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        const data = await api('/api/workflows');
+        const workflows = data.workflows || [];
+        if (workflows.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔀</div><div class="empty-title">No workflows available</div><div class="empty-desc">Registered workflows will appear here when they are available to run.</div></div>';
+            return;
+        }
+
+        let html = '';
+        workflows.forEach(workflow => {
+            html += '<div class="workflow-card">';
+            html += '<div class="workflow-card-header">';
+            html += '<div class="workflow-card-title">' + escapeHtml(workflow.name || 'Unnamed workflow') + '</div>';
+            html += '</div>';
+            html += '<div class="workflow-card-desc">' + escapeHtml(workflow.description || 'No description') + '</div>';
+            html += '<div class="workflow-actions">';
+            html += '<button class="btn btn-primary" style="width:auto;" data-name="' + escapeHtml(workflow.name || '') + '" onclick="runWorkflow(this.dataset.name)">Run</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load workflows: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+function runWorkflow(name) {
+    document.getElementById('workflow-run-name').value = name;
+    document.getElementById('workflow-run-title').textContent = 'Run Workflow: ' + name;
+    document.getElementById('workflow-run-goal').value = '';
+    const resultEl = document.getElementById('workflow-run-result');
+    resultEl.style.display = 'none';
+    resultEl.style.color = 'var(--text-primary)';
+    resultEl.textContent = '';
+    document.getElementById('workflow-run-btn').disabled = false;
+    document.getElementById('workflow-run-btn').textContent = 'Run Workflow';
+    document.getElementById('workflow-run-modal').style.display = 'block';
+}
+
+function closeRunWorkflowModal() {
+    document.getElementById('workflow-run-modal').style.display = 'none';
+}
+
+async function submitRunWorkflow() {
+    const workflowName = document.getElementById('workflow-run-name').value;
+    const goal = document.getElementById('workflow-run-goal').value.trim();
+    const btn = document.getElementById('workflow-run-btn');
+    const resultEl = document.getElementById('workflow-run-result');
+
+    if (!goal) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Goal is required.';
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;"></span> Running...';
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--text-secondary)';
+    resultEl.textContent = 'Running workflow...';
+
+    try {
+        const result = await api('/api/workflows/run', {
+            method: 'POST',
+            body: { workflowName, goal }
+        });
+        resultEl.style.color = 'var(--text-primary)';
+        resultEl.textContent = result && result.result ? result.result : 'Workflow completed.';
+    } catch (e) {
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Failed to run workflow: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+// ── Checkpoints ──
+function renderSessionOptions(selectEl, options = {}) {
+    if (!selectEl) return;
+    const placeholder = options.placeholder || 'Select session...';
+    const selectedValue = options.selectedValue || '';
+    selectEl.innerHTML = '<option value="">' + escapeHtml(placeholder) + '</option>';
+    state.sessions.forEach(session => {
+        const opt = document.createElement('option');
+        opt.value = session.id;
+        opt.textContent = session.title || session.id.slice(0, 8);
+        selectEl.appendChild(opt);
+    });
+    if (selectedValue) selectEl.value = selectedValue;
+}
+
+async function loadCheckpoints(sessionId) {
+    const filterEl = document.getElementById('checkpoint-session-filter');
+    const listEl = document.getElementById('checkpoints-list');
+    const resultEl = document.getElementById('checkpoint-resume-result');
+    if (!listEl) return;
+
+    const selectedSessionId = sessionId !== undefined ? sessionId : (filterEl ? filterEl.value : '');
+    renderSessionOptions(filterEl, {
+        placeholder: 'All sessions',
+        selectedValue: selectedSessionId,
+    });
+    resultEl.style.display = 'none';
+    resultEl.textContent = '';
+    listEl.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+
+    try {
+        const path = selectedSessionId
+            ? '/api/checkpoint/session/' + encodeURIComponent(selectedSessionId) + '/diffs'
+            : '/api/checkpoint';
+        const data = await api(path);
+        const checkpoints = data.checkpoints || [];
+
+        if (checkpoints.length === 0) {
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📌</div><div class="empty-title">No checkpoints found</div><div class="empty-desc">' + escapeHtml(selectedSessionId ? 'No checkpoints exist for this session yet.' : 'No checkpoints have been created yet.') + '</div></div>';
+            return;
+        }
+
+        let html = '';
+        checkpoints.forEach(checkpoint => {
+            html += '<div class="checkpoint-card">';
+            html += '<div class="checkpoint-card-header">';
+            html += '<div>';
+            html += '<div class="checkpoint-card-title">Session ' + escapeHtml(checkpoint.sessionId) + '</div>';
+            html += '<div class="checkpoint-card-id">Checkpoint ' + escapeHtml(checkpoint.id) + '</div>';
+            html += '</div>';
+            html += '<div class="checkpoint-meta">';
+            html += '<span class="checkpoint-chip">Turn ' + escapeHtml(checkpoint.turnNumber) + '</span>';
+            html += '<span class="checkpoint-chip">' + escapeHtml(checkpoint.createdAt || '—') + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="checkpoint-actions">';
+            html += '<button class="btn btn-primary" style="width:auto;" data-id="' + escapeHtml(checkpoint.id) + '" onclick="viewCheckpointDiff(this.dataset.id)">View Diff</button>';
+            html += '<button class="btn btn-secondary" data-session-id="' + escapeHtml(checkpoint.sessionId) + '" onclick="resumeSession(this.dataset.sessionId)">Resume Session</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load checkpoints: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+async function viewCheckpointDiff(id) {
+    const modal = document.getElementById('checkpoint-diff-modal');
+    const titleEl = document.getElementById('checkpoint-diff-title');
+    const metaEl = document.getElementById('checkpoint-diff-meta');
+    const contentEl = document.getElementById('checkpoint-diff-content');
+
+    titleEl.textContent = 'Checkpoint Diff';
+    metaEl.textContent = '';
+    contentEl.textContent = '';
+    modal.style.display = 'block';
+    contentEl.innerHTML = '<span class="loading-spinner"></span>';
+
+    try {
+        const checkpoint = await api('/api/checkpoint/' + encodeURIComponent(id) + '/diff');
+        titleEl.textContent = 'Checkpoint ' + (checkpoint.turnNumber !== undefined ? ('Turn ' + checkpoint.turnNumber) : id);
+        metaEl.textContent = 'Session ' + (checkpoint.sessionId || '—') + ' • ' + (checkpoint.createdAt || '—');
+        contentEl.textContent = checkpoint.diff || 'No diff available.';
+    } catch (e) {
+        metaEl.textContent = '';
+        contentEl.textContent = 'Failed to load diff: ' + e.message;
+    }
+}
+
+function closeCheckpointDiffModal() {
+    document.getElementById('checkpoint-diff-modal').style.display = 'none';
+}
+
+async function resumeSession(sessionId) {
+    const resultEl = document.getElementById('checkpoint-resume-result');
+    if (!resultEl) return;
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--text-secondary)';
+    resultEl.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:8px;"></span>Loading session...';
+
+    try {
+        const data = await api('/api/checkpoint/resume/' + encodeURIComponent(sessionId));
+        resultEl.style.color = 'var(--success)';
+        resultEl.textContent = 'Session ' + (data.sessionId || sessionId) + ' has ' + (data.messageCount ?? 0) + ' messages available for resume.';
+    } catch (e) {
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Failed to resume session: ' + e.message;
+    }
+}
+
+// ── Agents ──
+async function loadAgents() {
+    const el = document.getElementById('agents-list');
+    if (!el) return;
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        const agents = await api('/api/agents');
+        if (!Array.isArray(agents) || agents.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🤖</div><div class="empty-title">No agents defined</div><div class="empty-desc">Create an agent to manage reusable prompts, permissions, and execution settings.</div></div>';
+            return;
+        }
+
+        let html = '';
+        agents.forEach(agent => {
+            const description = agent.description || 'No description';
+            const model = agent.preferredModel || agent.fallbackModel || '—';
+            const tags = Array.isArray(agent.tags) ? agent.tags : [];
+            html += '<div class="agent-card">';
+            html += '<div class="agent-card-header">';
+            html += '<div>';
+            html += '<div class="agent-card-title">' + escapeHtml(agent.name || agent.id) + '</div>';
+            html += '<div class="agent-card-id">' + escapeHtml(agent.id) + '</div>';
+            html += '</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;">';
+            html += '<span class="agent-badge policy">' + escapeHtml(agent.toolPolicy || '—') + '</span>';
+            html += '<span class="agent-badge ' + (agent.enabled ? 'enabled' : 'disabled') + '">' + (agent.enabled ? 'Enabled' : 'Disabled') + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="agent-card-desc">' + escapeHtml(description) + '</div>';
+            html += '<div class="agent-meta">';
+            html += '<span class="agent-chip">Model: ' + escapeHtml(model) + '</span>';
+            html += '<span class="agent-chip">FS: ' + escapeHtml(agent.filesystemAccess || '—') + '</span>';
+            html += '<span class="agent-chip">Shell: ' + (agent.shellAccess ? 'on' : 'off') + '</span>';
+            html += '<span class="agent-chip">Network: ' + (agent.networkAccess ? 'on' : 'off') + '</span>';
+            if (tags.length > 0) {
+                html += '<span class="agent-chip">Tags: ' + escapeHtml(tags.join(', ')) + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="agent-actions">';
+            html += '<button class="btn btn-primary" style="width:auto;" data-id="' + escapeHtml(agent.id) + '" onclick="runAgent(this.dataset.id)">Run</button>';
+            html += '<button class="btn btn-secondary" data-id="' + escapeHtml(agent.id) + '" onclick="openEditAgentModal(this.dataset.id)">Edit</button>';
+            html += '<button class="btn btn-danger" data-id="' + escapeHtml(agent.id) + '" data-name="' + escapeHtml(agent.name || agent.id) + '" onclick="deleteAgent(this.dataset.id,this.dataset.name)">Delete</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load agents: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+function parseAgentTags(value) {
+    return value.split(',').map(tag => tag.trim()).filter(Boolean);
+}
+
+function resetAgentModal() {
+    document.getElementById('agent-edit-id').value = '';
+    document.getElementById('agent-id').value = '';
+    document.getElementById('agent-id').disabled = false;
+    document.getElementById('agent-name').value = '';
+    document.getElementById('agent-description').value = '';
+    document.getElementById('agent-system-prompt').value = '';
+    document.getElementById('agent-preferred-model').value = '';
+    document.getElementById('agent-tool-policy').value = 'ALL';
+    document.getElementById('agent-filesystem-access').value = 'none';
+    document.getElementById('agent-shell-access').checked = false;
+    document.getElementById('agent-network-access').checked = false;
+    document.getElementById('agent-tags').value = '';
+    const errorEl = document.getElementById('agent-modal-error');
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+}
+
+function openCreateAgentModal() {
+    resetAgentModal();
+    document.getElementById('agent-modal-title').textContent = 'Create Agent';
+    document.getElementById('agent-save-btn').textContent = 'Create Agent';
+    document.getElementById('agent-modal').style.display = 'block';
+}
+
+async function openEditAgentModal(id) {
+    resetAgentModal();
+    document.getElementById('agent-modal-title').textContent = 'Edit Agent';
+    document.getElementById('agent-save-btn').textContent = 'Save Changes';
+    document.getElementById('agent-modal').style.display = 'block';
+    document.getElementById('agent-modal-error').style.display = 'block';
+    document.getElementById('agent-modal-error').style.color = 'var(--text-secondary)';
+    document.getElementById('agent-modal-error').textContent = 'Loading agent...';
+    try {
+        const agent = await api('/api/agents/' + encodeURIComponent(id));
+        document.getElementById('agent-edit-id').value = agent.id || id;
+        document.getElementById('agent-id').value = agent.id || id;
+        document.getElementById('agent-id').disabled = true;
+        document.getElementById('agent-name').value = agent.name || '';
+        document.getElementById('agent-description').value = agent.description || '';
+        document.getElementById('agent-system-prompt').value = agent.systemPrompt || '';
+        document.getElementById('agent-preferred-model').value = agent.preferredModel || '';
+        document.getElementById('agent-tool-policy').value = agent.toolPolicy || 'ALL';
+        document.getElementById('agent-filesystem-access').value = agent.filesystemAccess || 'none';
+        document.getElementById('agent-shell-access').checked = !!agent.shellAccess;
+        document.getElementById('agent-network-access').checked = !!agent.networkAccess;
+        document.getElementById('agent-tags').value = Array.isArray(agent.tags) ? agent.tags.join(', ') : '';
+        const errorEl = document.getElementById('agent-modal-error');
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+    } catch (e) {
+        const errorEl = document.getElementById('agent-modal-error');
+        errorEl.style.display = 'block';
+        errorEl.style.color = 'var(--error)';
+        errorEl.textContent = 'Failed to load agent: ' + e.message;
+    }
+}
+
+function closeAgentModal() {
+    document.getElementById('agent-modal').style.display = 'none';
+}
+
+function getAgentFormPayload(includeId) {
+    const payload = {
+        name: document.getElementById('agent-name').value.trim(),
+        description: document.getElementById('agent-description').value.trim() || undefined,
+        systemPrompt: document.getElementById('agent-system-prompt').value.trim() || undefined,
+        preferredModel: document.getElementById('agent-preferred-model').value.trim() || undefined,
+        toolPolicy: document.getElementById('agent-tool-policy').value,
+        filesystemAccess: document.getElementById('agent-filesystem-access').value,
+        shellAccess: document.getElementById('agent-shell-access').checked,
+        networkAccess: document.getElementById('agent-network-access').checked,
+        tags: parseAgentTags(document.getElementById('agent-tags').value),
+    };
+    if (includeId) payload.id = document.getElementById('agent-id').value.trim();
+    return payload;
+}
+
+async function submitAgentForm() {
+    const editId = document.getElementById('agent-edit-id').value.trim();
+    if (editId) {
+        await updateAgent(editId);
+    } else {
+        await createAgent();
+    }
+}
+
+async function createAgent() {
+    const payload = getAgentFormPayload(true);
+    const errorEl = document.getElementById('agent-modal-error');
+    if (!payload.id || !payload.name) {
+        errorEl.style.display = 'block';
+        errorEl.style.color = 'var(--error)';
+        errorEl.textContent = 'ID and name are required.';
+        return;
+    }
+
+    const btn = document.getElementById('agent-save-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;"></span> Creating...';
+    errorEl.style.display = 'none';
+
+    try {
+        await api('/api/agents', { method: 'POST', body: payload });
+        closeAgentModal();
+        await loadAgents();
+    } catch (e) {
+        errorEl.style.display = 'block';
+        errorEl.style.color = 'var(--error)';
+        errorEl.textContent = 'Failed to create agent: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function updateAgent(id) {
+    const payload = getAgentFormPayload(false);
+    const errorEl = document.getElementById('agent-modal-error');
+    if (!payload.name) {
+        errorEl.style.display = 'block';
+        errorEl.style.color = 'var(--error)';
+        errorEl.textContent = 'Name is required.';
+        return;
+    }
+
+    const btn = document.getElementById('agent-save-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;"></span> Saving...';
+    errorEl.style.display = 'none';
+
+    try {
+        await api('/api/agents/' + encodeURIComponent(id), { method: 'PUT', body: payload });
+        closeAgentModal();
+        await loadAgents();
+    } catch (e) {
+        errorEl.style.display = 'block';
+        errorEl.style.color = 'var(--error)';
+        errorEl.textContent = 'Failed to update agent: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function deleteAgent(id, name) {
+    if (!confirm('Delete agent "' + name + '"?')) return;
+    try {
+        await api('/api/agents/' + encodeURIComponent(id), { method: 'DELETE' });
+        await loadAgents();
+    } catch (e) {
+        alert('Failed to delete agent: ' + e.message);
+    }
+}
+
+async function runAgent(agentId) {
+    document.getElementById('agent-run-id').value = agentId;
+    document.getElementById('agent-run-title').textContent = 'Run Agent: ' + agentId;
+    document.getElementById('agent-run-goal').value = '';
+    const resultEl = document.getElementById('agent-run-result');
+    resultEl.style.display = 'none';
+    resultEl.style.color = 'var(--text-primary)';
+    resultEl.textContent = '';
+    document.getElementById('agent-run-btn').disabled = false;
+    document.getElementById('agent-run-btn').textContent = 'Run Agent';
+    document.getElementById('agent-run-modal').style.display = 'block';
+}
+
+function closeRunAgentModal() {
+    document.getElementById('agent-run-modal').style.display = 'none';
+}
+
+async function submitRunAgent() {
+    const agentId = document.getElementById('agent-run-id').value;
+    const goal = document.getElementById('agent-run-goal').value.trim();
+    const btn = document.getElementById('agent-run-btn');
+    const resultEl = document.getElementById('agent-run-result');
+
+    if (!goal) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Goal is required.';
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;border-width:2px;"></span> Running...';
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--text-secondary)';
+    resultEl.textContent = 'Running agent...';
+
+    try {
+        const result = await api('/api/agents/run', {
+            method: 'POST',
+            body: { agentId, goal }
+        });
+        resultEl.style.color = 'var(--text-primary)';
+        resultEl.textContent = result && result.result ? result.result : 'Run completed.';
+    } catch (e) {
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Failed to run agent: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function sendTelegram() {
+    const chatId = document.getElementById('delivery-telegram-chat-id').value.trim();
+    const text = document.getElementById('delivery-telegram-text').value.trim();
+    const btn = document.getElementById('delivery-telegram-btn');
+    const resultEl = document.getElementById('delivery-telegram-result');
+
+    if (!chatId || !text) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Chat ID and message are required.';
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--text-secondary)';
+    resultEl.textContent = 'Sending Telegram message...';
+
+    try {
+        const result = await api('/api/deliver/telegram', {
+            method: 'POST',
+            body: { chatId, text }
+        });
+        resultEl.style.color = result.success ? 'var(--success)' : 'var(--error)';
+        resultEl.textContent = (result.success ? '✅ ' : '❌ ') + (result.message || (result.success ? 'Telegram message sent.' : 'Telegram send failed.'));
+    } catch (e) {
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = '❌ Failed to send Telegram message: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function sendEmail() {
+    const to = document.getElementById('delivery-email-to').value.trim();
+    const subject = document.getElementById('delivery-email-subject').value.trim();
+    const body = document.getElementById('delivery-email-body').value.trim();
+    const btn = document.getElementById('delivery-email-btn');
+    const resultEl = document.getElementById('delivery-email-result');
+
+    if (!to || !subject || !body) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = 'Recipient, subject, and body are required.';
+        return;
+    }
+
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--text-secondary)';
+    resultEl.textContent = 'Sending email...';
+
+    try {
+        const result = await api('/api/deliver/email', {
+            method: 'POST',
+            body: { to, subject, body }
+        });
+        resultEl.style.color = result.success ? 'var(--success)' : 'var(--error)';
+        resultEl.textContent = (result.success ? '✅ ' : '❌ ') + (result.message || (result.success ? 'Email sent.' : 'Email send failed.'));
+    } catch (e) {
+        resultEl.style.color = 'var(--error)';
+        resultEl.textContent = '❌ Failed to send email: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+// ── Utilities ──
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatNum(n) {
+    if (n === null || n === undefined) return '—';
+    if (typeof n === 'number') {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return Math.round(n).toString();
+    }
+    return n.toString();
+}
+
+// ── Providers ──
+async function loadProviders() {
+    const el = document.getElementById('providers-list');
+    if (!el) return;
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        const data = await api('/api/providers');
+        const providers = data.providers || [];
+        if (providers.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><div class="empty-title">No providers configured</div><div class="empty-desc">Configure a provider in <code>~/.golem/config.yaml</code> or use environment variables.</div></div>';
+            return;
+        }
+        let html = '';
+        providers.forEach(p => {
+            const icon = p.isBuiltin ? '⚙️' : '🔌';
+            const badge = p.isBuiltin ? '<span class="job-badge enabled" style="font-size:10px;margin-left:8px;">built-in</span>' : '<span class="job-badge disabled" style="font-size:10px;margin-left:8px;">custom</span>';
+            const keyStatus = p.hasApiKey ? '<span style="color:var(--success);font-size:11px;">🔑 key set</span>' : '<span style="color:var(--warning);font-size:11px;">⚠️ no key</span>';
+            html += '<div class="job-card" style="margin-bottom:8px;">';
+            html += '<div class="job-header">';
+            html += '<span style="font-size:18px;">' + icon + '</span>';
+            html += '<span class="job-name">' + escapeHtml(p.name) + '</span>';
+            html += badge;
+            html += '</div>';
+            html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-secondary);">';
+            html += '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;">' + escapeHtml(p.type) + '</span>';
+            if (p.baseUrl) html += '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;">' + escapeHtml(p.baseUrl) + '</span>';
+            if (p.model) html += '<span style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;">📦 ' + escapeHtml(p.model) + '</span>';
+            html += '<span>' + keyStatus + '</span>';
+            html += '</div>';
+            if (!p.isBuiltin) {
+                html += '<div style="margin-top:8px;display:flex;gap:4px;">';
+                html += '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;" onclick="deleteProvider(\'' + escapeHtml(p.name) + '\')">🗑️ Delete</button>';
+                html += '</div>';
+            }
+            html += '</div>';
+        });
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load providers: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+function showAddProviderForm() {
+    document.getElementById('provider-modal-title').textContent = 'Add Provider';
+    document.getElementById('provider-name').value = '';
+    document.getElementById('provider-type').value = 'openai-compat';
+    document.getElementById('provider-base-url').value = '';
+    document.getElementById('provider-api-key').value = '';
+    document.getElementById('provider-model').value = '';
+    document.getElementById('provider-test-result').style.display = 'none';
+    document.getElementById('provider-modal').style.display = 'block';
+    document.getElementById('provider-test-result').textContent = '';
+}
+
+function closeProviderModal() {
+    document.getElementById('provider-modal').style.display = 'none';
+}
+
+async function saveProvider() {
+    const name = document.getElementById('provider-name').value.trim();
+    const type = document.getElementById('provider-type').value;
+    const baseUrl = document.getElementById('provider-base-url').value.trim();
+    const apiKey = document.getElementById('provider-api-key').value.trim();
+    const model = document.getElementById('provider-model').value.trim();
+
+    if (!name) { showTestResult('Please enter a provider name', 'error'); return; }
+    if (!baseUrl) { showTestResult('Please enter a base URL', 'error'); return; }
+
+    const btn = document.getElementById('save-provider-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        const body = { name, type, baseUrl };
+        if (apiKey) body.apiKey = apiKey;
+        if (model) body.model = model;
+
+        await api('/api/providers', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+        closeProviderModal();
+        loadProviders();
+    } catch (e) {
+        showTestResult('❌ Failed to save: ' + escapeHtml(e.message), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Provider';
+    }
+}
+
+async function testProvider() {
+    const baseUrl = document.getElementById('provider-base-url').value.trim();
+    const apiKey = document.getElementById('provider-api-key').value.trim();
+
+    if (!baseUrl) { showTestResult('Please enter a base URL', 'error'); return; }
+
+    const btn = document.getElementById('test-provider-btn');
+    btn.disabled = true;
+    btn.textContent = 'Testing...';
+
+    try {
+        const body = { baseUrl };
+        if (apiKey) body.apiKey = apiKey;
+
+        const result = await api('/api/provider/test', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+        if (result.success) {
+            showTestResult('✅ Connected (HTTP ' + result.status + ')', 'success');
+        } else {
+            showTestResult('❌ Failed: ' + escapeHtml(result.message || 'Unknown error'), 'error');
+        }
+    } catch (e) {
+        showTestResult('❌ Error: ' + escapeHtml(e.message), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Test';
+    }
+}
+
+function showTestResult(msg, type) {
+    const el = document.getElementById('provider-test-result');
+    el.style.display = 'block';
+    el.textContent = msg;
+    el.style.color = type === 'success' ? 'var(--success)' : 'var(--error)';
+}
+
+async function deleteProvider(name) {
+    if (!confirm('Delete provider "' + name + '"? This will remove it from the config file.')) return;
+    try {
+        await api('/api/providers/' + encodeURIComponent(name), { method: 'DELETE' });
+        loadProviders();
+    } catch (e) {
+        alert('Failed to delete: ' + e.message);
+    }
+}
+
+// ── Auto-resize textarea ──
+document.addEventListener('input', e => {
+    if (e.target && e.target.id === 'chat-input') {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+    }
+});
+
+/* ── Theme Toggle ── */
+function toggleTheme() {
+    const html = document.documentElement;
+    const isLight = html.dataset.theme === 'light';
+    if (isLight) {
+        delete html.dataset.theme;
+        localStorage.setItem('golem_theme', 'dark');
+        document.getElementById('theme-toggle').textContent = '🌙';
+    } else {
+        html.dataset.theme = 'light';
+        localStorage.setItem('golem_theme', 'light');
+        document.getElementById('theme-toggle').textContent = '☀️';
+    }
+}
+(function initTheme() {
+    const saved = localStorage.getItem('golem_theme');
+    if (saved === 'light') {
+        document.documentElement.dataset.theme = 'light';
+        document.getElementById('theme-toggle').textContent = '☀️';
+    }
+})();
+
+/* ── Command Palette ── */
+const commandItems = [
+    { label: 'New Session', icon: '💬', action: () => { closeCommandPalette(); createSession(); } },
+    { label: 'Switch Tab', icon: '📂', action: () => { closeCommandPalette(); switchToNextTab(); } },
+    { label: 'Disconnect', icon: '🔌', action: () => { closeCommandPalette(); disconnect(); } },
+];
+
+function switchToNextTab() {
+    const tabs = ['chat', 'tools', 'memory', 'scheduler', 'metrics', 'workflows', 'checkpoints', 'agents', 'providers', 'delivery', 'settings'];
+    const current = document.querySelector('.sidebar-tabs a.active');
+    const currentTab = current ? current.getAttribute('data-tab') : 'chat';
+    const idx = tabs.indexOf(currentTab);
+    const next = tabs[(idx + 1) % tabs.length];
+    switchTab(next);
+}
+
+function openCommandPalette() {
+    const overlay = document.getElementById('command-palette-overlay');
+    overlay.classList.add('open');
+    const input = document.getElementById('command-palette-input');
+    input.value = '';
+    input.focus();
+    renderCommandPalette('');
+}
+
+function closeCommandPalette() {
+    document.getElementById('command-palette-overlay').classList.remove('open');
+}
+
+function renderCommandPalette(query) {
+    const q = query.toLowerCase();
+    const items = commandItems.filter(i => i.label.toLowerCase().includes(q));
+    const list = document.getElementById('command-palette-list');
+    if (items.length === 0) {
+        list.innerHTML = '<div class="command-palette-empty">No commands found</div>';
+        return;
+    }
+    list.innerHTML = items.map((item, idx) =>
+        '<div class="command-palette-item" data-idx="' + idx + '" onclick="executeCommand(' + idx + ')">' +
+        '<span>' + item.icon + '</span><span>' + item.label + '</span></div>'
+    ).join('');
+    // Select first item
+    const first = list.querySelector('.command-palette-item');
+    if (first) first.classList.add('selected');
+}
+
+let _paletteIdx = 0;
+function executeCommand(idx) {
+    if (idx >= 0 && idx < commandItems.length) {
+        commandItems[idx].action();
+    }
+}
+
+/* ── Connection Health Polling ── */
+let healthPollInterval = null;
+
+async function checkHealth() {
+    if (!state.baseUrl) return;
+    const dot = document.getElementById('health-dot');
+    try {
+        const resp = await fetch(state.baseUrl + '/api/health', {
+            headers: { 'Authorization': 'Bearer ' + state.apiKey },
+            signal: AbortSignal.timeout(5000),
+        });
+        if (!resp.ok) throw new Error('Health check failed: ' + resp.status);
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            dot.className = 'connected';
+            dot.title = 'Connected to server';
+            // Re-fire agent status if it was in error
+            loadAgentStatus();
+            // Restore 30s polling interval
+            clearInterval(healthPollInterval);
+            healthPollInterval = setInterval(checkHealth, 30000);
+        } else {
+            throw new Error('Unexpected health response');
+        }
+    } catch (e) {
+        dot.className = 'disconnected';
+        dot.title = 'Server unreachable';
+        // Mark header status as offline
+        document.getElementById('header-status-dot').className = 'status-dot offline';
+        document.getElementById('header-status-text').textContent = 'disconnected';
+        // Auto-reconnect: try again in 5s instead of 30s
+        clearInterval(healthPollInterval);
+        healthPollInterval = setInterval(checkHealth, 5000);
+        // Once connected, restore 30s interval
+    }
+}
+
+function startHealthPolling() {
+    if (healthPollInterval) clearInterval(healthPollInterval);
+    checkHealth(); // immediate check
+    healthPollInterval = setInterval(checkHealth, 30000);
+}
+
+// Patch initDashboard to also start health polling
+const _origInitDashboard = initDashboard;
+initDashboard = function() {
+    _origInitDashboard();
+    startHealthPolling();
+};
+
+/* ── Global Keyboard Shortcuts ── */
+document.addEventListener('keydown', function(e) {
+    // Ctrl+K: toggle command palette (skip when typing in input/textarea)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+        e.preventDefault();
+        const overlay = document.getElementById('command-palette-overlay');
+        if (overlay.classList.contains('open')) {
+            closeCommandPalette();
+        } else {
+            openCommandPalette();
+        }
+        return;
+    }
+
+    // Esc: close command palette
+    if (e.key === 'Escape') {
+        const overlay = document.getElementById('command-palette-overlay');
+        if (overlay.classList.contains('open')) {
+            closeCommandPalette();
+            e.preventDefault();
+            return;
+        }
+    }
+
+    // Arrow keys in command palette
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const overlay = document.getElementById('command-palette-overlay');
+        if (overlay.classList.contains('open')) {
+            e.preventDefault();
+            const items = document.querySelectorAll('.command-palette-item');
+            const current = document.querySelector('.command-palette-item.selected');
+            let idx = -1;
+            if (current) {
+                idx = parseInt(current.dataset.idx);
+                current.classList.remove('selected');
+            }
+            if (e.key === 'ArrowDown') {
+                idx = Math.min(idx + 1, items.length - 1);
+            } else {
+                idx = Math.max(idx - 1, 0);
+            }
+            if (items[idx]) items[idx].classList.add('selected');
+            return;
+        }
+    }
+
+    // Enter in command palette
+    if (e.key === 'Enter') {
+        const overlay = document.getElementById('command-palette-overlay');
+        if (overlay.classList.contains('open')) {
+            e.preventDefault();
+            const selected = document.querySelector('.command-palette-item.selected');
+            if (selected) {
+                const idx = parseInt(selected.dataset.idx);
+                executeCommand(idx);
+            }
+            return;
+        }
+    }
+
+    // / (slash): Focus chat input when on chat tab
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const chatTab = document.getElementById('tab-chat');
+        if (chatTab && chatTab.classList.contains('active')) {
+            const input = document.getElementById('chat-input');
+            if (input && document.activeElement !== input) {
+                e.preventDefault();
+                input.focus();
+                return;
+            }
+        }
+    }
+
+    // Arrow Up/Down: Navigate session selector (when chat tab is active and not in input)
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const chatTab = document.getElementById('tab-chat');
+        if (chatTab && chatTab.classList.contains('active')) {
+            const input = document.getElementById('chat-input');
+            const sel = document.getElementById('session-select');
+            if (document.activeElement !== input && document.activeElement !== sel) {
+                e.preventDefault();
+                if (sel.options.length > 0) {
+                    let idx = sel.selectedIndex;
+                    if (e.key === 'ArrowDown') idx = Math.min(idx + 1, sel.options.length - 1);
+                    else idx = Math.max(idx - 1, 0);
+                    sel.selectedIndex = idx;
+                    switchSession(sel.value);
+                }
+            }
+        }
+    }
+});
+
+/* ── Enter key polish for chat ── */
+// Update the chat-input onkeydown handler
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('chat-input');
+    if (input) {
+        // Remove inline handler and use JS
+        input.removeAttribute('onkeydown');
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                sendMessage();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+});
+
+// ── Settings ──
+async function loadSettings() {
+    const el = document.getElementById('settings-content');
+    el.innerHTML = '<div class="text-center" style="padding:40px"><span class="loading-spinner"></span></div>';
+    try {
+        const config = await api('/api/config');
+        document.getElementById('settings-config-path').textContent = 'Config: ' + (config.effectiveConfigPath || '—');
+        
+        const sections = [
+            {
+                title: '🤖 Model & Provider', icon: '🤖',
+                fields: [
+                    { key: 'model', label: 'Model', value: config.model, type: 'text', hint: 'e.g., gpt-4o, Qwen3...' },
+                    { key: 'provider', label: 'Provider', value: config.provider, type: 'text', hint: 'openai, anthropic, openai-compat...' },
+                    { key: 'maxTurns', label: 'Max Turns', value: config.maxTurns, type: 'number', hint: 'Agent loop iterations' },
+                    { key: 'temperature', label: 'Temperature', value: config.temperature, type: 'number', hint: '0.0 – 2.0' },
+                    { key: 'maxTokens', label: 'Max Tokens', value: config.maxTokens, type: 'number', hint: 'Per response' },
+                ]
+            },
+            {
+                title: '📁 Directories & Paths', icon: '📁',
+                fields: [
+                    { key: 'workdir', label: 'Working Directory', value: config.workdir, type: 'text' },
+                    { key: 'persona', label: 'Persona File', value: config.persona, type: 'text', hint: 'AGENTS.md path' },
+                    { key: 'memoryDb', label: 'Memory DB', value: config.memoryDb, type: 'text' },
+                    { key: 'schedulerDb', label: 'Scheduler DB', value: config.schedulerDb, type: 'text' },
+                    { key: 'kanbanDb', label: 'Kanban DB', value: config.kanbanDb, type: 'text' },
+                    { key: 'checkpointDb', label: 'Checkpoint DB', value: config.checkpointDb, type: 'text' },
+                    { key: 'jvmIndexDb', label: 'JVM Index DB', value: config.jvmIndexDb, type: 'text' },
+                    { key: 'sessionsDb', label: 'Sessions DB', value: config.sessionsDb, type: 'text' },
+                    { key: 'pluginsDir', label: 'Plugins Dir', value: config.pluginsDir, type: 'text' },
+                    { key: 'agentsDir', label: 'Agents Dir', value: config.agentsDir, type: 'text' },
+                    { key: 'agentsDb', label: 'Agents DB', value: config.agentsDb, type: 'text' },
+                ]
+            },
+            {
+                title: '🔒 Security', icon: '🔒',
+                fields: [
+                    { key: 'apiKey', label: 'API Key', value: config.apiKey, type: 'password', hint: 'Set via env var recommended' },
+                    { key: 'pairingToken', label: 'Pairing Token', value: config.pairingToken, type: 'password' },
+                    { key: 'telegramBotToken', label: 'Telegram Token', value: config.telegramBotToken, type: 'password' },
+                    { key: 'insecure', label: 'Insecure Mode', value: config.insecure, type: 'checkbox', hint: 'Allow binding without API key' },
+                    { key: 'unsafe', label: 'Unsafe Mode', value: config.unsafe, type: 'checkbox', hint: 'Bypass path restrictions' },
+                ]
+            },
+            {
+                title: '📧 Email Delivery', icon: '📧',
+                fields: [
+                    { key: 'emailSmtpHost', label: 'SMTP Host', value: config.email?.smtpHost, type: 'text' },
+                    { key: 'emailSmtpPort', label: 'SMTP Port', value: config.email?.smtpPort, type: 'number' },
+                    { key: 'emailUsername', label: 'SMTP Username', value: config.email?.username, type: 'text' },
+                    { key: 'emailPassword', label: 'SMTP Password', value: config.email?.password, type: 'password' },
+                    { key: 'emailFrom', label: 'Email From', value: config.email?.from, type: 'text' },
+                ]
+            },
+            {
+                title: '🎤 TTS (Text-to-Speech)', icon: '🎤',
+                fields: [
+                    { key: 'ttsProvider', label: 'TTS Provider', value: config.tts?.provider, type: 'text', hint: 'edge, elevenlabs, openai' },
+                    { key: 'elevenlabsApiKey', label: 'ElevenLabs API Key', value: config.tts?.elevenlabsApiKey, type: 'password' },
+                    { key: 'elevenlabsVoiceId', label: 'ElevenLabs Voice ID', value: config.tts?.elevenlabsVoiceId, type: 'text' },
+                ]
+            },
+            {
+                title: '📊 Observability', icon: '📊',
+                fields: [
+                    { key: 'otelEnabled', label: 'OpenTelemetry', value: config.otelEnabled, type: 'checkbox' },
+                    { key: 'otelEndpoint', label: 'OTEL Endpoint', value: config.otelEndpoint, type: 'text' },
+                    { key: 'otelServiceName', label: 'OTEL Service Name', value: config.otelServiceName, type: 'text' },
+                    { key: 'metricsEnabled', label: 'Prometheus Metrics', value: config.metricsEnabled, type: 'checkbox' },
+                ]
+            },
+            {
+                title: '🔌 Plugins & Extras', icon: '🔌',
+                fields: [
+                    { key: 'pluginsEnabled', label: 'Plugins Enabled', value: config.pluginsEnabled, type: 'checkbox' },
+                    { key: 'compressionEnabled', label: 'Context Compression', value: config.compressionEnabled, type: 'checkbox', hint: 'Compress long conversations' },
+                    { key: 'autoCheckpoint', label: 'Auto Checkpoint', value: config.autoCheckpoint, type: 'checkbox', hint: 'Save checkpoints per turn' },
+                    { key: 'jvmIndexAutoRefresh', label: 'JVM Index Auto-Refresh', value: config.jvmIndexAutoRefresh, type: 'checkbox' },
+                    { key: 'defaultAgentId', label: 'Default Agent ID', value: config.defaultAgentId, type: 'text', hint: 'Custom agent template' },
+                ]
+            },
+            {
+                title: '🏗️ Architect Mode', icon: '🏗️',
+                fields: [
+                    { key: 'architectEnabled', label: 'Enabled', value: config.architectMode?.enabled, type: 'checkbox' },
+                    { key: 'architectModel', label: 'Architect Model', value: config.architectMode?.architectModel, type: 'text', hint: 'Cheap model for planning' },
+                    { key: 'architectProvider', label: 'Architect Provider', value: config.architectMode?.architectProvider, type: 'text' },
+                    { key: 'editorModel', label: 'Editor Model', value: config.architectMode?.editorModel, type: 'text', hint: 'Powerful model for implementation' },
+                    { key: 'editorProvider', label: 'Editor Provider', value: config.architectMode?.editorProvider, type: 'text' },
+                ]
+            },
+        ];
+
+        let html = '';
+        sections.forEach(section => {
+            html += '<div class="settings-section">';
+            html += '<h3>' + section.icon + ' ' + section.title + ' <span class="count">(' + section.fields.length + ')</span></h3>';
+            html += '<div class="settings-grid">';
+            section.fields.forEach(f => {
+                const val = f.value !== null && f.value !== undefined ? f.value : '';
+                const isChecked = f.type === 'checkbox' && val === true ? 'checked' : '';
+                const inputVal = f.type === 'checkbox' ? '' : (f.type === 'password' ? (val === '***' ? '' : escapeHtml(String(val))) : escapeHtml(String(val)));
+                const placeholder = f.type === 'password' && val === '***' ? '••••••••' : '';
+                
+                if (f.type === 'checkbox') {
+                    html += '<div class="settings-field checkbox-field">';
+                    html += '<input type="checkbox" id="set-' + f.key + '" ' + isChecked + ' data-key="' + f.key + '">';
+                    html += '<label for="set-' + f.key + '">' + f.label + '</label>';
+                    if (f.hint) html += '<span class="hint" style="margin-left:auto;">' + f.hint + '</span>';
+                    html += '</div>';
+                } else {
+                    html += '<div class="settings-field">';
+                    html += '<label for="set-' + f.key + '">' + f.label + '</label>';
+                    if (f.type === 'password') {
+                        html += '<input type="password" id="set-' + f.key + '" data-key="' + f.key + '" placeholder="' + placeholder + '">';
+                    } else if (f.type === 'number') {
+                        html += '<input type="number" id="set-' + f.key + '" data-key="' + f.key + '" value="' + inputVal + '" placeholder="' + (f.hint || '') + '">';
+                    } else {
+                        html += '<input type="text" id="set-' + f.key + '" data-key="' + f.key + '" value="' + inputVal + '" placeholder="' + (f.hint || '') + '">';
+                    }
+                    if (f.hint && f.type !== 'password') html += '<span class="hint">' + f.hint + '</span>';
+                    html += '</div>';
+                }
+            });
+            html += '</div></div>';
+        });
+
+        // Save button
+        html += '<div style="display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;padding:12px 0;background:var(--bg-primary);">';
+        html += '<button class="btn btn-primary" onclick="saveSettings()" id="settings-save-btn">💾 Save to Config File</button>';
+        html += '<span id="settings-save-result" style="font-size:13px;align-self:center;display:none;"></span>';
+        html += '</div>';
+
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = '<div class="text-center" style="padding:40px;color:var(--error)">Failed to load settings: ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+async function saveSettings() {
+    const btn = document.getElementById('settings-save-btn');
+    const result = document.getElementById('settings-save-result');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    result.style.display = 'none';
+
+    // Collect all values from the form
+    const inputs = document.querySelectorAll('#settings-content [data-key]');
+    const values = {};
+    inputs.forEach(input => {
+        const key = input.dataset.key;
+        if (input.type === 'checkbox') {
+            values[key] = input.checked;
+        } else if (input.type === 'number') {
+            const v = input.value.trim();
+            values[key] = v !== '' ? Number(v) : null;
+        } else if (input.type === 'password') {
+            const v = input.value.trim();
+            if (v) values[key] = v;
+            // If empty and placeholder shows ***, keep existing
+        } else {
+            const v = input.value.trim();
+            values[key] = v !== '' ? v : null;
+        }
+    });
+
+    try {
+        const response = await api('/api/config/save', {
+            method: 'POST',
+            body: values
+        });
+        if (response.effectiveConfigPath) {
+            document.getElementById('settings-config-path').textContent = 'Config: ' + response.effectiveConfigPath;
+        }
+        result.style.display = 'block';
+        result.style.color = 'var(--success)';
+        result.textContent = response.success
+            ? '✅ Saved to ' + (response.effectiveConfigPath || 'config file') + '.'
+            : '❌ Failed to save settings.';
+    } catch (e) {
+        result.style.display = 'block';
+        result.style.color = 'var(--error)';
+        result.textContent = '❌ ' + escapeHtml(e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Save to Config File';
+    }
+}
+
+</script>
+</body>
+</html>

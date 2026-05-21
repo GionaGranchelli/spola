@@ -218,22 +218,22 @@ class SpolaTracerTest {
             otelServiceName = "spola-production",
         )
 
-        assertThat(config.otelEnabled).isTrue()
-        assertThat(config.otelEndpoint).isEqualTo("http://jaeger:4317")
+        assertThat(config.metrics.otelEnabled).isTrue()
+        assertThat(config.metrics.otelEndpoint).isEqualTo("http://jaeger:4317")
         assertThat(config.otelServiceName).isEqualTo("spola-production")
 
         // When endpoint is set and enabled, tracer should be active
         val tracer = SpolaTracer(
-            otelEnabled = config.otelEnabled,
-            otelEndpoint = config.otelEndpoint,
+            otelEnabled = config.metrics.otelEnabled,
+            otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
         assertThat(tracer.isActive).isTrue()
 
         // Default config should produce noop
         val defaultConfig = SpolaConfig()
-        assertThat(defaultConfig.otelEnabled).isFalse()
-        assertThat(defaultConfig.otelEndpoint).isNull()
+        assertThat(defaultConfig.metrics.otelEnabled).isFalse()
+        assertThat(defaultConfig.metrics.otelEndpoint).isEmpty()
         assertThat(defaultConfig.otelServiceName).isEqualTo("spola")
     }
 

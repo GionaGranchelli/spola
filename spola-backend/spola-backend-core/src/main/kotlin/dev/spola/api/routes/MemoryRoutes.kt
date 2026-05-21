@@ -15,7 +15,7 @@ fun Route.apiMemoryRoutes(
     memoryStore: MemoryStore,
 ) {
     get("/memory") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val query = call.request.queryParameters["q"]?.trim().orEmpty()
         val entries = if (query.isBlank()) {
             memoryStore.listAll()
@@ -31,7 +31,7 @@ fun Route.apiMemoryRoutes(
     }
 
     delete("/memory/{key}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val key = call.parameters["key"] ?: throw IllegalArgumentException("missing memory key")
         val deleted = memoryStore.delete(key)
         if (!deleted) {

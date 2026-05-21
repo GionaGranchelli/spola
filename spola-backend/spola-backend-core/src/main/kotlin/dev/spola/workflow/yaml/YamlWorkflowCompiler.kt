@@ -126,6 +126,7 @@ object YamlWorkflowCompiler {
                                 onError = step.onError,
                                 maxOutputBytes = step.maxOutputBytes,
                                 env = step.env,
+                                workdir = config.workingDirectory,
                             )
                         }
 
@@ -277,6 +278,7 @@ object YamlWorkflowCompiler {
         onError: OnError,
         maxOutputBytes: Long,
         env: Map<String, String>?,
+        workdir: String,
     ) {
         localStep(stepId) { state, _ ->
             val resolvedCommand = command
@@ -289,6 +291,7 @@ object YamlWorkflowCompiler {
                 onError = onError,
                 maxOutputBytes = maxOutputBytes,
                 env = env,
+                workdir = workdir,
             )
             state.copy(
                 result = output,

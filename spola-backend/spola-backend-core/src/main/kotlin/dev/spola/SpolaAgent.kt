@@ -108,7 +108,7 @@ class SpolaAgent(
         val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
         observer?.onStatus("started", "Agent run started")
         try {
-            for (turn in 1..config.maxTurns) {
+            for (turn in 1..config.agent.maxTurns) {
                 observer?.onStatus("thinking", "Running turn $turn")
                 val response = callLlm(observer, messages)
                 if (response.content.isNotBlank()) {
@@ -161,7 +161,7 @@ class SpolaAgent(
                     }
                 }
             }
-            throw MaxTurnsExceededException(config.maxTurns)
+            throw MaxTurnsExceededException(config.agent.maxTurns)
         } catch (e: Exception) {
             observer?.onError(e)
             throw e

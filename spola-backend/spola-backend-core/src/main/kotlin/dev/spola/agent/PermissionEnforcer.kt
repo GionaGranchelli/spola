@@ -1,6 +1,7 @@
 package dev.spola.agent
 
-import java.nio.file.Path
+import dev.spola.tools.ShellSecurityPolicy
+import dev.spola.tools.inspectShellCommand
 
 /**
  * ⚠️ IMPORTANT: This is NOT a real security boundary.
@@ -22,25 +23,14 @@ import java.nio.file.Path
  */
 class PermissionEnforcer(private val agentDef: AgentDefinition) {
 
-    companion object {
-        private val NETWORK_COMMANDS = setOf(
-            "curl", "wget", "nc", "ncat", "ssh", "scp", "rsync",
-            "sftp", "telnet", "ftp", "socat", "nmap",
-        )
-        private val DESTRUCTIVE_COMMANDS = setOf(
-            "rm", "dd", "mkfs", "format", "chmod", "chown", "mv",
-            "truncate", "fallocate", "fdisk", "parted", "mount",
-            "umount", "swapoff", "swapon",
-        )
-        private val WRITE_COMMANDS = setOf(
-            "tee", "touch", "install", "cp",
-        )
-    }
-
     /** Check if a shell command is permitted. */
     fun checkShell(command: String, workdir: String? = null) {
-        val rawExecutable = command.trim().split(" ").first().removePrefix("./").removeSuffix("/")
-        val executable = Path.of(rawExecutable).fileName?.toString() ?: rawExecutable
+        val parsedCommand = inspectShellCommand(command, workdir)
+        val commandNames = listOfNotNull(
+            parsedCommand.executableName,
+            parsedCommand.resolvedExecutableName,
+        ).distinct()
+        val executable = commandNames.firstOrNull() ?: parsedCommand.rawExecutable
 
         if (!agentDef.shellAccess) {
             throw PermissionDeniedException("Shell access is disabled for this agent")
@@ -52,7 +42,7 @@ class PermissionEnforcer(private val agentDef: AgentDefinition) {
 
         // Filesystem-read-only agents: block destructive + write commands in shell
         if (agentDef.filesystemAccess == "read-only") {
-            if (executable in DESTRUCTIVE_COMMANDS || executable in WRITE_COMMANDS) {
+            if (commandNames.any { it in ShellSecurityPolicy.destructiveCommands || it in ShellSecurityPolicy.writeCommands }) {
                 throw PermissionDeniedException(
                     "Cannot run '$executable': agent has read-only filesystem access " +
                         "(shell bypasses filesystem constraints)",
@@ -62,7 +52,7 @@ class PermissionEnforcer(private val agentDef: AgentDefinition) {
 
         // Filesystem-none agents: block ALL write-capable commands
         if (agentDef.filesystemAccess == "none") {
-            if (executable in DESTRUCTIVE_COMMANDS || executable in WRITE_COMMANDS) {
+            if (commandNames.any { it in ShellSecurityPolicy.destructiveCommands || it in ShellSecurityPolicy.writeCommands }) {
                 throw PermissionDeniedException(
                     "Cannot run '$executable': agent has no filesystem access",
                 )
@@ -70,7 +60,7 @@ class PermissionEnforcer(private val agentDef: AgentDefinition) {
         }
 
         // Network access disabled: block network commands
-        if (!agentDef.networkAccess && executable in NETWORK_COMMANDS) {
+        if (!agentDef.networkAccess && commandNames.any { it in ShellSecurityPolicy.networkCommands }) {
             throw PermissionDeniedException(
                 "Cannot run '$executable': agent has network access disabled",
             )

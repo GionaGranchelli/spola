@@ -213,16 +213,17 @@ object ModelsCommand : SlashCommand {
 
     override suspend fun execute(args: String, session: ReplSession): Boolean {
         val cfg = session.instance.config
-        println("${ANSI_BOLD}Known models for provider '${cfg.provider}':${ANSI_RESET}")
+        val providerName = cfg.provider.defaultProvider
+        println("${ANSI_BOLD}Known models for provider '$providerName':${ANSI_RESET}")
         println("  This is an advisory list. Unknown model names may still work.")
         println()
-        when (cfg.provider) {
+        when (providerName) {
             "openai" -> println("  gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo")
             "anthropic" -> println("  claude-sonnet-4-20250514, claude-3-opus-latest, claude-3-haiku-20240307")
             "google" -> println("  gemini-2.5-pro, gemini-2.5-flash, gemini-2.0-flash")
             "ollama" -> println("  llama3, llama2, mistral, codellama, mixtral, ...")
             "openai-compat" -> println("  Varies by endpoint. Check your compatible provider's docs.")
-            else -> println("  No model list available for '${cfg.provider}'.")
+            else -> println("  No model list available for '$providerName'.")
         }
         println()
         println("  Use ${ANSI_YELLOW}/model <name>${ANSI_RESET} to switch.")
@@ -242,7 +243,7 @@ object ModelCommand : SlashCommand {
             return true
         }
         try {
-            session.instance.reconfigure(session.instance.config.provider, modelName)
+            session.instance.reconfigure(session.instance.config.provider.defaultProvider, modelName)
             println("${ANSI_GREEN}Model set to: ${ANSI_BOLD}$modelName${ANSI_RESET}")
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e

@@ -43,21 +43,21 @@ object AgentFactory {
     ): SpolaInstance {
         // Set up OpenTelemetry tracer
         val spolaTracer = SpolaTracer(
-            otelEnabled = config.otelEnabled,
-            otelEndpoint = config.otelEndpoint,
+            otelEnabled = config.metrics.otelEnabled,
+            otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
 
         // Set up Prometheus metrics
         val spolaMetrics = SpolaMetrics(
-            isEnabled = config.metricsEnabled,
+            isEnabled = config.metrics.metricsEnabled,
         )
 
         // Wrap observer with tracing
         var combinedObserver = observer
 
         // Apply metrics observer if enabled
-        if (config.metricsEnabled) {
+        if (config.metrics.metricsEnabled) {
             combinedObserver = MetricsObserver(
                 metrics = spolaMetrics,
                 next = combinedObserver,
@@ -65,24 +65,24 @@ object AgentFactory {
         }
 
         // Apply tracing observer (outermost, wraps everything)
-        if (spolaTracer.isActive || config.otelEnabled) {
+        if (spolaTracer.isActive || config.metrics.otelEnabled) {
             combinedObserver = SpolaTracerObserver(tracer = spolaTracer, config = config, next = combinedObserver)
         }
 
         // Resolve LLM provider
-        val (llmProvider, modelName) = provider?.let { it to (effectiveModel ?: config.model) }
+        val (llmProvider, modelName) = provider?.let { it to (effectiveModel ?: config.provider.defaultModel) }
             ?: ProviderResolver.resolveFromConfig(config)
 
         // Load persona
         var persona = PersonaLoader.load(
-            explicitPath = config.personaPath,
+            explicitPath = config.agent.personaPath,
             workingDirectory = config.workingDirectory,
         )
 
         // Inject skill catalog if enabled
         if (config.skillsEnabled) {
             val skillsDir = Path.of(config.skillsDir)
-            SkillRepository(config.skillsDbPath).use { repository ->
+            SkillRepository(config.database.skillsDbPath).use { repository ->
                 val indexer = SkillIndexer(skillsDir, repository)
                 indexer.reindex()
                 val catalog = SkillCatalog(skillsDir, repository)
@@ -134,26 +134,26 @@ object AgentFactory {
     ): SpolaInstance {
         val permissionEnforcer = dev.spola.agent.PermissionEnforcer(agentDef)
 
-        val checkpointStore = dev.spola.checkpoint.CheckpointStore(config.checkpointDbPath)
+        val checkpointStore = dev.spola.checkpoint.CheckpointStore(config.database.checkpointDbPath)
         val checkpointManager = CheckpointManager(checkpointStore)
 
         // Set up observability
         val spolaTracer = SpolaTracer(
-            otelEnabled = config.otelEnabled,
-            otelEndpoint = config.otelEndpoint,
+            otelEnabled = config.metrics.otelEnabled,
+            otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
-        val spolaMetrics = SpolaMetrics(isEnabled = config.metricsEnabled)
+        val spolaMetrics = SpolaMetrics(isEnabled = config.metrics.metricsEnabled)
 
         // Wrap observer
         var combinedObserver = observer
-        if (config.metricsEnabled) {
+        if (config.metrics.metricsEnabled) {
             combinedObserver = MetricsObserver(
                 metrics = spolaMetrics,
                 next = combinedObserver,
             )
         }
-        if (spolaTracer.isActive || config.otelEnabled) {
+        if (spolaTracer.isActive || config.metrics.otelEnabled) {
             combinedObserver = SpolaTracerObserver(tracer = spolaTracer, config = config, next = combinedObserver)
         }
 
@@ -177,7 +177,7 @@ object AgentFactory {
 
         // Build effective config with agent-specific overrides
         val agentConfig = config.copy(
-            maxTurns = agentDef.maxTurnsOverride ?: config.maxTurns,
+            agent = config.agent.copy(maxTurns = agentDef.maxTurnsOverride ?: config.agent.maxTurns),
             temperature = agentDef.temperature ?: config.temperature,
             maxTokens = agentDef.maxTokens ?: config.maxTokens,
         )
@@ -191,7 +191,7 @@ object AgentFactory {
             checkpointManager = checkpointManager,
         )
 
-        val schedulerStore = config.schedulerDbPath
+        val schedulerStore = config.database.schedulerDbPath
             .takeIf { it.isNotBlank() }
             ?.let(::SqliteSpolaJobStore)
 

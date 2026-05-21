@@ -100,10 +100,10 @@ object WorkflowFactory {
             workflow = workflow,
             resultSelector = resultSelector,
         )
-        val metrics = SpolaMetrics(isEnabled = config.metricsEnabled)
+        val metrics = SpolaMetrics(isEnabled = config.metrics.metricsEnabled)
         val tracer = SpolaTracer(
-            otelEnabled = config.otelEnabled,
-            otelEndpoint = config.otelEndpoint,
+            otelEnabled = config.metrics.otelEnabled,
+            otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
         val observer = SpolaWorkflowObserver(
@@ -129,10 +129,10 @@ object WorkflowFactory {
         executionId: String? = null,
         sessionId: String? = null,
     ): String {
-        val metrics = SpolaMetrics(isEnabled = config.metricsEnabled)
+        val metrics = SpolaMetrics(isEnabled = config.metrics.metricsEnabled)
         val tracer = SpolaTracer(
-            otelEnabled = config.otelEnabled,
-            otelEndpoint = config.otelEndpoint,
+            otelEnabled = config.metrics.otelEnabled,
+            otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
         val observer = SpolaWorkflowObserver(

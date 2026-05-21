@@ -1,6 +1,7 @@
 package dev.spola.workflow.yaml
 
 import dev.spola.SpolaConfig
+import dev.spola.config.MetricsConfig
 import dev.spola.factory.WorkflowFactory
 import dev.spola.workflow.SpolaState
 import dev.spola.workflow.NewWorkflowExecution
@@ -259,7 +260,7 @@ class YamlWorkflowSystemTest {
         }
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), "test goal")
 
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val workflow = YamlWorkflowCompiler.compile(
             resolved = resolved,
             config = config,
@@ -273,7 +274,7 @@ class YamlWorkflowSystemTest {
 
     @Test
     fun `yaml workflow registered alongside built-ins`() = withTempYamlWorkflow { yamlPath ->
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
             YamlWorkflowLoader.loadAndRegister(this, config, yamlPath.parent)
@@ -581,7 +582,7 @@ class YamlWorkflowSystemTest {
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), "test goal")
         val sorted = YamlWorkflowDagSorter.sort(resolved.steps).map { it.id }
 
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val workflow = YamlWorkflowCompiler.compile(
             resolved = resolved,
             config = config,
@@ -1289,7 +1290,7 @@ class YamlWorkflowSystemTest {
 
         val subDef = requireNotNull(YamlWorkflowParser.parseContent(subYaml))
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(object : dev.spola.workflow.WorkflowTemplate {
             override val name = "sub-workflow"
             override val version = "1"
@@ -1323,7 +1324,7 @@ class YamlWorkflowSystemTest {
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml))
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), "test")
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
 
         assertFailsWith<IllegalArgumentException> {
             YamlWorkflowCompiler.compile(resolved, config, "test", registry)
@@ -1342,7 +1343,7 @@ class YamlWorkflowSystemTest {
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml))
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), "test")
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
 
         assertFailsWith<IllegalStateException> {
             YamlWorkflowCompiler.compile(resolved, config, "test", registry)
@@ -1374,7 +1375,7 @@ class YamlWorkflowSystemTest {
 
         val subDef = requireNotNull(YamlWorkflowParser.parseContent(subYaml))
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(object : dev.spola.workflow.WorkflowTemplate {
             override val name = "analyze-sub-workflow"
             override val version = "1"
@@ -1409,7 +1410,7 @@ class YamlWorkflowSystemTest {
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml))
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), "test")
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(def, config, registry))
 
         val error = assertFailsWith<IllegalStateException> {
@@ -1440,7 +1441,7 @@ class YamlWorkflowSystemTest {
         val bDef = requireNotNull(YamlWorkflowParser.parseContent(bYaml))
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(aDef, config, registry))
         registry.register(YamlWorkflowTemplate(bDef, config, registry))
 
@@ -1482,7 +1483,7 @@ class YamlWorkflowSystemTest {
         val cDef = requireNotNull(YamlWorkflowParser.parseContent(cYaml))
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(aDef, config, registry))
         registry.register(YamlWorkflowTemplate(bDef, config, registry))
         registry.register(YamlWorkflowTemplate(cDef, config, registry))
@@ -1528,7 +1529,7 @@ class YamlWorkflowSystemTest {
         val rootDef = requireNotNull(YamlWorkflowParser.parseContent(rootYaml))
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(leafDef, config, registry))
         registry.register(YamlWorkflowTemplate(midDef, config, registry))
         registry.register(YamlWorkflowTemplate(rootDef, config, registry))
@@ -1584,7 +1585,7 @@ class YamlWorkflowSystemTest {
         val aDef = requireNotNull(YamlWorkflowParser.parseContent(aYaml))
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(leafDef, config, registry))
         registry.register(YamlWorkflowTemplate(bDef, config, registry))
         registry.register(YamlWorkflowTemplate(cDef, config, registry))
@@ -1625,7 +1626,7 @@ class YamlWorkflowSystemTest {
         val parentDef = requireNotNull(YamlWorkflowParser.parseContent(parentYaml))
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         registry.register(YamlWorkflowTemplate(leafDef, config, registry))
 
         val resolved = WorkflowParameterResolver.resolve(parentDef, emptyMap(), "test")
@@ -1662,7 +1663,7 @@ class YamlWorkflowSystemTest {
         """.trimMargin()
 
         val registry = WorkflowTemplateRegistry()
-        val config = SpolaConfig().copy(metricsEnabled = false)
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
 
         val defs = wfYamls.map { yaml -> requireNotNull(YamlWorkflowParser.parseContent(yaml)) }
         val leafDef = requireNotNull(YamlWorkflowParser.parseContent(leafYaml))
@@ -2026,7 +2027,7 @@ class YamlWorkflowSystemTest {
                 depends_on: [review]
         """.trimIndent()
 
-        val testConfig = SpolaConfig().copy(metricsEnabled = false)
+        val testConfig = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry()
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml)) {
             "Failed to parse workflow YAML"
@@ -2073,7 +2074,7 @@ class YamlWorkflowSystemTest {
                 prompt: "Approve?"
         """.trimIndent()
 
-        val testConfig = SpolaConfig().copy(metricsEnabled = false)
+        val testConfig = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry()
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml))
         registry.register(YamlWorkflowTemplate(def, testConfig, registry))
@@ -2109,7 +2110,7 @@ class YamlWorkflowSystemTest {
                 command: "echo done"
         """.trimIndent()
 
-        val testConfig = SpolaConfig().copy(metricsEnabled = false)
+        val testConfig = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry()
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml))
         registry.register(YamlWorkflowTemplate(def, testConfig, registry))
@@ -2153,7 +2154,7 @@ class YamlWorkflowSystemTest {
                 depends_on: [review]
         """.trimIndent()
 
-        val testConfig = SpolaConfig().copy(metricsEnabled = false)
+        val testConfig = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry()
         val def = requireNotNull(YamlWorkflowParser.parseContent(yaml)) {
             "Failed to parse workflow YAML"
@@ -2246,7 +2247,7 @@ class YamlWorkflowSystemTest {
         val resolved = WorkflowParameterResolver.resolve(def, emptyMap(), goal)
         val workflow = YamlWorkflowCompiler.compile(
             resolved = resolved,
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
             goal = goal,
             registry = WorkflowTemplateRegistry(),
         )
@@ -2254,7 +2255,7 @@ class YamlWorkflowSystemTest {
         return WorkflowFactory.runWorkflow(
             workflow = workflow,
             initialState = SpolaState(goal = goal),
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
         )
     }
 }

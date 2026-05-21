@@ -22,24 +22,24 @@ fun Route.apiAgentCrudRoutes(
     config: SpolaConfig,
     providedAgentStore: AgentStore?,
 ) {
-    val localAgentStore = providedAgentStore ?: SqliteAgentStore(config.agentsDbPath)
+    val localAgentStore = providedAgentStore ?: SqliteAgentStore(config.database.agentsDbPath)
 
     get("/agents") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val tag = call.request.queryParameters["tag"]?.trim().orEmpty()
         val agents = localAgentStore.list(tag.ifBlank { null })
         call.respond(agents.map { it.toResponse() })
     }
 
     get("/agents/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
         val agent = localAgentStore.get(id) ?: throw IllegalArgumentException("agent not found: $id")
         call.respond(agent.toResponse())
     }
 
     post("/agents") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<AgentCreateRequest>()
         val agent = AgentDefinition(
             id = request.id, name = request.name,
@@ -59,7 +59,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     put("/agents/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
         val existing = localAgentStore.get(id) ?: throw IllegalArgumentException("agent not found: $id")
         val request = call.receive<AgentUpdateRequest>()
@@ -99,7 +99,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     delete("/agents/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
         if (localAgentStore.delete(id)) {
             call.respond(HttpStatusCode.NoContent)
@@ -109,7 +109,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     post("/agents/run") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<AgentRunAgentRequest>()
         val agentDef = localAgentStore.get(request.agentId)
             ?: throw IllegalArgumentException("agent not found: ${request.agentId}")

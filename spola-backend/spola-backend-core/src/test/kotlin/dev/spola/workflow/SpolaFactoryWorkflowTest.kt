@@ -2,6 +2,7 @@ package dev.spola.workflow
 
 import dev.spola.SpolaConfig
 import dev.spola.SpolaFactory
+import dev.spola.config.MetricsConfig
 import dev.tramai.orchestration.StopPolicy
 import dev.tramai.orchestration.Workflow
 import kotlin.reflect.typeOf
@@ -55,7 +56,7 @@ class SpolaFactoryWorkflowTest {
         val result = SpolaFactory.runWorkflow(
             name = "local-step-test",
             initialState = initialState,
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
             workflow = {
                 localStep("transform") { state, _ ->
                     state.copy(
@@ -75,7 +76,7 @@ class SpolaFactoryWorkflowTest {
         val result = SpolaFactory.runWorkflow(
             name = "multi-step-test",
             initialState = initialState,
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
             workflow = {
                 localStep("step-a") { state, _ ->
                     state.copy(turnCount = 1)
@@ -99,7 +100,7 @@ class SpolaFactoryWorkflowTest {
             val result = SpolaFactory.runWorkflow(
                 name = "parallel-agents-test",
                 initialState = initialState,
-                config = SpolaConfig().copy(metricsEnabled = false),
+                config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
                 stopPolicy = StopPolicy(maxStepExecutions = 20),
                 workflow = {
                     // Use localStep to simulate parallel agent results

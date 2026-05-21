@@ -2,6 +2,7 @@ package dev.spola.tools
 
 import dev.spola.SpolaConfig
 import dev.spola.ToolRegistry
+import dev.spola.config.TtsConfig
 import dev.spola.tts.EdgeTtsProvider
 import dev.spola.tts.ElevenLabsTtsProvider
 import kotlinx.coroutines.test.runTest
@@ -152,7 +153,7 @@ class TtsToolsTest {
 
     @Test
     fun `createTtsProvider returns EdgeTtsProvider when no api key`() {
-        val config = SpolaConfig(elevenlabsApiKey = null)
+        val config = SpolaConfig(tts = TtsConfig(elevenlabsApiKey = null))
         val provider = createTtsProvider(config)
 
         assertTrue(provider is EdgeTtsProvider, "Should create EdgeTtsProvider when no ElevenLabs API key")
@@ -161,8 +162,10 @@ class TtsToolsTest {
     @Test
     fun `createTtsProvider returns ElevenLabsTtsProvider when api key is set`() {
         val config = SpolaConfig(
-            elevenlabsApiKey = "test-key",
-            elevenlabsVoiceId = "custom-voice",
+            tts = TtsConfig(
+                elevenlabsApiKey = "test-key",
+                elevenlabsVoiceId = "custom-voice",
+            ),
         )
         val provider = createTtsProvider(config)
 

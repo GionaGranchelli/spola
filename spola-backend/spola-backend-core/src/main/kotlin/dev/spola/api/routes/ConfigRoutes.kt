@@ -24,12 +24,12 @@ fun Route.apiConfigRoutes(
     configStore: SpolaConfigFileStore,
 ) {
     get("/config") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         call.respond(ConfigResponse.fromConfig(config, configStore.configPath.toString()))
     }
 
     post("/config/save") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val body = call.receive<JsonObject>()
         val savedConfig = mergeConfig(configStore.load(), body)
         configStore.save(savedConfig)
@@ -46,44 +46,59 @@ fun Route.apiConfigRoutes(
 
 private fun mergeConfig(base: SpolaConfig, body: JsonObject): SpolaConfig {
     return base.copy(
-        model = body.string("model") ?: base.model,
-        provider = body.string("provider") ?: base.provider,
-        maxTurns = body.int("maxTurns") ?: base.maxTurns,
+        provider = base.provider.copy(
+            defaultModel = body.string("model") ?: base.provider.defaultModel,
+            defaultProvider = body.string("provider") ?: base.provider.defaultProvider,
+        ),
+        agent = base.agent.copy(
+            maxTurns = body.int("maxTurns") ?: base.agent.maxTurns,
+            personaPath = body.string("persona", base.agent.personaPath),
+        ),
         temperature = body.double("temperature", base.temperature),
         maxTokens = body.int("maxTokens", base.maxTokens),
         workingDirectory = body.string("workdir") ?: base.workingDirectory,
-        personaPath = body.string("persona", base.personaPath),
-        memoryDbPath = body.string("memoryDb") ?: base.memoryDbPath,
-        schedulerDbPath = body.string("schedulerDb") ?: base.schedulerDbPath,
-        kanbanDbPath = body.string("kanbanDb") ?: base.kanbanDbPath,
+        persona = body.string("persona", base.persona) ?: "",
+        database = base.database.copy(
+            memoryDbPath = body.string("memoryDb") ?: base.database.memoryDbPath,
+            schedulerDbPath = body.string("schedulerDb") ?: base.database.schedulerDbPath,
+            kanbanDbPath = body.string("kanbanDb") ?: base.database.kanbanDbPath,
+            checkpointDbPath = body.string("checkpointDb") ?: base.database.checkpointDbPath,
+            jvmIndexDbPath = body.string("jvmIndexDb") ?: base.database.jvmIndexDbPath,
+            sessionsDbPath = body.string("sessionsDb") ?: base.database.sessionsDbPath,
+            agentsDbPath = body.string("agentsDb") ?: base.database.agentsDbPath,
+        ),
         kanbanWorkflowCooldownSeconds = body.long("kanbanWorkflowCooldownSeconds") ?: base.kanbanWorkflowCooldownSeconds,
-        checkpointDbPath = body.string("checkpointDb") ?: base.checkpointDbPath,
-        jvmIndexDbPath = body.string("jvmIndexDb") ?: base.jvmIndexDbPath,
-        sessionsDbPath = body.string("sessionsDb") ?: base.sessionsDbPath,
         pluginsDir = body.string("pluginsDir") ?: base.pluginsDir,
         agentsDir = body.string("agentsDir") ?: base.agentsDir,
-        agentsDbPath = body.string("agentsDb") ?: base.agentsDbPath,
-        apiKey = body.string("apiKey", base.apiKey),
+        security = base.security.copy(
+            apiKey = body.string("apiKey", base.security.apiKey),
+            insecure = body.bool("insecure") ?: base.security.insecure,
+        ),
         pairingToken = body.string("pairingToken", base.pairingToken),
-        telegramBotToken = body.string("telegramBotToken", base.telegramBotToken),
-        emailSmtpHost = body.string("emailSmtpHost", base.emailSmtpHost),
-        emailSmtpPort = body.int("emailSmtpPort") ?: base.emailSmtpPort,
-        emailUsername = body.string("emailUsername", base.emailUsername),
-        emailPassword = body.string("emailPassword", base.emailPassword),
-        emailFrom = body.string("emailFrom", base.emailFrom),
-        ttsProvider = body.string("ttsProvider") ?: base.ttsProvider,
-        elevenlabsApiKey = body.string("elevenlabsApiKey", base.elevenlabsApiKey),
-        elevenlabsVoiceId = body.string("elevenlabsVoiceId") ?: base.elevenlabsVoiceId,
-        otelEnabled = body.bool("otelEnabled") ?: base.otelEnabled,
-        otelEndpoint = body.string("otelEndpoint", base.otelEndpoint),
+        delivery = base.delivery.copy(
+            telegramToken = body.string("telegramBotToken", base.delivery.telegramToken) ?: "",
+            smtpHost = body.string("emailSmtpHost", base.delivery.smtpHost) ?: "",
+            smtpPort = body.int("emailSmtpPort") ?: base.delivery.smtpPort,
+            smtpUser = body.string("emailUsername", base.delivery.smtpUser) ?: "",
+            smtpPass = body.string("emailPassword", base.delivery.smtpPass) ?: "",
+            fromEmail = body.string("emailFrom", base.delivery.fromEmail) ?: "",
+        ),
+        tts = base.tts.copy(
+            ttsProvider = body.string("ttsProvider") ?: base.tts.ttsProvider,
+            elevenlabsApiKey = body.string("elevenlabsApiKey", base.tts.elevenlabsApiKey),
+            elevenlabsVoiceId = body.string("elevenlabsVoiceId") ?: base.tts.elevenlabsVoiceId,
+        ),
+        metrics = base.metrics.copy(
+            otelEnabled = body.bool("otelEnabled") ?: base.metrics.otelEnabled,
+            otelEndpoint = body.string("otelEndpoint", base.metrics.otelEndpoint) ?: "",
+            metricsEnabled = body.bool("metricsEnabled") ?: base.metrics.metricsEnabled,
+        ),
         otelServiceName = body.string("otelServiceName") ?: base.otelServiceName,
-        metricsEnabled = body.bool("metricsEnabled") ?: base.metricsEnabled,
         pluginsEnabled = body.bool("pluginsEnabled") ?: base.pluginsEnabled,
         compressionEnabled = body.bool("compressionEnabled") ?: base.compressionEnabled,
         autoCheckpoint = body.bool("autoCheckpoint") ?: base.autoCheckpoint,
         jvmIndexAutoRefresh = body.bool("jvmIndexAutoRefresh") ?: base.jvmIndexAutoRefresh,
         defaultAgentId = body.string("defaultAgentId", base.defaultAgentId),
-        insecure = body.bool("insecure") ?: base.insecure,
         architectMode = mergeArchitectConfig(base.architectMode, body),
     )
 }

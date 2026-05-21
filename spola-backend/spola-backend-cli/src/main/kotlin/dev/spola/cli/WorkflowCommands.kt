@@ -66,7 +66,7 @@ class WorkflowRunCommand : Callable<Int> {
             YamlWorkflowLoader.loadAndRegister(this, config)
         }
 
-        val executionStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
+        val executionStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
         val executionService = WorkflowExecutionService(
             config = config,
             executionStore = executionStore,
@@ -180,7 +180,7 @@ class WorkflowApproveCommand : Callable<Int> {
 
     override fun call(): Int = runBlocking {
         val config = buildConfig(root)
-        val executionStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
+        val executionStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
             YamlWorkflowLoader.loadAndRegister(this, config)

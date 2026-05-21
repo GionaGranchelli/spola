@@ -59,8 +59,8 @@ class WorkflowChatIntegrationTest {
             kanbanDbPath = tempDir.resolve("kanban.db").toString(),
             jvmIndexDbPath = tempDir.resolve("jvm-index.db").toString(),
         )
-        val workflowStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
-        val jobStore = dev.spola.scheduler.SqliteSpolaJobStore(config.schedulerDbPath)
+        val workflowStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
+        val jobStore = dev.spola.scheduler.SqliteSpolaJobStore(config.database.schedulerDbPath)
 
         runBlocking {
             workflowStore.create(

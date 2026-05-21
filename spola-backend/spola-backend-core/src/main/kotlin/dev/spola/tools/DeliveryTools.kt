@@ -158,7 +158,7 @@ private fun emailSendTool(config: SpolaConfig): Tool {
 }
 
 private fun resolveTelegramToken(config: SpolaConfig): String? {
-    return config.telegramBotToken
+    return config.delivery.telegramToken.ifBlank { null }
         ?: System.getenv("TELEGRAM_BOT_TOKEN")
         ?.takeIf { it.isNotBlank() }
 }
@@ -173,11 +173,11 @@ private data class EmailConfig(
 
 private fun resolveEmailConfig(config: SpolaConfig): EmailConfig {
     return EmailConfig(
-        host = config.emailSmtpHost ?: System.getenv("EMAIL_SMTP_HOST")?.takeIf { it.isNotBlank() },
-        port = config.emailSmtpPort,
-        username = config.emailUsername ?: System.getenv("EMAIL_USERNAME")?.takeIf { it.isNotBlank() },
-        password = config.emailPassword ?: System.getenv("EMAIL_PASSWORD")?.takeIf { it.isNotBlank() },
-        from = config.emailFrom ?: System.getenv("EMAIL_FROM")?.takeIf { it.isNotBlank() },
+        host = config.delivery.smtpHost.ifBlank { null } ?: System.getenv("EMAIL_SMTP_HOST")?.takeIf { it.isNotBlank() },
+        port = config.delivery.smtpPort,
+        username = config.delivery.smtpUser.ifBlank { null } ?: System.getenv("EMAIL_USERNAME")?.takeIf { it.isNotBlank() },
+        password = config.delivery.smtpPass.ifBlank { null } ?: System.getenv("EMAIL_PASSWORD")?.takeIf { it.isNotBlank() },
+        from = config.delivery.fromEmail.ifBlank { null } ?: System.getenv("EMAIL_FROM")?.takeIf { it.isNotBlank() },
     )
 }
 

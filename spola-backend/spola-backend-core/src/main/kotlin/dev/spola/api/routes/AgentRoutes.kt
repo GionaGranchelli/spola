@@ -22,7 +22,7 @@ fun Route.apiAgentRoutes(
     toolRegistry: ToolRegistry,
 ) {
     post("/agent/run") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<AgentRunRequest>()
         if (request.goal.isBlank()) {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to "goal must not be blank"))
@@ -32,7 +32,7 @@ fun Route.apiAgentRoutes(
     }
 
     post("/agent/run/stream") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<AgentRunRequest>()
         call.respond(SSEServerContent(call) {
             streamHandler.stream(this, request)
@@ -40,12 +40,12 @@ fun Route.apiAgentRoutes(
     }
 
     get("/agent/status") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         call.respond(
             AgentStatusResponse(
-                model = config.model,
-                provider = config.provider,
-                maxTurns = config.maxTurns,
+                model = config.provider.defaultModel,
+                provider = config.provider.defaultProvider,
+                maxTurns = config.agent.maxTurns,
                 workingDirectory = config.workingDirectory,
                 toolCount = toolRegistry.list().size,
                 running = (runState?.isRunning() == true) || agentRunHandler.isRunning(),

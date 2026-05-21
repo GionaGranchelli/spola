@@ -68,13 +68,13 @@ fun registerTtsTool(
                     // Resolve provider (allow override)
                     val effectiveProvider = when (providerOverride?.lowercase()) {
                         "elevenlabs" -> {
-                            val key = config.elevenlabsApiKey
+                            val key = config.tts.elevenlabsApiKey
                             if (key.isNullOrBlank()) {
                                 return@Tool ToolResult.fail(
                                     "ElevenLabs provider requested but elevenlabsApiKey is not configured"
                                 )
                             }
-                            ElevenLabsTtsProvider(key, config.elevenlabsVoiceId)
+                            ElevenLabsTtsProvider(key, config.tts.elevenlabsVoiceId)
                         }
                         "edge" -> EdgeTtsProvider()
                         null -> provider
@@ -118,9 +118,9 @@ fun registerTtsTool(
  * Uses ElevenLabs if API key is set, otherwise Edge TTS.
  */
 internal fun createTtsProvider(config: SpolaConfig): TtsProvider {
-    val key = config.elevenlabsApiKey
+    val key = config.tts.elevenlabsApiKey
     if (!key.isNullOrBlank()) {
-        return ElevenLabsTtsProvider(key, config.elevenlabsVoiceId)
+        return ElevenLabsTtsProvider(key, config.tts.elevenlabsVoiceId)
     }
     return EdgeTtsProvider()
 }

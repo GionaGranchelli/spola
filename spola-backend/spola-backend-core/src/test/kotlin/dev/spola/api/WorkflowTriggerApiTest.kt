@@ -34,8 +34,8 @@ class WorkflowTriggerApiTest {
     @Test
     fun `scheduler execution history endpoint lists executions for a workflow job`(@TempDir tempDir: Path) = testApplication {
         val config = testConfig(tempDir)
-        val jobStore = SqliteSpolaJobStore(config.schedulerDbPath)
-        val workflowStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
+        val jobStore = SqliteSpolaJobStore(config.database.schedulerDbPath)
+        val workflowStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
 
         application {
             spolaApiModule(
@@ -53,7 +53,7 @@ class WorkflowTriggerApiTest {
         }
 
         val createResponse = apiClient.post("/api/jobs") {
-            header("Authorization", "Bearer ${config.apiKey}")
+            header("Authorization", "Bearer ${config.security.apiKey}")
             contentType(ContentType.Application.Json)
             setBody(
                 CreateJobRequest(
@@ -79,7 +79,7 @@ class WorkflowTriggerApiTest {
         }
 
         val response = apiClient.get("/api/scheduler/jobs/${createdJob.id}/executions") {
-            header("Authorization", "Bearer ${config.apiKey}")
+            header("Authorization", "Bearer ${config.security.apiKey}")
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
@@ -91,8 +91,8 @@ class WorkflowTriggerApiTest {
     @Test
     fun `kanban history endpoint returns executions created by status transitions`(@TempDir tempDir: Path) = testApplication {
         val config = testConfig(tempDir)
-        val jobStore = SqliteSpolaJobStore(config.schedulerDbPath)
-        val workflowStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
+        val jobStore = SqliteSpolaJobStore(config.database.schedulerDbPath)
+        val workflowStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
         val workflowExecutionService = WorkflowExecutionService(
             config = config,
             executionStore = workflowStore,
@@ -104,7 +104,7 @@ class WorkflowTriggerApiTest {
             currentEpochSeconds = { 100L },
         )
         val kanbanStore = SqliteKanbanStore(
-            dbPath = config.kanbanDbPath,
+            dbPath = config.database.kanbanDbPath,
             onStatusChanged = workflowKanbanService::onTaskStatusChanged,
         )
 
@@ -127,19 +127,19 @@ class WorkflowTriggerApiTest {
         }
 
         val created = apiClient.post("/api/kanban") {
-            header("Authorization", "Bearer ${config.apiKey}")
+            header("Authorization", "Bearer ${config.security.apiKey}")
             contentType(ContentType.Application.Json)
             setBody(KanbanCreateRequest(text = "Review PR"))
         }
         val card = Json.decodeFromString<KanbanCardResponse>(created.bodyAsText())
 
         val updated = apiClient.put("/api/kanban/${card.id}") {
-            header("Authorization", "Bearer ${config.apiKey}")
+            header("Authorization", "Bearer ${config.security.apiKey}")
             contentType(ContentType.Application.Json)
             setBody(KanbanUpdateRequest(text = "Review PR", status = "done"))
         }
         val history = apiClient.get("/api/kanban/tasks/${card.id}/executions") {
-            header("Authorization", "Bearer ${config.apiKey}")
+            header("Authorization", "Bearer ${config.security.apiKey}")
         }
 
         assertEquals(HttpStatusCode.OK, updated.status)

@@ -22,10 +22,10 @@ object ProviderResolver {
         config: SpolaConfig,
         providerStore: ProviderStore = ProviderStore.fromEnvironment(),
     ): Pair<ModelProvider, String> {
-        val providerConfig = providerStore.get(config.provider)
+        val providerConfig = providerStore.get(config.provider.defaultProvider)
         return resolveNamed(
             providerConfig = providerConfig,
-            modelName = config.model,
+            modelName = config.provider.defaultModel,
         )
     }
 

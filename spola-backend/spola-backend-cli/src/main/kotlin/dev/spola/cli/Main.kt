@@ -264,7 +264,7 @@ fun buildConfig(root: SpolaCli): SpolaConfig {
         root.optionMatched("--api-key") -> root.apiKey
         !System.getenv("SPOLA_API_KEY").isNullOrBlank() -> System.getenv("SPOLA_API_KEY")
         !System.getenv("GOLEM_API_KEY").isNullOrBlank() -> System.getenv("GOLEM_API_KEY")
-        else -> baseConfig.apiKey
+        else -> baseConfig.security.apiKey
     }
     val resolvedVerbosity = when {
         root.debug -> Verbosity.DEBUG
@@ -273,18 +273,27 @@ fun buildConfig(root: SpolaCli): SpolaConfig {
     }
 
     return baseConfig.copy(
-        model = root.overrideIfMatched("--model", root.model, baseConfig.model),
-        provider = root.overrideIfMatched("--provider", root.provider, baseConfig.provider),
+        provider = baseConfig.provider.copy(
+            defaultModel = root.overrideIfMatched("--model", root.model, baseConfig.provider.defaultModel),
+            defaultProvider = root.overrideIfMatched("--provider", root.provider, baseConfig.provider.defaultProvider),
+        ),
         verbosity = resolvedVerbosity,
-        maxTurns = root.overrideIfMatched("--max-turns", root.maxTurns, baseConfig.maxTurns),
+        agent = baseConfig.agent.copy(
+            maxTurns = root.overrideIfMatched("--max-turns", root.maxTurns, baseConfig.agent.maxTurns),
+            personaPath = root.overrideIfMatched("--persona", root.personaPath, baseConfig.agent.personaPath),
+        ),
         workingDirectory = root.overrideIfMatched(arrayOf("--dir", "--workdir"), root.workdir, baseConfig.workingDirectory),
-        personaPath = root.overrideIfMatched("--persona", root.personaPath, baseConfig.personaPath),
-        memoryDbPath = root.overrideIfMatched("--memory-db", root.memoryDb, baseConfig.memoryDbPath),
-        schedulerDbPath = root.overrideIfMatched("--scheduler-db", root.schedulerDb, baseConfig.schedulerDbPath),
-        kanbanDbPath = root.overrideIfMatched("--kanban-db", root.kanbanDb, baseConfig.kanbanDbPath),
-        jvmIndexDbPath = root.overrideIfMatched("--jvm-index-db", root.jvmIndexDb, baseConfig.jvmIndexDbPath),
-        apiKey = resolvedApiKey,
-        insecure = root.overrideIfMatched("--insecure", root.insecure, baseConfig.insecure),
+        persona = root.overrideIfMatched("--persona", root.personaPath ?: "", baseConfig.persona),
+        database = baseConfig.database.copy(
+            memoryDbPath = root.overrideIfMatched("--memory-db", root.memoryDb, baseConfig.database.memoryDbPath),
+            schedulerDbPath = root.overrideIfMatched("--scheduler-db", root.schedulerDb, baseConfig.database.schedulerDbPath),
+            kanbanDbPath = root.overrideIfMatched("--kanban-db", root.kanbanDb, baseConfig.database.kanbanDbPath),
+            jvmIndexDbPath = root.overrideIfMatched("--jvm-index-db", root.jvmIndexDb, baseConfig.database.jvmIndexDbPath),
+        ),
+        security = baseConfig.security.copy(
+            apiKey = resolvedApiKey,
+            insecure = root.overrideIfMatched("--insecure", root.insecure, baseConfig.security.insecure),
+        ),
         sessionId = root.overrideIfMatched(arrayOf("--resume", "--session-id"), root.sessionId, baseConfig.sessionId),
         skillsDir = root.overrideIfMatched("--skills-dir", root.skillsDir, baseConfig.skillsDir),
     )
@@ -300,8 +309,8 @@ suspend fun <T> withJobStore(root: SpolaCli, block: suspend (SpolaJobStore) -> T
 }
 
 suspend fun runSchedulerDaemon(config: SpolaConfig) {
-    val jobStore = SqliteSpolaJobStore(config.schedulerDbPath)
-    val workflowStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
+    val jobStore = SqliteSpolaJobStore(config.database.schedulerDbPath)
+    val workflowStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
     val workflowRegistry = WorkflowTemplateRegistry().apply {
         registerBuiltInTemplates()
         registerYamlWorkflows(config)
@@ -334,7 +343,7 @@ suspend fun runSchedulerDaemon(config: SpolaConfig) {
     }
 
     try {
-        println("Scheduler daemon started. Polling ${config.schedulerDbPath}")
+        println("Scheduler daemon started. Polling ${config.database.schedulerDbPath}")
         dispatcher?.start()
         scheduler.start()
         awaitCancellation()

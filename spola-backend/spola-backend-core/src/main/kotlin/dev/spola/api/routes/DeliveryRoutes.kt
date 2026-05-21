@@ -16,7 +16,7 @@ fun Route.apiDeliveryRoutes(
     toolRegistry: ToolRegistry,
 ) {
     post("/deliver/telegram") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<TelegramSendRequest>()
         val tool = toolRegistry.get("telegram_send")
             ?: throw IllegalStateException("telegram_send tool not registered")
@@ -30,7 +30,7 @@ fun Route.apiDeliveryRoutes(
     }
 
     post("/deliver/email") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<EmailSendRequest>()
         val tool = toolRegistry.get("email_send")
             ?: throw IllegalStateException("email_send tool not registered")

@@ -40,23 +40,23 @@ object SpolaFactory {
         effectiveModel: String? = null,
         observer: AgentRunObserver? = null,
     ): SpolaInstance {
-        val store = memoryStore ?: SqliteMemoryStore(config.memoryDbPath)
+        val store = memoryStore ?: SqliteMemoryStore(config.database.memoryDbPath)
 
         // Set up checkpoint store
-        val checkpointStore = CheckpointStore(config.checkpointDbPath)
+        val checkpointStore = CheckpointStore(config.database.checkpointDbPath)
         val checkpointManager = CheckpointManager(checkpointStore)
 
         // Set up scheduler
-        val schedulerStore = config.schedulerDbPath
+        val schedulerStore = config.database.schedulerDbPath
             .takeIf { it.isNotBlank() }
             ?.let(::SqliteSpolaJobStore)
 
         // Build tool registry via factory
-        val jvmIndex = SqliteJvmProjectIndex(config.jvmIndexDbPath)
+        val jvmIndex = SqliteJvmProjectIndex(config.database.jvmIndexDbPath)
         val jvmIndexCoordinator = JvmIndexCoordinator(autoRefresh = config.jvmIndexAutoRefresh) {
             config.workingDirectory
         }
-        val spolaMetrics = SpolaMetrics(isEnabled = config.metricsEnabled)
+        val spolaMetrics = SpolaMetrics(isEnabled = config.metrics.metricsEnabled)
         val toolRegistry = ToolRegistryFactory.buildDefaultToolRegistry(
             config = config,
             memoryStore = store,
@@ -65,7 +65,7 @@ object SpolaFactory {
             jvmIndex = jvmIndex,
             jvmIndexCoordinator = jvmIndexCoordinator,
             spolaMetrics = spolaMetrics,
-            model = effectiveModel ?: config.model,
+            model = effectiveModel ?: config.provider.defaultModel,
         )
 
         // Delegate to AgentFactory
@@ -90,7 +90,7 @@ object SpolaFactory {
         memoryStore: MemoryStore? = null,
         observer: AgentRunObserver? = null,
     ): SpolaInstance {
-        val store = memoryStore ?: SqliteMemoryStore(config.memoryDbPath)
+        val store = memoryStore ?: SqliteMemoryStore(config.database.memoryDbPath)
         val effectiveModel = agentDef.preferredModel
         val effectiveProviderName = agentDef.preferredProvider
         val effectiveNamespace = agentDef.memoryNamespace ?: if (agentDef.memoryScope == "agent") agentDef.id else null

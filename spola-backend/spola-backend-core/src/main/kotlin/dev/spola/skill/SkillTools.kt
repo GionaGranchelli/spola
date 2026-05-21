@@ -27,8 +27,8 @@ object SkillTools {
 
         val repositoryFactory = when {
             repository != null -> null
-            config.skillsDbPath.isBlank() -> null
-            else -> { { SkillRepository(config.skillsDbPath) } }
+            config.database.skillsDbPath.isBlank() -> null
+            else -> { { SkillRepository(config.database.skillsDbPath) } }
         }
 
         val effectiveRepo = repository ?: repositoryFactory?.invoke()?.also { repo ->

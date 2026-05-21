@@ -103,7 +103,7 @@ object TeamWorkflowSteps {
             name = name,
             items = { state -> agents.map { it to goal(state) } },
             invoke = { (agentId, agentGoal) ->
-                val agentDef = SqliteAgentStore(config.agentsDbPath).get(agentId)
+                val agentDef = SqliteAgentStore(config.database.agentsDbPath).get(agentId)
                     ?: throw RuntimeException("Agent '$agentId' not found")
                 val instance = SpolaFactory.createFromAgentDefinition(agentDef = agentDef, config = config)
                 try {

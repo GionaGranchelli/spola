@@ -193,7 +193,7 @@ class CheckpointManager(
         private const val MAX_DIFF_LENGTH = 50 * 1024
 
         fun fromConfig(config: SpolaConfig): CheckpointManager {
-            val store = CheckpointStore(config.checkpointDbPath)
+            val store = CheckpointStore(config.database.checkpointDbPath)
             return CheckpointManager(store, workingDirectory = config.workingDirectory)
         }
     }

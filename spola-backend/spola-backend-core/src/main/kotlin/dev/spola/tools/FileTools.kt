@@ -11,14 +11,28 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
-internal val allowedDirs: List<Path> by lazy {
+internal fun getAllowedDirs(config: SpolaConfig? = null): List<Path> {
     val envAllowed = System.getenv("SPOLA_ALLOWED_DIRS")
         ?: System.getenv("GOLEM_ALLOWED_DIRS")
-    if (envAllowed != null && envAllowed.isNotBlank()) {
-        envAllowed.split(":").map { Paths.get(it).toRealPath() }
-    } else {
-        emptyList() // No restriction — all paths allowed
+    val rawDirs = when {
+        !envAllowed.isNullOrBlank() -> envAllowed.split(":")
+        config != null && config.security.allowedDirs.isNotEmpty() -> config.security.allowedDirs
+        else -> emptyList()
     }
+
+    return rawDirs
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .map { dir ->
+            val path = Paths.get(dir)
+            try {
+                path.toRealPath()
+            } catch (_: Exception) {
+                path.toAbsolutePath().normalize()
+            }
+        }
+        .toList()
 }
 
 internal fun resolvePath(path: String, config: SpolaConfig? = null): Path {
@@ -32,7 +46,8 @@ internal fun resolvePath(path: String, config: SpolaConfig? = null): Path {
     return abs.normalize()
 }
 
-internal fun checkAllowed(path: Path) {
+internal fun checkAllowed(path: Path, config: SpolaConfig? = null) {
+    val allowedDirs = getAllowedDirs(config)
     if (allowedDirs.isEmpty()) return // No restriction
     // Resolve symlinks to prevent symlink-based escape
     val realPath = try {
@@ -62,7 +77,7 @@ fun registerFileTools(registry: ToolRegistry, config: SpolaConfig? = null) {
                 val limit = ((args["limit"] as? Int) ?: 500).coerceIn(1, 2000)
 
                 val resolved = resolvePath(path, config)
-                checkAllowed(resolved)
+                checkAllowed(resolved, config)
 
                 if (!Files.exists(resolved)) {
                     return@Tool ToolResult.fail("File not found: $path")
@@ -104,7 +119,7 @@ fun registerFileTools(registry: ToolRegistry, config: SpolaConfig? = null) {
                 val content = (args["content"] as? String) ?: return@Tool ToolResult.fail("Missing required argument: content")
 
                 val resolved = resolvePath(path, config)
-                checkAllowed(resolved)
+                checkAllowed(resolved, config)
 
                 Files.createDirectories(resolved.parent)
                 Files.writeString(resolved, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
@@ -134,7 +149,7 @@ fun registerFileTools(registry: ToolRegistry, config: SpolaConfig? = null) {
                 val fileGlob = args["file_glob"] as? String
 
                 val resolved = resolvePath(searchPath, config)
-                checkAllowed(resolved)
+                checkAllowed(resolved, config)
 
                 val regex = try {
                     Regex(pattern)

@@ -28,12 +28,12 @@ fun Route.apiSessionRoutes(
     streamHandler: StreamHandler,
 ) {
     get("/sessions") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         call.respond(sessionStore.list())
     }
 
     post("/session") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<CreateSessionRequest>()
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
@@ -42,29 +42,29 @@ fun Route.apiSessionRoutes(
             title = request.title,
             createdAt = now,
             lastActiveAt = now,
-            modelId = request.modelId ?: config.model,
-            providerId = request.providerId ?: config.provider,
+            modelId = request.modelId ?: config.provider.defaultModel,
+            providerId = request.providerId ?: config.provider.defaultProvider,
         )
         sessionStore.create(session)
         call.respond(session)
     }
 
     delete("/session/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         sessionStore.delete(id)
         call.respond(HttpStatusCode.NoContent)
     }
 
     get("/session/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         val session = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
         call.respond(session)
     }
 
     post("/session/{id}/model") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         val request = call.receive<SessionModelUpdate>()
         val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
@@ -74,7 +74,7 @@ fun Route.apiSessionRoutes(
     }
 
     get("/session/{id}/messages") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
         call.respond(
@@ -85,7 +85,7 @@ fun Route.apiSessionRoutes(
     }
 
     post("/session/{id}/run") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
         val request = call.receive<AgentRunRequest>()
@@ -103,7 +103,7 @@ fun Route.apiSessionRoutes(
     }
 
     post("/session/{id}/run/stream") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
         val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
         val request = call.receive<AgentRunRequest>()
@@ -117,14 +117,14 @@ fun Route.apiSessionRoutes(
     }
 
     get("/models") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         call.respond(
             listOf(
                 ModelInfo(
-                    id = config.model,
-                    name = config.model,
-                    provider = config.provider,
-                    description = "${config.provider} model configured in Spola",
+                    id = config.provider.defaultModel,
+                    name = config.provider.defaultModel,
+                    provider = config.provider.defaultProvider,
+                    description = "${config.provider.defaultProvider} model configured in Spola",
                 ),
             ),
         )

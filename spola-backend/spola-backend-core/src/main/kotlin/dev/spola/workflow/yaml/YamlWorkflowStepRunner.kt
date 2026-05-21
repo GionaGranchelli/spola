@@ -1,22 +1,16 @@
 package dev.spola.workflow.yaml
 
+import dev.spola.agent.PermissionEnforcer
+import dev.spola.tools.executeShellCommand
+import dev.spola.tools.toolResultToShellExecutionResult
 import dev.spola.workflow.SpolaState
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 
 /**
- * Executes shell/local workflow steps via ProcessBuilder.
+ * Executes shell/local workflow steps through the shared shell execution path.
  */
 object YamlWorkflowStepRunner {
     private val logger = LoggerFactory.getLogger(YamlWorkflowStepRunner::class.java)
-    private val ioExecutor: ExecutorService = Executors.newCachedThreadPool { runnable ->
-        Thread(runnable, "spola-shell-io").apply {
-            isDaemon = true
-        }
-    }
 
     data class ShellStepResult(
         val stdout: String,
@@ -36,6 +30,8 @@ object YamlWorkflowStepRunner {
         onError: OnError = OnError.FAIL,
         maxOutputBytes: Long = 10 * 1024 * 1024,
         env: Map<String, String>? = null,
+        workdir: String = ".",
+        permissionEnforcer: PermissionEnforcer? = null,
     ): String {
         val resolvedCommand = WorkflowParameterResolver.resolveRuntimeTemplates(
             command,
@@ -54,6 +50,8 @@ object YamlWorkflowStepRunner {
                     timeoutSeconds = timeoutSeconds.coerceAtLeast(1),
                     maxOutputBytes = maxOutputBytes,
                     env = resolvedEnv,
+                    workdir = workdir,
+                    permissionEnforcer = permissionEnforcer,
                 )
 
                 if (result.exitCode == 0) {
@@ -98,51 +96,22 @@ object YamlWorkflowStepRunner {
         timeoutSeconds: Int,
         maxOutputBytes: Long,
         env: Map<String, String>?,
+        workdir: String,
+        permissionEnforcer: PermissionEnforcer?,
     ): ShellStepResult {
-        if (command.isBlank()) {
-            throw IllegalArgumentException("Command is empty")
-        }
-
-        val pb = ProcessBuilder("/bin/sh", "-c", command)
-            .redirectErrorStream(false)
-        if (env != null) {
-            pb.environment().putAll(env)
-        }
-        val process = pb.start()
-        val outputLimit = maxOutputBytes.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
-
-        val stdoutFuture = CompletableFuture.supplyAsync({
-            try {
-                val bytes = process.inputStream.readNBytes(outputLimit)
-                String(bytes, Charsets.UTF_8)
-            } catch (_: Exception) {
-                ""
-            }
-        }, ioExecutor)
-        val stderrFuture = CompletableFuture.supplyAsync({
-            try {
-                val bytes = process.errorStream.readNBytes(outputLimit)
-                String(bytes, Charsets.UTF_8)
-            } catch (_: Exception) {
-                ""
-            }
-        }, ioExecutor)
-
-        val finished = process.waitFor(timeoutSeconds.toLong(), TimeUnit.SECONDS)
-        if (!finished) {
-            process.destroyForcibly()
-            process.waitFor(5, TimeUnit.SECONDS)
-            stdoutFuture.cancel(true)
-            stderrFuture.cancel(true)
-            throw IllegalStateException("Command timed out after ${timeoutSeconds}s: $command")
-        }
-
-        val stdout = stdoutFuture.join()
-        val stderr = stderrFuture.join()
+        val result = executeShellCommand(
+            commandStr = command,
+            workdirStr = workdir,
+            timeoutSec = timeoutSeconds,
+            permissionEnforcer = permissionEnforcer,
+            env = env,
+            maxOutputSize = maxOutputBytes.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(),
+        )
+        val shellResult = toolResultToShellExecutionResult(result)
         return ShellStepResult(
-            stdout = stdout,
-            stderr = stderr,
-            exitCode = process.exitValue(),
+            stdout = shellResult.stdout,
+            stderr = shellResult.stderr,
+            exitCode = shellResult.exitCode,
         )
     }
 

@@ -139,7 +139,7 @@ class ArchitectRunner(
      */
     private suspend fun runEditorPhase(persona: String, goal: String, plan: String): String {
         val toolRegistry = buildEditorToolRegistry()
-        val memoryStore = SqliteMemoryStore(config.memoryDbPath)
+        val memoryStore = SqliteMemoryStore(config.database.memoryDbPath)
         dev.spola.memory.registerMemoryTools(toolRegistry, memoryStore)
 
         val editorPersona = buildString {

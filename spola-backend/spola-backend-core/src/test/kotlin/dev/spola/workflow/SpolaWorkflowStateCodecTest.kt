@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import dev.spola.SpolaConfig
 import dev.spola.SpolaFactory
+import dev.spola.config.MetricsConfig
 import dev.tramai.orchestration.InMemoryWorkflowCheckpointStore
 import dev.tramai.orchestration.WorkflowPersistence
 import dev.tramai.orchestration.WorkflowStateCodec
@@ -125,7 +126,7 @@ class SpolaWorkflowStateCodecTest {
         val result = SpolaFactory.runWorkflow(
             name = "persistence-test-wf",
             initialState = initialState,
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
             persistence = persistence,
             workflow = {
                 localStep("transform") { state, _ ->

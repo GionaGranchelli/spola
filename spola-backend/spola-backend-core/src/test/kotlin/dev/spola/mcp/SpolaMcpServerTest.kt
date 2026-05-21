@@ -136,7 +136,7 @@ class SpolaMcpServerTest {
         val config = SpolaConfig(apiKey = "secret")
 
         assertFailsWith<MissingApiKeyException> {
-            ApiAuth.validateApiKey(config.apiKey, null)
+            ApiAuth.validateApiKey(config.security.apiKey, null)
         }
     }
 
@@ -145,7 +145,7 @@ class SpolaMcpServerTest {
         val config = SpolaConfig(apiKey = "secret")
 
         assertFailsWith<InvalidApiKeyException> {
-            ApiAuth.validateApiKey(config.apiKey, "wrong")
+            ApiAuth.validateApiKey(config.security.apiKey, "wrong")
         }
     }
 

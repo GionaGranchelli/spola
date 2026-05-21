@@ -38,7 +38,12 @@ data class SpolaInstance(
         if (existingCm != null) {
             toolRegistry.rebuildModelDependentTools(resolvedModel, existingCm, spolaMetrics)
         }
-        config = config.copy(provider = providerName, model = resolvedModel)
+        config = config.copy(
+            provider = config.provider.copy(
+                defaultProvider = providerName,
+                defaultModel = resolvedModel,
+            ),
+        )
     }
 
     /** Close resources. */

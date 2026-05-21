@@ -37,7 +37,7 @@ fun Route.apiProviderRoutes(
 ) {
     // ── GET /api/providers — list all available providers ──
     get("/providers") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val builtinProviders = listOf(
             ProviderInfoResponse(
                 name = "openai",
@@ -81,7 +81,7 @@ fun Route.apiProviderRoutes(
             ),
         )
 
-        val customProviders = config.customProviders.map { cp ->
+        val customProviders = config.provider.customProviders.map { cp ->
             ProviderInfoResponse(
                 name = cp.name,
                 type = cp.type,
@@ -97,12 +97,12 @@ fun Route.apiProviderRoutes(
 
     // ── POST /api/providers — add a custom provider ──
     post("/providers") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val body = call.receive<CreateProviderRequest>()
         val currentConfig = configStore.load()
 
         // Validate uniqueness
-        val exists = currentConfig.customProviders.any { it.name == body.name }
+        val exists = currentConfig.provider.customProviders.any { it.name == body.name }
         if (exists) {
             call.respond(HttpStatusCode.Conflict, mapOf("error" to "Provider '${body.name}' already exists"))
             return@post
@@ -117,7 +117,9 @@ fun Route.apiProviderRoutes(
         )
 
         val updatedConfig = currentConfig.copy(
-            customProviders = currentConfig.customProviders + newProvider,
+            provider = currentConfig.provider.copy(
+                customProviders = currentConfig.provider.customProviders + newProvider,
+            ),
         )
         configStore.save(updatedConfig)
 
@@ -136,20 +138,20 @@ fun Route.apiProviderRoutes(
 
     // ── DELETE /api/providers/{name} — remove a custom provider ──
     delete("/providers/{name}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val name = call.parameters["name"] ?: return@delete run {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing provider name"))
         }
 
         val currentConfig = configStore.load()
-        val filtered = currentConfig.customProviders.filterNot { it.name == name }
+        val filtered = currentConfig.provider.customProviders.filterNot { it.name == name }
 
-        if (filtered.size == currentConfig.customProviders.size) {
+        if (filtered.size == currentConfig.provider.customProviders.size) {
             call.respond(HttpStatusCode.NotFound, DeleteProviderResponse(deleted = false, name = name))
             return@delete
         }
 
-        val updatedConfig = currentConfig.copy(customProviders = filtered)
+        val updatedConfig = currentConfig.copy(provider = currentConfig.provider.copy(customProviders = filtered))
         configStore.save(updatedConfig)
 
         call.respond(DeleteProviderResponse(deleted = true, name = name))
@@ -157,7 +159,7 @@ fun Route.apiProviderRoutes(
 
     // ── POST /api/provider/test — test a provider connection ──
     post("/provider/test") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val body = try {
             call.receive<ProviderTestRequest>()
         } catch (e: Exception) {

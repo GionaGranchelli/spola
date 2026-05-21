@@ -3,28 +3,7 @@ package dev.spola.api
 import dev.spola.SpolaConfig
 import dev.spola.SpolaVersion
 import dev.spola.ToolRegistry
-import dev.spola.api.AgentRunHandler
-import dev.spola.api.AgentRunState
-import dev.spola.api.ApiAuth
-import dev.spola.api.apiAgentRoutes
-import dev.spola.api.apiAgentCrudRoutes
-import dev.spola.api.apiCheckpointRoutes
-import dev.spola.api.apiConfigRoutes
-import dev.spola.api.apiDeliveryRoutes
-import dev.spola.api.apiHealthRoutes
-import dev.spola.api.apiJobRoutes
-import dev.spola.api.apiKanbanRoutes
-import dev.spola.api.apiMemoryRoutes
-import dev.spola.api.apiMetricsRoutes
-import dev.spola.api.apiPairingRoutes
-import dev.spola.api.apiProviderRoutes
-import dev.spola.api.apiSessionRoutes
-import dev.spola.api.apiStaticRoutes
-import dev.spola.api.apiToolRoutes
-import dev.spola.api.apiWorkflowRoutes
-import dev.spola.api.apiWorkflowSessionRoutes
 import dev.spola.checkpoint.CheckpointManager
-import dev.spola.checkpoint.CheckpointStore
 import dev.spola.config.SpolaConfigFileStore
 import dev.spola.kanban.KanbanStore
 import dev.spola.kanban.SqliteKanbanStore
@@ -34,11 +13,9 @@ import dev.spola.metrics.SpolaMetrics
 import dev.spola.scheduler.SpolaJobStore
 import dev.spola.scheduler.SqliteSpolaJobStore
 import dev.spola.workflow.SqliteWorkflowExecutionStore
-import dev.spola.workflow.AsyncWorkflowDispatcher
 import dev.spola.workflow.WorkflowChatService
 import dev.spola.workflow.WorkflowExecutionService
 import dev.spola.workflow.WorkflowExecutionStore
-import dev.spola.workflow.WorkflowKanbanService
 import dev.spola.workflow.WorkflowTemplateRegistry
 import dev.spola.workflow.registerBuiltInTemplates
 import io.ktor.http.HttpStatusCode
@@ -56,6 +33,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -64,94 +42,25 @@ class SpolaApiServer(
     private val port: Int = 8082,
     private val host: String = "127.0.0.1",
     private val insecure: Boolean = false,
-    private val runState: AgentRunState = AgentRunState(),
-    private val agentRunHandler: AgentRunHandler = AgentRunHandler(config, runState = runState),
-    private val jobStoreFactory: (String) -> SpolaJobStore = ::SqliteSpolaJobStore,
-    private val memoryStoreFactory: (String) -> MemoryStore = ::SqliteMemoryStore,
-    private val checkpointStoreFactory: (String) -> CheckpointStore = ::CheckpointStore,
-    private val spolaMetrics: SpolaMetrics? = null,
-    private val configFileStore: SpolaConfigFileStore = SpolaConfigFileStore(),
+    private val services: SpolaServices = SpolaServices(config),
 ) {
-    private val jobStore = jobStoreFactory(config.schedulerDbPath)
-    private val memoryStore = memoryStoreFactory(config.memoryDbPath)
-    private val checkpointStore = checkpointStoreFactory(config.checkpointDbPath)
-    private val checkpointManager = CheckpointManager(checkpointStore)
-    private val sessionStore = SqliteSessionStore(config.sessionsDbPath)
-    private val workflowChatService = WorkflowChatService(sessionStore)
-    private val workflowExecutionStore: WorkflowExecutionStore = SqliteWorkflowExecutionStore(config.workflowDbPath)
-    private val workflowTemplateRegistry = WorkflowTemplateRegistry().apply {
-        registerBuiltInTemplates()
-        registerYamlWorkflows(config)
-    }
-    private val workflowExecutionService = WorkflowExecutionService(
-        config = config,
-        executionStore = workflowExecutionStore,
-        workflowRegistry = workflowTemplateRegistry,
-        chatService = workflowChatService,
-    )
-    private val workflowKanbanService = WorkflowKanbanService(
-        executionService = workflowExecutionService,
-        cooldownSeconds = config.kanbanWorkflowCooldownSeconds,
-    )
-    private val kanbanStore: KanbanStore = SqliteKanbanStore(
-        dbPath = config.kanbanDbPath,
-        onStatusChanged = workflowKanbanService::onTaskStatusChanged,
-    )
-    private val workflowDispatcher: AsyncWorkflowDispatcher? = if (config.workflowDispatcherConfig.enabled) {
-        AsyncWorkflowDispatcher(
-            executionStore = workflowExecutionStore,
-            executionService = workflowExecutionService,
-            pollIntervalMs = config.workflowDispatcherConfig.pollIntervalMs,
-            batchSize = config.workflowDispatcherConfig.batchSize,
-            globalMaxConcurrent = config.workflowDispatcherConfig.globalMaxConcurrent,
-            perUserMaxConcurrent = config.workflowDispatcherConfig.perUserMaxConcurrent,
-        )
-    } else {
-        null
-    }
-    private val toolRegistry = kotlinx.coroutines.runBlocking {
-        dev.spola.factory.ToolRegistryFactory.buildApiToolRegistry(
-            config = config,
-            memoryStore = memoryStore,
-            jobStore = jobStore,
-            kanbanStore = kanbanStore,
-            checkpointManager = checkpointManager,
-            workflowExecutionService = workflowExecutionService,
-        )
-    }
-    private val streamHandler = StreamHandler(agentRunHandler)
     private val trustId: String = UUID.randomUUID().toString()
     private val pairingToken: String = config.pairingToken ?: UUID.randomUUID().toString()
 
     fun start(wait: Boolean = true) {
         val listenHost = if (insecure && host == "127.0.0.1") "0.0.0.0" else host
-
-        // Start workflow dispatcher (non-blocking — runs in its own coroutine scope)
-        kotlinx.coroutines.runBlocking {
-            workflowDispatcher?.start()
-        }
+        runBlocking { services.start() }
 
         embeddedServer(CIO, host = listenHost, port = port) {
             spolaApiModule(
                 config = config,
-                agentRunHandler = agentRunHandler,
-                jobStore = jobStore,
-                memoryStore = memoryStore,
-                toolRegistry = toolRegistry,
-                streamHandler = streamHandler,
-                runState = runState,
-                spolaMetrics = spolaMetrics,
+                services = services,
+                spolaMetrics = services.metrics,
                 spolaPort = port,
                 spolaPairingToken = pairingToken,
                 spolaTrustId = trustId,
-                sessionStore = sessionStore,
-                host = host,
+                host = listenHost,
                 insecure = insecure,
-                configFileStore = configFileStore,
-                kanbanStore = kanbanStore,
-                workflowExecutionService = workflowExecutionService,
-                workflowExecutionStore = workflowExecutionStore,
-                workflowTemplateRegistry = workflowTemplateRegistry,
             )
         }.start(wait = wait)
     }
@@ -159,11 +68,11 @@ class SpolaApiServer(
 
 fun Application.spolaApiModule(
     config: SpolaConfig = SpolaConfig(),
-    agentRunHandler: AgentRunHandler,
-    jobStore: SpolaJobStore,
-    memoryStore: MemoryStore = SqliteMemoryStore(config.memoryDbPath),
-    kanbanStore: KanbanStore = SqliteKanbanStore(config.kanbanDbPath),
-    workflowExecutionStore: WorkflowExecutionStore = SqliteWorkflowExecutionStore(config.workflowDbPath),
+    agentRunHandler: AgentRunHandler = AgentRunHandler(config),
+    jobStore: SpolaJobStore = SqliteSpolaJobStore(config.database.schedulerDbPath),
+    memoryStore: MemoryStore = SqliteMemoryStore(config.database.memoryDbPath),
+    kanbanStore: KanbanStore = SqliteKanbanStore(config.database.kanbanDbPath),
+    workflowExecutionStore: WorkflowExecutionStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath),
     workflowExecutionService: WorkflowExecutionService = WorkflowExecutionService(
         config = config,
         executionStore = workflowExecutionStore,
@@ -171,13 +80,13 @@ fun Application.spolaApiModule(
             registerBuiltInTemplates()
             registerYamlWorkflows(config)
         },
-        chatService = WorkflowChatService(SqliteSessionStore(config.sessionsDbPath)),
+        chatService = WorkflowChatService(SqliteSessionStore(config.database.sessionsDbPath)),
     ),
     workflowTemplateRegistry: WorkflowTemplateRegistry = WorkflowTemplateRegistry().apply {
         registerBuiltInTemplates()
         registerYamlWorkflows(config)
     },
-    toolRegistry: ToolRegistry = kotlinx.coroutines.runBlocking {
+    toolRegistry: ToolRegistry = runBlocking {
         dev.spola.factory.ToolRegistryFactory.buildApiToolRegistry(
             config = config,
             memoryStore = memoryStore,
@@ -195,11 +104,27 @@ fun Application.spolaApiModule(
     spolaPairingToken: String = "",
     spolaTrustId: String = "",
     providedAgentStore: dev.spola.agent.AgentStore? = null,
-    sessionStore: SqliteSessionStore = SqliteSessionStore(config.sessionsDbPath),
+    sessionStore: SqliteSessionStore = SqliteSessionStore(config.database.sessionsDbPath),
     host: String = "127.0.0.1",
     insecure: Boolean = false,
     configFileStore: SpolaConfigFileStore = SpolaConfigFileStore(),
+    services: SpolaServices? = null,
 ) {
+    val resolvedServices = services
+    val effectiveAgentRunHandler = resolvedServices?.agentRunHandler ?: agentRunHandler
+    val effectiveJobStore = resolvedServices?.jobStore ?: jobStore
+    val effectiveMemoryStore = resolvedServices?.memoryStore ?: memoryStore
+    val effectiveKanbanStore = resolvedServices?.kanbanStore ?: kanbanStore
+    val effectiveWorkflowExecutionStore = resolvedServices?.workflowExecutionStore ?: workflowExecutionStore
+    val effectiveWorkflowExecutionService = resolvedServices?.workflowExecutionService ?: workflowExecutionService
+    val effectiveWorkflowTemplateRegistry = resolvedServices?.workflowTemplateRegistry ?: workflowTemplateRegistry
+    val effectiveToolRegistry = resolvedServices?.toolRegistry?.let { runBlocking { it.await() } } ?: toolRegistry
+    val effectiveStreamHandler = resolvedServices?.streamHandler ?: streamHandler
+    val effectiveRunState = resolvedServices?.runState ?: runState
+    val effectiveCheckpointManager = resolvedServices?.checkpointManager ?: checkpointManager
+    val effectiveConfigStore = resolvedServices?.configFileStore ?: configFileStore
+    val effectiveSessionStore = resolvedServices?.sessionStore ?: sessionStore
+
     install(ContentNegotiation) {
         json(Json {
             ignoreUnknownKeys = true
@@ -215,22 +140,13 @@ fun Application.spolaApiModule(
             call.respondAuthFailure(cause)
         }
         exception<IllegalArgumentException> { call, cause ->
-            call.respond(
-                HttpStatusCode.BadRequest,
-                mapOf("error" to (cause.message ?: "bad request")),
-            )
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to (cause.message ?: "bad request")))
         }
         exception<BadRequestException> { call, cause ->
-            call.respond(
-                HttpStatusCode.BadRequest,
-                mapOf("error" to (cause.message ?: "bad request")),
-            )
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to (cause.message ?: "bad request")))
         }
         exception<IllegalStateException> { call, cause ->
-            call.respond(
-                HttpStatusCode.InternalServerError,
-                mapOf("error" to (cause.message ?: "internal server error")),
-            )
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "internal server error")))
         }
         exception<Exception> { call, cause ->
             call.respond(
@@ -252,24 +168,24 @@ fun Application.spolaApiModule(
                     ?.takeIf { it.startsWith("Bearer ") }
                     ?.removePrefix("Bearer ")
                     ?.trim()
-                ApiAuth.validateApiKeyForHost(config.apiKey, provided, host, insecure)
+                ApiAuth.validateApiKeyForHost(config.security.apiKey, provided, host, insecure)
             }
 
             apiHealthRoutes(version = version)
-            apiConfigRoutes(config, configFileStore)
-            apiSessionRoutes(config, sessionStore, agentRunHandler, streamHandler)
-            apiAgentRoutes(config, agentRunHandler, streamHandler, runState, toolRegistry)
+            apiConfigRoutes(config, effectiveConfigStore)
+            apiSessionRoutes(config, effectiveSessionStore, effectiveAgentRunHandler, effectiveStreamHandler)
+            apiAgentRoutes(config, effectiveAgentRunHandler, effectiveStreamHandler, effectiveRunState, effectiveToolRegistry)
             apiAgentCrudRoutes(config, providedAgentStore)
-            apiMemoryRoutes(config, memoryStore)
-            apiJobRoutes(config, jobStore)
-            apiKanbanRoutes(config, kanbanStore)
-            apiDeliveryRoutes(config, toolRegistry)
-            apiWorkflowRoutes(config, workflowExecutionService, workflowExecutionStore, workflowTemplateRegistry)
-            apiWorkflowSessionRoutes(config, workflowExecutionStore)
-            apiCheckpointRoutes(config, checkpointManager)
-            apiToolRoutes(config, toolRegistry)
+            apiMemoryRoutes(config, effectiveMemoryStore)
+            apiJobRoutes(config, effectiveJobStore)
+            apiKanbanRoutes(config, effectiveKanbanStore)
+            apiDeliveryRoutes(config, effectiveToolRegistry)
+            apiWorkflowRoutes(config, effectiveWorkflowExecutionService, effectiveWorkflowExecutionStore, effectiveWorkflowTemplateRegistry)
+            apiWorkflowSessionRoutes(config, effectiveWorkflowExecutionStore)
+            apiCheckpointRoutes(config, effectiveCheckpointManager)
+            apiToolRoutes(config, effectiveToolRegistry)
             apiPairingRoutes(spolaPairingToken, spolaPort, spolaTrustId, version)
-            apiProviderRoutes(config, configFileStore)
+            apiProviderRoutes(config, effectiveConfigStore)
             apiMetricsRoutes(spolaMetrics)
         }
         apiStaticRoutes()

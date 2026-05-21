@@ -163,14 +163,14 @@ class SpolaApiServerTest {
 
         assertEquals(HttpStatusCode.OK, response.status)
         val saved = configFileStore.load()
-        assertEquals("gpt-4.1", saved.model)
+        assertEquals("gpt-4.1", saved.provider.defaultModel)
         assertEquals("/tmp/work", saved.workingDirectory)
-        assertEquals("smtp.example.com", saved.emailSmtpHost)
+        assertEquals("smtp.example.com", saved.delivery.smtpHost)
         assertTrue(saved.architectMode.enabled)
         assertEquals("gpt-4o-mini", saved.architectMode.architectModel)
-        assertEquals("stored-secret", saved.apiKey)
-        assertEquals("stored-email-secret", saved.emailPassword)
-        assertEquals("stored-elevenlabs-secret", saved.elevenlabsApiKey)
+        assertEquals("stored-secret", saved.security.apiKey)
+        assertEquals("stored-email-secret", saved.delivery.smtpPass)
+        assertEquals("stored-elevenlabs-secret", saved.tts.elevenlabsApiKey)
         store.close()
     }
 
@@ -573,7 +573,7 @@ class SpolaApiServerTest {
             sessionsDbPath = tempDir.resolve("sessions.db").toString(),
         )
         val store = SqliteSpolaJobStore(tempDir.resolve("jobs.db").toString())
-        val sessionStore = SqliteSessionStore(config.sessionsDbPath)
+        val sessionStore = SqliteSessionStore(config.database.sessionsDbPath)
         val handler = AgentRunHandler(
             baseConfig = config,
             instanceFactory = { baseConfig, model ->
@@ -637,7 +637,7 @@ class SpolaApiServerTest {
             sessionsDbPath = tempDir.resolve("sessions.db").toString(),
         )
         val store = SqliteSpolaJobStore(tempDir.resolve("jobs.db").toString())
-        val sessionStore = SqliteSessionStore(config.sessionsDbPath)
+        val sessionStore = SqliteSessionStore(config.database.sessionsDbPath)
         val handler = AgentRunHandler(
             baseConfig = config,
             instanceFactory = { baseConfig, model ->

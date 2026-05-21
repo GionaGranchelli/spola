@@ -18,12 +18,12 @@ fun Route.apiJobRoutes(
     jobStore: SpolaJobStore,
 ) {
     get("/jobs") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         call.respond(JobsResponse(jobStore.list().map { it.toResponse() }))
     }
 
     post("/jobs") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<CreateJobRequest>()
         val job = jobStore.add(
             name = request.name,
@@ -36,7 +36,7 @@ fun Route.apiJobRoutes(
     }
 
     delete("/jobs/{id}") {
-        call.enforceBearerAuth(config.apiKey)
+        call.enforceBearerAuth(config.security.apiKey)
         val id = call.parameters["id"] ?: throw IllegalArgumentException("missing job id")
         val removed = jobStore.remove(id)
         if (!removed) {

@@ -4,6 +4,7 @@ import kotlin.reflect.typeOf
 import kotlinx.coroutines.test.runTest
 import dev.spola.SpolaConfig
 import dev.spola.SpolaFactory
+import dev.spola.config.MetricsConfig
 import dev.tramai.orchestration.StopPolicy
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -41,7 +42,7 @@ class JvmWorkflowTemplatesTest {
         val result = SpolaFactory.runWorkflow(
             name = "state-transfer-test",
             initialState = initialState,
-            config = SpolaConfig().copy(metricsEnabled = false),
+            config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false)),
             stopPolicy = StopPolicy(maxStepExecutions = 10),
             workflow = {
                 localStep("step-1") { state, _ ->

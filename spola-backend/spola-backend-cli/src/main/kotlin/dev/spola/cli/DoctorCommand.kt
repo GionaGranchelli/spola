@@ -51,7 +51,10 @@ class DoctorCommand : Callable<Int> {
         // Verbose/debug-aware output
         if (root.debug) {
             results += DoctorResult.pass("Verbosity", "DEBUG mode — showing detailed diagnostics")
-            results += DoctorResult.pass("Effective config", "provider=${config.provider}, model=${config.model}, turns=${config.maxTurns}")
+            results += DoctorResult.pass(
+                "Effective config",
+                "provider=${config.provider.defaultProvider}, model=${config.provider.defaultModel}, turns=${config.agent.maxTurns}",
+            )
             results += DoctorResult.pass("Working directory", config.workingDirectory)
         } else if (root.verbose) {
             results += DoctorResult.pass("Verbosity", "VERBOSE mode")
@@ -78,18 +81,18 @@ class DoctorCommand : Callable<Int> {
 
     private fun databaseChecks(config: SpolaConfig): List<DoctorResult> {
         return listOf(
-            "memory.db" to config.memoryDbPath,
-            "scheduler.db" to config.schedulerDbPath,
-            "kanban.db" to config.kanbanDbPath,
-            "jvm-index.db" to config.jvmIndexDbPath,
-            "checkpoint.db" to config.checkpointDbPath,
+            "memory.db" to config.database.memoryDbPath,
+            "scheduler.db" to config.database.schedulerDbPath,
+            "kanban.db" to config.database.kanbanDbPath,
+            "jvm-index.db" to config.database.jvmIndexDbPath,
+            "checkpoint.db" to config.database.checkpointDbPath,
         ).map { (label, path) ->
             writablePathCheck("Database $label", path)
         }
     }
 
     private fun environmentCheck(config: SpolaConfig): DoctorResult {
-        val provider = config.provider.lowercase()
+        val provider = config.provider.defaultProvider.lowercase()
         val message = when (provider) {
             "openai" -> singleEnvCheck("OPENAI_API_KEY")
             "anthropic" -> singleEnvCheck("ANTHROPIC_API_KEY")
@@ -98,7 +101,7 @@ class DoctorCommand : Callable<Int> {
             "ollama" -> "No API key required"
             else -> {
                 // Check if it's a custom provider defined in config
-                if (config.customProviders.any { it.name.lowercase() == provider }) {
+                if (config.provider.customProviders.any { it.name.lowercase() == provider }) {
                     anyEnvCheck("SPOLA_API_KEY", "GOLEM_API_KEY") +
                         " (custom provider '$provider' may use its own apiKey field)"
                 } else {
@@ -135,7 +138,7 @@ class DoctorCommand : Callable<Int> {
                 val modelUsed = response.modelUsed ?: model
                 DoctorResult.pass(
                     "Provider connectivity",
-                    "Provider ${config.provider} responded with model $modelUsed",
+                    "Provider ${config.provider.defaultProvider} responded with model $modelUsed",
                 )
             } finally {
                 runCatching { (provider as? AutoCloseable)?.close() }
@@ -147,7 +150,7 @@ class DoctorCommand : Callable<Int> {
 
     private fun personaCheck(config: SpolaConfig): DoctorResult {
         return try {
-            val personaPath = config.personaPath ?: return DoctorResult.pass("Persona file", "Using default persona resolution")
+            val personaPath = config.agent.personaPath ?: return DoctorResult.pass("Persona file", "Using default persona resolution")
             val path = Path.of(personaPath)
             if (Files.exists(path)) {
                 DoctorResult.pass("Persona file", "Found: $path")

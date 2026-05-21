@@ -48,8 +48,8 @@ suspend fun runMcpServer(
     System.setProperty("user.dir", workDir.toString())
 
     // Set up tool registry + memory store (no LLM provider needed for MCP mode)
-    val memoryStore = SqliteMemoryStore(config.memoryDbPath)
-    val schedulerStore = config.schedulerDbPath
+    val memoryStore = SqliteMemoryStore(config.database.memoryDbPath)
+    val schedulerStore = config.database.schedulerDbPath
         .takeIf { it.isNotBlank() }
         ?.let(::SqliteSpolaJobStore)
     val checkpointManager = CheckpointManager.fromConfig(config)
@@ -98,7 +98,7 @@ suspend fun runMcpServer(
                                 val providedApiKey = context.request.queryParameters["apiKey"]
                                     ?: context.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
                                     ?: context.request.header("X-Api-Key")
-                                ApiAuth.validateApiKey(config.apiKey, providedApiKey)
+                                ApiAuth.validateApiKey(config.security.apiKey, providedApiKey)
                             }
                             mcp {
                                 mcpServer.buildServer()

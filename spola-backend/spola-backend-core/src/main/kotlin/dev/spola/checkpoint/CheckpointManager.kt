@@ -166,17 +166,17 @@ class CheckpointManager(
         return try {
             val process = ProcessBuilder("git", "diff", "HEAD")
                 .directory(java.io.File(workingDirectory))
-                .redirectErrorStream(false)
+                .redirectErrorStream(true)
                 .start()
 
-            val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.errorStream.bufferedReader().readText()
             val completed = process.waitFor(5, TimeUnit.SECONDS)
 
             if (!completed) {
                 process.destroyForcibly()
                 return ""
             }
+
+            val stdout = process.inputStream.bufferedReader().readText()
 
             val exitCode = process.exitValue()
 

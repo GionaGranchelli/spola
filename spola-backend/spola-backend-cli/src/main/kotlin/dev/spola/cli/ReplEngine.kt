@@ -177,36 +177,7 @@ suspend fun runRepl(config: SpolaConfig = SpolaConfig()) {
                         break
                     }
                     val trimmed = line.trim()
-
-                    when {
-                        trimmed.isEmpty() -> continue
-
-                        // /quit is an alias for /exit
-                        trimmed == "/exit" || trimmed == "/quit" -> {
-                            if (!ExitCommand.execute("", session)) break
-                        }
-
-                        trimmed.startsWith("/") -> {
-                            // Parse /cmd [args]
-                            val spaceIdx = trimmed.indexOf(' ')
-                            val cmdName = if (spaceIdx > 0) trimmed.substring(1, spaceIdx).lowercase()
-                                          else trimmed.removePrefix("/").lowercase()
-                            val cmdArgs = if (spaceIdx > 0) trimmed.substring(spaceIdx + 1) else ""
-
-                            val command = SLASH_COMMANDS[cmdName]
-                            if (command != null) {
-                                val shouldContinue = command.execute(cmdArgs, session)
-                                if (!shouldContinue) break
-                            } else {
-                                // Unknown command — send to agent as goal
-                                runGoal(session, trimmed)
-                            }
-                        }
-
-                        else -> {
-                            runGoal(session, trimmed)
-                        }
-                    }
+                    if (!dispatchReplInput(session, trimmed)) break
                 }
             } finally {
                 terminal.close()
@@ -217,40 +188,48 @@ suspend fun runRepl(config: SpolaConfig = SpolaConfig()) {
                 System.out.flush()
                 val line = console.readLine() ?: break
                 val trimmed = line.trim()
-
-                when {
-                    trimmed.isEmpty() -> continue
-
-                    // /quit is an alias for /exit
-                    trimmed == "/exit" || trimmed == "/quit" -> {
-                        if (!ExitCommand.execute("", session)) break
-                    }
-
-                    trimmed.startsWith("/") -> {
-                        // Parse /cmd [args]
-                        val spaceIdx = trimmed.indexOf(' ')
-                        val cmdName = if (spaceIdx > 0) trimmed.substring(1, spaceIdx).lowercase()
-                                      else trimmed.removePrefix("/").lowercase()
-                        val cmdArgs = if (spaceIdx > 0) trimmed.substring(spaceIdx + 1) else ""
-
-                        val command = SLASH_COMMANDS[cmdName]
-                        if (command != null) {
-                            val shouldContinue = command.execute(cmdArgs, session)
-                            if (!shouldContinue) break
-                        } else {
-                            // Unknown command — send to agent as goal
-                            runGoal(session, trimmed)
-                        }
-                    }
-
-                    else -> {
-                        runGoal(session, trimmed)
-                    }
-                }
+                if (!dispatchReplInput(session, trimmed)) break
             }
         }
     } finally {
         session.close()
+    }
+}
+
+private data class ParsedSlashCommand(
+    val name: String,
+    val args: String,
+)
+
+private fun parseSlashCommand(input: String): ParsedSlashCommand {
+    val spaceIdx = input.indexOf(' ')
+    val commandName = if (spaceIdx > 0) {
+        input.substring(1, spaceIdx).lowercase()
+    } else {
+        input.removePrefix("/").lowercase()
+    }
+    val commandArgs = if (spaceIdx > 0) input.substring(spaceIdx + 1) else ""
+    return ParsedSlashCommand(commandName, commandArgs)
+}
+
+private suspend fun dispatchReplInput(session: ReplSession, trimmed: String): Boolean {
+    when {
+        trimmed.isEmpty() -> return true
+        trimmed == "/exit" || trimmed == "/quit" -> return ExitCommand.execute("", session)
+        trimmed.startsWith("/") -> {
+            val parsed = parseSlashCommand(trimmed)
+            val command = SLASH_COMMANDS[parsed.name]
+            return if (command != null) {
+                command.execute(parsed.args, session)
+            } else {
+                runGoal(session, trimmed)
+                true
+            }
+        }
+        else -> {
+            runGoal(session, trimmed)
+            return true
+        }
     }
 }
 

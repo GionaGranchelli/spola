@@ -24,11 +24,12 @@ import dev.tramai.core.provider.ModelProvider
  */
 class SpolaAgent(
     private var provider: ModelProvider,
-    private var effectiveModel: String,
+    effectiveModel: String,
     private val toolRegistry: ToolRegistry,
     private val config: SpolaConfig = SpolaConfig(),
     private val checkpointManager: CheckpointManager? = null,
 ) {
+    private var effectiveModel: ModelName = ModelName(effectiveModel)
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val conversation = mutableListOf<ChatMessage>()
 
@@ -40,7 +41,7 @@ class SpolaAgent(
      * @return The agent's final text response
      */
     suspend fun run(persona: String, goal: String): String {
-        return run(persona, goal, observer = null, sessionId = null)
+        return run(persona, goal, observer = null, sessionId = null as SessionId?)
     }
 
     /**
@@ -49,8 +50,8 @@ class SpolaAgent(
      * @param sessionId If provided, resume from (or save to) this checkpoint session.
      *   When null, a new random session id is generated.
      */
-    suspend fun run(persona: String, goal: String, observer: AgentRunObserver?, sessionId: String? = null): String {
-        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
+    suspend fun run(persona: String, goal: String, observer: AgentRunObserver?, sessionId: SessionId? = null): String {
+        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()?.let(::SessionId)
         conversation.clear()
         conversation.add(SystemMessage(persona))
         conversation.add(UserMessage(goal))
@@ -67,6 +68,9 @@ class SpolaAgent(
 
         return runLoop(observer, resolvedSessionId)
     }
+
+    suspend fun run(persona: String, goal: String, observer: AgentRunObserver?, sessionId: String?): String =
+        run(persona, goal, observer, sessionId?.let(::SessionId))
 
     /**
      * Run the agent using a caller-owned transcript. The transcript is mutated
@@ -86,7 +90,7 @@ class SpolaAgent(
         return runLoop(observer, sessionId = null, transcript = transcript)
     }
 
-    fun reconfigure(newProvider: ModelProvider, newModel: String) {
+    fun reconfigure(newProvider: ModelProvider, newModel: ModelName) {
         provider = newProvider
         effectiveModel = newModel
     }
@@ -101,11 +105,11 @@ class SpolaAgent(
      */
     private suspend fun runLoop(
         observer: AgentRunObserver?,
-        sessionId: String?,
+        sessionId: SessionId?,
         transcript: MutableList<ChatMessage>? = null,
     ): String {
         val messages = transcript ?: conversation
-        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
+        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()?.let(::SessionId)
         observer?.onStatus("started", "Agent run started")
         try {
             for (turn in 1..config.agent.maxTurns) {
@@ -141,7 +145,7 @@ class SpolaAgent(
 
                 for ((index, tc) in toolCalls.withIndex()) {
                     observer?.onToolCall(parsedToolCalls[index])
-                    val result = executeTool(tc.name, tc.argumentsJson)
+                    val result = executeTool(ToolName(tc.name), tc.argumentsJson)
                     observer?.onToolResult(parsedToolCalls[index], result)
                     messages.add(ToolResultMessage(
                         toolCallId = tc.id,
@@ -199,7 +203,7 @@ class SpolaAgent(
         }
 
         val request = ModelRequest(
-            model = effectiveModel,
+            model = effectiveModel.value,
             messages = tramaiMessages,
             tools = toolRegistry.schemas().map { schema ->
                 val params = mapper.writeValueAsString(schema["parameters"])
@@ -215,12 +219,12 @@ class SpolaAgent(
 
         observer?.onStatus(
             "llm_request",
-            "model=$effectiveModel, messages=${tramaiMessages.size}, tools=${request.tools?.size ?: 0}",
+            "model=${effectiveModel.value}, messages=${tramaiMessages.size}, tools=${request.tools?.size ?: 0}",
         )
         // Notify observer about LLM call
-        observer?.onLlmCall(effectiveModel, provider.providerId())
+        observer?.onLlmCall(effectiveModel.value, provider.providerId())
         val response = provider.complete(request)
-        observer?.onLlmResult(effectiveModel, provider.providerId(), response.inputTokens, response.outputTokens)
+        observer?.onLlmResult(effectiveModel.value, provider.providerId(), response.inputTokens, response.outputTokens)
 
         return response
     }
@@ -228,9 +232,9 @@ class SpolaAgent(
     /**
      * Execute a tool and return its result. Retries once on failure per ADR-002.
      */
-    private suspend fun executeTool(name: String, argumentsJson: String): ToolResult {
+    private suspend fun executeTool(name: ToolName, argumentsJson: String): ToolResult {
         val tool = toolRegistry.get(name)
-            ?: return ToolResult.fail("Unknown tool: $name")
+            ?: return ToolResult.fail("Unknown tool: ${name.value}")
 
         val args = parseJsonArguments(argumentsJson)
         // Attempt with one retry per ADR-002
@@ -238,7 +242,7 @@ class SpolaAgent(
             try {
                 val result = tool.execute(args)
                 val finalResult = maybeCompressToolResult(
-                    toolName = name,
+                    toolName = name.value,
                     result = result,
                     compressionEnabled = config.compressionEnabled,
                 )
@@ -246,7 +250,7 @@ class SpolaAgent(
                 // Transient failure — retry
             } catch (e: Exception) {
                 if (attempt == 2) {
-                    return ToolResult.fail("Tool '$name' failed after 2 attempts: ${e.message}")
+                    return ToolResult.fail("Tool '${name.value}' failed after 2 attempts: ${e.message}")
                 }
             }
         }
@@ -272,8 +276,26 @@ class SpolaAgent(
         node.isInt -> node.intValue()
         node.isLong -> node.longValue()
         node.isDouble -> node.doubleValue()
+        node.isFloat -> node.floatValue()
+        node.isBigDecimal -> node.decimalValue()
         node.isBoolean -> node.booleanValue()
+        node.isArray -> node.map { jsonNodeToUntypedValue(it) }
+        node.isObject -> node.fields().asSequence().associate { (key, value) -> key to jsonNodeToUntypedValue(value) }
         node.isNull -> "null"
+        else -> node.toString()
+    }
+
+    private fun jsonNodeToUntypedValue(node: JsonNode): Any? = when {
+        node.isTextual -> node.textValue()
+        node.isInt -> node.intValue()
+        node.isLong -> node.longValue()
+        node.isDouble -> node.doubleValue()
+        node.isFloat -> node.floatValue()
+        node.isBigDecimal -> node.decimalValue()
+        node.isBoolean -> node.booleanValue()
+        node.isArray -> node.map { jsonNodeToUntypedValue(it) }
+        node.isObject -> node.fields().asSequence().associate { (key, value) -> key to jsonNodeToUntypedValue(value) }
+        node.isNull -> null
         else -> node.toString()
     }
 

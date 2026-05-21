@@ -27,12 +27,17 @@ data class ToolParameter(
     val type: ToolParameterType,
     val required: Boolean = true,
     val defaultValue: Any? = null,
+    val enumValues: List<String> = emptyList(),
 )
 
 enum class ToolParameterType {
     STRING,
     INTEGER,
+    NUMBER,
     BOOLEAN,
+    ARRAY,
+    OBJECT,
+    ENUM,
 }
 
 /**
@@ -66,38 +71,46 @@ class ToolRegistry {
         enabledTools.add(tool.name)
     }
 
-    fun get(name: String): Tool? = tools[name]
+    fun get(name: ToolName): Tool? = tools[name.value]
+
+    fun get(name: String): Tool? = get(ToolName(name))
 
     fun list(): Collection<Tool> = tools.values.filter { enabledTools.contains(it.name) }
 
     fun listAll(): Collection<Tool> = tools.values
 
-    fun isEnabled(name: String): Boolean = enabledTools.contains(name)
+    fun isEnabled(name: ToolName): Boolean = enabledTools.contains(name.value)
+
+    fun isEnabled(name: String): Boolean = isEnabled(ToolName(name))
 
     fun listEnabled(): List<Tool> = tools.values.filter { enabledTools.contains(it.name) }
 
-    fun toggleEnabled(name: String): Boolean {
-        val tool = tools[name] ?: return false
-        return if (enabledTools.contains(name)) {
-            enabledTools.remove(name)
+    fun toggleEnabled(name: ToolName): Boolean {
+        val tool = tools[name.value] ?: return false
+        return if (enabledTools.contains(name.value)) {
+            enabledTools.remove(name.value)
             false
         } else {
-            enabledTools.add(name)
+            enabledTools.add(name.value)
             true
         }
     }
 
+    fun toggleEnabled(name: String): Boolean = toggleEnabled(ToolName(name))
+
     /** Remove a tool from the registry entirely. */
-    fun unregister(name: String): Boolean {
-        enabledTools.remove(name)
-        return tools.remove(name) != null
+    fun unregister(name: ToolName): Boolean {
+        enabledTools.remove(name.value)
+        return tools.remove(name.value) != null
     }
 
-    fun rebuildModelDependentTools(newModel: String, manager: CheckpointManager, metrics: SpolaMetrics?) {
-        unregister("provenance_export")
-        unregister("provenance_list")
-        unregister("provenance_info")
-        registerProvenanceTools(this, manager, metrics, model = newModel)
+    fun unregister(name: String): Boolean = unregister(ToolName(name))
+
+    fun rebuildModelDependentTools(newModel: ModelName, manager: CheckpointManager, metrics: SpolaMetrics?) {
+        unregister(ToolName("provenance_export"))
+        unregister(ToolName("provenance_list"))
+        unregister(ToolName("provenance_info"))
+        registerProvenanceTools(this, manager, metrics, model = newModel.value)
     }
 
     fun activateSkill(skillName: String, tools: List<SkillToolDef>, body: String = ""): List<String> {
@@ -142,7 +155,7 @@ class ToolRegistry {
 
     fun deactivateSkill(skillName: String): Boolean {
         val names = skillTools.remove(skillName.lowercase()) ?: return false
-        names.forEach { unregister(it) }
+        names.forEach { unregister(ToolName(it)) }
         return true
     }
 
@@ -153,27 +166,44 @@ class ToolRegistry {
             "parameters" to mapOf(
                 "type" to "object",
                 "properties" to tool.parameters.associate { param ->
-                    param.name to buildJsonParamSchema(param)
+                    param.name to param.toJsonSchema()
                 },
                 "required" to tool.parameters.filter { it.required }.map { it.name },
             ),
         )
     }
+}
 
-    private fun buildJsonParamSchema(param: ToolParameter): Map<String, Any?> {
-        val schema = mutableMapOf<String, Any?>(
-            "type" to when (param.type) {
-                ToolParameterType.STRING -> "string"
-                ToolParameterType.INTEGER -> "integer"
-                ToolParameterType.BOOLEAN -> "boolean"
-            },
-            "description" to param.description,
-        )
-        if (param.defaultValue != null) {
-            schema["default"] = param.defaultValue
+fun ToolParameter.toJsonSchema(): Map<String, Any?> {
+    val schema = mutableMapOf<String, Any?>(
+        "description" to description,
+    )
+
+    when (type) {
+        ToolParameterType.STRING -> schema["type"] = "string"
+        ToolParameterType.INTEGER -> schema["type"] = "integer"
+        ToolParameterType.NUMBER -> schema["type"] = "number"
+        ToolParameterType.BOOLEAN -> schema["type"] = "boolean"
+        ToolParameterType.ARRAY -> {
+            schema["type"] = "array"
+            schema["items"] = emptyMap<String, Any?>()
         }
-        return schema
+        ToolParameterType.OBJECT -> {
+            schema["type"] = "object"
+            schema["additionalProperties"] = true
+        }
+        ToolParameterType.ENUM -> {
+            schema["type"] = "string"
+            if (enumValues.isNotEmpty()) {
+                schema["enum"] = enumValues
+            }
+        }
     }
+
+    if (defaultValue != null) {
+        schema["default"] = defaultValue
+    }
+    return schema
 }
 
 private fun SkillToolParam.toToolParameter(): ToolParameter = ToolParameter(
@@ -181,7 +211,11 @@ private fun SkillToolParam.toToolParameter(): ToolParameter = ToolParameter(
     description = description,
     type = when (type.lowercase()) {
         "integer" -> ToolParameterType.INTEGER
+        "number" -> ToolParameterType.NUMBER
         "boolean" -> ToolParameterType.BOOLEAN
+        "array" -> ToolParameterType.ARRAY
+        "object" -> ToolParameterType.OBJECT
+        "enum" -> ToolParameterType.ENUM
         else -> ToolParameterType.STRING
     },
     required = required,

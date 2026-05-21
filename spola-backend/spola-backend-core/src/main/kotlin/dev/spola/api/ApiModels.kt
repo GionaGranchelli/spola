@@ -1,5 +1,6 @@
 package dev.spola.api
 
+import dev.spola.SpolaVersion
 import dev.spola.Tool
 import dev.spola.ToolParameter
 import dev.spola.ToolParameterType
@@ -191,6 +192,7 @@ data class DeliveryResponse(
 
 @Serializable
 data class ConfigResponse(
+    val version: String = SpolaVersion.VERSION,
     val effectiveConfigPath: String,
     val workdir: String,
     val persona: String? = null,
@@ -229,6 +231,7 @@ data class ConfigResponse(
     companion object {
         fun fromConfig(config: dev.spola.SpolaConfig, effectiveConfigPath: String): ConfigResponse {
             return ConfigResponse(
+                version = SpolaVersion.VERSION,
                 effectiveConfigPath = effectiveConfigPath,
                 workdir = config.workingDirectory,
                 persona = config.agent.personaPath,
@@ -426,7 +429,11 @@ internal fun ToolParameter.toSchemaResponse(): ToolParameterSchemaResponse = Too
     type = when (type) {
         ToolParameterType.STRING -> "string"
         ToolParameterType.INTEGER -> "integer"
+        ToolParameterType.NUMBER -> "number"
         ToolParameterType.BOOLEAN -> "boolean"
+        ToolParameterType.ARRAY -> "array"
+        ToolParameterType.OBJECT -> "object"
+        ToolParameterType.ENUM -> "enum"
     },
     description = description,
     default = defaultValue?.toJsonElement(),
@@ -612,6 +619,29 @@ private fun Any.toJsonElement(): JsonElement = when (this) {
     is String -> JsonPrimitive(this)
     is Number -> JsonPrimitive(this)
     is Boolean -> JsonPrimitive(this)
+    is List<*> -> kotlinx.serialization.json.JsonArray(mapNotNull { it?.toJsonElementOrNull() })
+    is Map<*, *> -> kotlinx.serialization.json.buildJsonObject {
+        this@toJsonElement.forEach { (key, value) ->
+            if (key is String && value != null) {
+                put(key, value.toJsonElementOrNull())
+            }
+        }
+    }
+    else -> JsonPrimitive(toString())
+}
+
+private fun Any.toJsonElementOrNull(): JsonElement = when (this) {
+    is String -> JsonPrimitive(this)
+    is Number -> JsonPrimitive(this)
+    is Boolean -> JsonPrimitive(this)
+    is List<*> -> kotlinx.serialization.json.JsonArray(map { it?.toJsonElementOrNull() ?: kotlinx.serialization.json.JsonNull })
+    is Map<*, *> -> kotlinx.serialization.json.buildJsonObject {
+        this@toJsonElementOrNull.forEach { (key, value) ->
+            if (key is String) {
+                put(key, value?.toJsonElementOrNull() ?: kotlinx.serialization.json.JsonNull)
+            }
+        }
+    }
     else -> JsonPrimitive(toString())
 }
 

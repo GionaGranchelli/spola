@@ -1,5 +1,6 @@
 package dev.spola.mcp
 
+import dev.spola.SpolaVersion
 import dev.spola.Tool
 import dev.spola.ToolParameterType
 import dev.spola.ToolRegistry
@@ -15,6 +16,8 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.long
@@ -37,7 +40,7 @@ import kotlinx.io.buffered
 class SpolaMcpServer(
     private val toolRegistry: ToolRegistry,
     private val serverName: String = "spola-backend-mcp",
-    private val serverVersion: String = "0.1.0",
+    private val serverVersion: String = SpolaVersion.VERSION,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var server: Server? = null
@@ -127,11 +130,32 @@ class SpolaMcpServer(
                 val l = element.long
                 if (l in Int.MIN_VALUE..Int.MAX_VALUE) l.toInt() else l
             }
+            element.content.toDoubleOrNull() != null -> element.content.toDouble()
             element.content == "true" -> true
             element.content == "false" -> false
             else -> element.content
         }
         is JsonNull -> "null"
+        is JsonArray -> element.map { jsonElementToUntypedValue(it) }
+        is JsonObject -> element.mapValues { (_, value) -> jsonElementToUntypedValue(value) }
+        else -> element.toString()
+    }
+
+    private fun jsonElementToUntypedValue(element: JsonElement): Any? = when (element) {
+        is JsonPrimitive -> when {
+            element.isString -> element.content
+            element.long != null -> {
+                val l = element.long
+                if (l in Int.MIN_VALUE..Int.MAX_VALUE) l.toInt() else l
+            }
+            element.content.toDoubleOrNull() != null -> element.content.toDouble()
+            element.content == "true" -> true
+            element.content == "false" -> false
+            else -> element.content
+        }
+        is JsonNull -> null
+        is JsonArray -> element.map { jsonElementToUntypedValue(it) }
+        is JsonObject -> element.mapValues { (_, value) -> jsonElementToUntypedValue(value) }
         else -> element.toString()
     }
 
@@ -145,11 +169,24 @@ class SpolaMcpServer(
                     put("type", JsonPrimitive(when (param.type) {
                         ToolParameterType.STRING -> "string"
                         ToolParameterType.INTEGER -> "integer"
+                        ToolParameterType.NUMBER -> "number"
                         ToolParameterType.BOOLEAN -> "boolean"
+                        ToolParameterType.ARRAY -> "array"
+                        ToolParameterType.OBJECT -> "object"
+                        ToolParameterType.ENUM -> "string"
                     }))
                     put("description", JsonPrimitive(param.description))
+                    if (param.type == ToolParameterType.ARRAY) {
+                        put("items", buildJsonObject { })
+                    }
+                    if (param.type == ToolParameterType.OBJECT) {
+                        put("additionalProperties", JsonPrimitive(true))
+                    }
+                    if (param.type == ToolParameterType.ENUM && param.enumValues.isNotEmpty()) {
+                        put("enum", JsonArray(param.enumValues.map(::JsonPrimitive)))
+                    }
                     if (param.defaultValue != null) {
-                        put("default", jsonValueToPrimitive(param.defaultValue))
+                        put("default", jsonValueToElement(param.defaultValue))
                     }
                 }
             }
@@ -168,10 +205,18 @@ class SpolaMcpServer(
      * Convert a Kotlin value to the correct JsonPrimitive type.
      * Ensures integers are serialized as JSON numbers, not strings.
      */
-    private fun jsonValueToPrimitive(value: Any): JsonPrimitive = when (value) {
+    private fun jsonValueToElement(value: Any): JsonElement = when (value) {
         is String -> JsonPrimitive(value)
         is Number -> JsonPrimitive(value)
         is Boolean -> JsonPrimitive(value)
+        is List<*> -> JsonArray(value.map { it?.let(::jsonValueToElement) ?: JsonNull })
+        is Map<*, *> -> buildJsonObject {
+            value.forEach { (key, entryValue) ->
+                if (key is String) {
+                    put(key, entryValue?.let(::jsonValueToElement) ?: JsonNull)
+                }
+            }
+        }
         else -> JsonPrimitive(value.toString())
     }
 }

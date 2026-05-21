@@ -33,10 +33,10 @@ data class SpolaInstance(
         val providerConfig = providerStore.get(providerName)
         val (newProvider, resolvedModel) = ProviderResolver.resolveNamed(providerConfig, modelName)
 
-        agent.reconfigure(newProvider, resolvedModel)
+        agent.reconfigure(newProvider, ModelName(resolvedModel))
         val existingCm = agent.getCheckpointManager()
         if (existingCm != null) {
-            toolRegistry.rebuildModelDependentTools(resolvedModel, existingCm, spolaMetrics)
+            toolRegistry.rebuildModelDependentTools(ModelName(resolvedModel), existingCm, spolaMetrics)
         }
         config = config.copy(
             provider = config.provider.copy(

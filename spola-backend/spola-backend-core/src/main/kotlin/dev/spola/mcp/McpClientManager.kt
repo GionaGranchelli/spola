@@ -1,5 +1,6 @@
 package dev.spola.mcp
 
+import dev.spola.SpolaVersion
 import dev.spola.Tool
 import dev.spola.ToolParameterType
 import dev.spola.ToolRegistry
@@ -25,6 +26,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
@@ -86,7 +89,7 @@ class McpClientManager(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val connections = ConcurrentHashMap<String, McpConnection>()
     private val clientName = "spola-backend-mcp-client"
-    private val clientVersion = "0.1.0"
+    private val clientVersion = SpolaVersion.VERSION
     private val json = Json {
         prettyPrint = true
         ignoreUnknownKeys = true
@@ -391,6 +394,7 @@ class McpClientManager(
         val required = schema.required ?: emptyList()
 
         for ((name, propSchema) in properties) {
+            val enumValues = extractEnumValues(propSchema)
             val type = when {
                 propSchema is JsonObject -> propSchema["type"]?.jsonPrimitive?.content
                 else -> null
@@ -404,16 +408,50 @@ class McpClientManager(
                 dev.spola.ToolParameter(
                     name = name,
                     description = description,
-                    type = when (type) {
-                        "integer" -> ToolParameterType.INTEGER
-                        "boolean" -> ToolParameterType.BOOLEAN
+                    type = when {
+                        enumValues.isNotEmpty() -> ToolParameterType.ENUM
+                        type == "integer" -> ToolParameterType.INTEGER
+                        type == "number" -> ToolParameterType.NUMBER
+                        type == "boolean" -> ToolParameterType.BOOLEAN
+                        type == "array" -> ToolParameterType.ARRAY
+                        type == "object" -> ToolParameterType.OBJECT
                         else -> ToolParameterType.STRING
                     },
                     required = name in required,
+                    defaultValue = extractDefaultValue(propSchema),
+                    enumValues = enumValues,
                 ),
             )
         }
 
         return params
+    }
+
+    private fun extractDefaultValue(schema: JsonElement): Any? {
+        val value = (schema as? JsonObject)?.get("default") ?: return null
+        return jsonElementToUntypedValue(value)
+    }
+
+    private fun extractEnumValues(schema: JsonElement): List<String> {
+        val values = (schema as? JsonObject)?.get("enum") as? JsonArray ?: return emptyList()
+        return values.mapNotNull { element -> (element as? JsonPrimitive)?.content }
+    }
+
+    private fun jsonElementToUntypedValue(element: JsonElement): Any? = when (element) {
+        is JsonPrimitive -> when {
+            element.isString -> element.content
+            element.long != null -> {
+                val l = element.long
+                if (l in Int.MIN_VALUE..Int.MAX_VALUE) l.toInt() else l
+            }
+            element.content.toDoubleOrNull() != null -> element.content.toDouble()
+            element.content == "true" -> true
+            element.content == "false" -> false
+            else -> element.content
+        }
+        is JsonNull -> null
+        is JsonArray -> element.map { jsonElementToUntypedValue(it) }
+        is JsonObject -> element.mapValues { (_, value) -> jsonElementToUntypedValue(value) }
+        else -> element.toString()
     }
 }

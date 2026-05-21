@@ -1,6 +1,7 @@
 package dev.spola.cli
 
 import dev.spola.SpolaConfig
+import dev.spola.SpolaVersion
 import dev.spola.Verbosity
 import dev.spola.api.SpolaApiServer
 import dev.spola.agent.SqliteAgentStore
@@ -38,7 +39,7 @@ data class PairingCliInfo(
 
 @Command(
     name = "spola",
-    version = ["0.1.0"],
+    version = [SpolaVersion.VERSION],
     description = ["Spola \u2014 JVM Autonomous Coding Agent"],
     mixinStandardHelpOptions = true,
     usageHelpAutoWidth = true,

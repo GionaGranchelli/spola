@@ -1,5 +1,6 @@
 package dev.spola.cli
 
+import dev.spola.SpolaVersion
 import dev.spola.api.detectLanIp
 import dev.spola.api.generateQrCode
 import kotlinx.serialization.Serializable
@@ -38,7 +39,7 @@ private fun buildPairingCliInfo(root: SpolaCli): PairingCliInfo {
         port = root.apiPort,
         token = token,
         trustId = trustId,
-        version = "0.1.0",
+        version = SpolaVersion.VERSION,
     )
 }
 

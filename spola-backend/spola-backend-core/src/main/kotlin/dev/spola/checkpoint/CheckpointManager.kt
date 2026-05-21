@@ -1,6 +1,7 @@
 package dev.spola.checkpoint
 
 import dev.spola.ChatMessage
+import dev.spola.SessionId
 import dev.spola.SpolaConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -35,9 +36,7 @@ class CheckpointManager(
     /**
      * Generate a unique session id for checkpoint tracking.
      */
-    fun generateSessionId(): String {
-        return java.util.UUID.randomUUID().toString().take(16)
-    }
+    fun generateSessionId(): String = java.util.UUID.randomUUID().toString().take(16)
 
     /**
      * Save a checkpoint for the given session.
@@ -46,18 +45,21 @@ class CheckpointManager(
      *
      * @return the checkpoint id
      */
-    fun save(sessionId: String, turn: Int, conversation: List<ChatMessage>): Long {
+    fun save(sessionId: SessionId, turn: Int, conversation: List<ChatMessage>): Long {
         val conversationJson = serializeConversation(conversation)
         val diff = computeGitDiff()
-        return store.save(sessionId, turn, conversationJson, diff)
+        return store.save(sessionId.value, turn, conversationJson, diff)
     }
+
+    fun save(sessionId: String, turn: Int, conversation: List<ChatMessage>): Long =
+        save(SessionId(sessionId), turn, conversation)
 
     /**
      * Load the most recent checkpoint for a session.
      * Returns null if no checkpoint exists.
      */
-    fun load(sessionId: String): CheckpointState? {
-        val cp = store.load(sessionId) ?: return null
+    fun load(sessionId: SessionId): CheckpointState? {
+        val cp = store.load(sessionId.value) ?: return null
         return CheckpointState(
             sessionId = cp.sessionId,
             turnNumber = cp.turnNumber,
@@ -66,13 +68,17 @@ class CheckpointManager(
         )
     }
 
+    fun load(sessionId: String): CheckpointState? = load(SessionId(sessionId))
+
     /**
      * Load and deserialize the conversation from the most recent checkpoint.
      */
-    fun loadConversation(sessionId: String): List<ChatMessage>? {
-        val cp = store.load(sessionId) ?: return null
+    fun loadConversation(sessionId: SessionId): List<ChatMessage>? {
+        val cp = store.load(sessionId.value) ?: return null
         return deserializeConversation(cp.conversationJson)
     }
+
+    fun loadConversation(sessionId: String): List<ChatMessage>? = loadConversation(SessionId(sessionId))
 
     /**
      * List all available checkpoints.
@@ -98,15 +104,15 @@ class CheckpointManager(
     /**
      * Delete all checkpoints for a session.
      */
-    fun deleteForSession(sessionId: String): Int {
-        return store.deleteForSession(sessionId)
-    }
+    fun deleteForSession(sessionId: SessionId): Int = store.deleteForSession(sessionId.value)
+
+    fun deleteForSession(sessionId: String): Int = deleteForSession(SessionId(sessionId))
 
     /**
      * Save a raw JSON string as a checkpoint (used by the checkpoint_save tool).
      * Validates that the JSON is parseable before saving.
      */
-    fun saveRaw(sessionId: String, turn: Int, conversationJson: String): Long {
+    fun saveRaw(sessionId: SessionId, turn: Int, conversationJson: String): Long {
         // Validate JSON before saving
         try {
             json.decodeFromString<List<SerializableMessage>>(conversationJson)
@@ -114,8 +120,11 @@ class CheckpointManager(
             throw IllegalArgumentException("Invalid conversation JSON: ${e.message}")
         }
         val diff = computeGitDiff()
-        return store.save(sessionId, turn, conversationJson, diff)
+        return store.save(sessionId.value, turn, conversationJson, diff)
     }
+
+    fun saveRaw(sessionId: String, turn: Int, conversationJson: String): Long =
+        saveRaw(SessionId(sessionId), turn, conversationJson)
 
     /**
      * Get total checkpoint count.
@@ -142,9 +151,9 @@ class CheckpointManager(
      * List checkpoints for a specific session, ordered by turn descending.
      * Includes the diff field for each checkpoint.
      */
-    fun listForSession(sessionId: String): List<Checkpoint> {
-        return store.listForSession(sessionId)
-    }
+    fun listForSession(sessionId: SessionId): List<Checkpoint> = store.listForSession(sessionId.value)
+
+    fun listForSession(sessionId: String): List<Checkpoint> = listForSession(SessionId(sessionId))
 
     /**
      * Compute git diff against HEAD in the working directory.

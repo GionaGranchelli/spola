@@ -1,6 +1,7 @@
 package dev.spola.mcp
 
 import dev.spola.SpolaConfig
+import dev.spola.SpolaVersion
 import dev.spola.ToolRegistry
 import dev.spola.checkpoint.CheckpointManager
 import dev.spola.api.ApiAuth
@@ -65,7 +66,7 @@ suspend fun runMcpServer(
     val mcpServer = SpolaMcpServer(
         toolRegistry = toolRegistry,
         serverName = "spola-backend-mcp",
-        serverVersion = "0.1.0",
+        serverVersion = SpolaVersion.VERSION,
     )
 
     when (transport.lowercase()) {

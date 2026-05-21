@@ -54,7 +54,11 @@ fun Route.apiToolRoutes(
                         type = when (param.type) {
                             ToolParameterType.STRING -> "string"
                             ToolParameterType.INTEGER -> "integer"
+                            ToolParameterType.NUMBER -> "number"
                             ToolParameterType.BOOLEAN -> "boolean"
+                            ToolParameterType.ARRAY -> "array"
+                            ToolParameterType.OBJECT -> "object"
+                            ToolParameterType.ENUM -> "enum"
                         },
                         required = param.required,
                         default = param.defaultValue?.let {

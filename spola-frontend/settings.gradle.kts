@@ -1,4 +1,4 @@
-rootProject.name = "Spola Client"
+rootProject.name = "SpolaClient"
 
 pluginManagement {
     repositories {

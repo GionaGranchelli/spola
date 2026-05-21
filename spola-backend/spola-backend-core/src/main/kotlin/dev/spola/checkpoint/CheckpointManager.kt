@@ -36,7 +36,7 @@ class CheckpointManager(
     /**
      * Generate a unique session id for checkpoint tracking.
      */
-    fun generateSessionId(): String = java.util.UUID.randomUUID().toString().take(16)
+    fun generateSessionId(): SessionId = SessionId(java.util.UUID.randomUUID().toString().take(16))
 
     /**
      * Save a checkpoint for the given session.

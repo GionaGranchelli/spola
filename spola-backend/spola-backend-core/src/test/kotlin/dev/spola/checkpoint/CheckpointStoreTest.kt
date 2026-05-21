@@ -174,8 +174,8 @@ class CheckpointStoreTest {
         val id1 = manager.generateSessionId()
         val id2 = manager.generateSessionId()
 
-        assertTrue(id1.isNotBlank(), "Session ID should not be blank")
-        assertTrue(id1.length <= 16, "Session ID should be at most 16 chars")
+        assertTrue(id1.value.isNotBlank(), "Session ID should not be blank")
+        assertTrue(id1.value.length <= 16, "Session ID should be at most 16 chars")
         // UUID-based: each call produces a unique value
         assertTrue(id1 != id2, "Consecutive calls should produce different IDs")
 

@@ -108,6 +108,7 @@ data class ToolParameterSchemaResponse(
     val type: String,
     val description: String,
     val default: JsonElement? = null,
+    val enumValues: List<String> = emptyList(),
 )
 
 @Serializable
@@ -437,6 +438,7 @@ internal fun ToolParameter.toSchemaResponse(): ToolParameterSchemaResponse = Too
     },
     description = description,
     default = defaultValue?.toJsonElement(),
+    enumValues = enumValues,
 )
 
 internal fun MemoryEntry.toResponse(): MemoryEntryResponse = MemoryEntryResponse(
@@ -583,6 +585,7 @@ data class ParameterInfo(
     val type: String,
     val required: Boolean = true,
     val default: JsonElement? = null,
+    val enumValues: List<String> = emptyList(),
 )
 
 @Serializable
@@ -615,30 +618,23 @@ data class MetricsHistoryResponse(
     val metrics: List<MetricsPointResponse>,
 )
 
-private fun Any.toJsonElement(): JsonElement = when (this) {
+internal fun Any.toJsonElement(preserveNulls: Boolean = false): JsonElement = when (this) {
     is String -> JsonPrimitive(this)
     is Number -> JsonPrimitive(this)
     is Boolean -> JsonPrimitive(this)
-    is List<*> -> kotlinx.serialization.json.JsonArray(mapNotNull { it?.toJsonElementOrNull() })
+    is List<*> -> if (preserveNulls) {
+        kotlinx.serialization.json.JsonArray(map { it?.toJsonElement(preserveNulls = true) ?: kotlinx.serialization.json.JsonNull })
+    } else {
+        kotlinx.serialization.json.JsonArray(mapNotNull { it?.toJsonElement() })
+    }
     is Map<*, *> -> kotlinx.serialization.json.buildJsonObject {
         this@toJsonElement.forEach { (key, value) ->
-            if (key is String && value != null) {
-                put(key, value.toJsonElementOrNull())
-            }
-        }
-    }
-    else -> JsonPrimitive(toString())
-}
-
-private fun Any.toJsonElementOrNull(): JsonElement = when (this) {
-    is String -> JsonPrimitive(this)
-    is Number -> JsonPrimitive(this)
-    is Boolean -> JsonPrimitive(this)
-    is List<*> -> kotlinx.serialization.json.JsonArray(map { it?.toJsonElementOrNull() ?: kotlinx.serialization.json.JsonNull })
-    is Map<*, *> -> kotlinx.serialization.json.buildJsonObject {
-        this@toJsonElementOrNull.forEach { (key, value) ->
             if (key is String) {
-                put(key, value?.toJsonElementOrNull() ?: kotlinx.serialization.json.JsonNull)
+                if (preserveNulls) {
+                    put(key, value?.toJsonElement(preserveNulls = true) ?: kotlinx.serialization.json.JsonNull)
+                } else if (value != null) {
+                    put(key, value.toJsonElement())
+                }
             }
         }
     }

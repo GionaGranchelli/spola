@@ -1,7 +1,9 @@
 package dev.spola.mcp
 
-import dev.spola.SpolaVersion
+import dev.spola.util.jsonElementToUntypedValue
+import java.util.Collections
 import dev.spola.Tool
+import dev.spola.SpolaVersion
 import dev.spola.ToolParameterType
 import dev.spola.ToolRegistry
 import dev.spola.ToolResult
@@ -65,7 +67,7 @@ class McpConnection(
     var connected: Boolean = true
         internal set
 
-    val tools: MutableList<McpToolRegistration> = mutableListOf()
+    val tools: MutableList<McpToolRegistration> = Collections.synchronizedList(mutableListOf())
 }
 
 /**
@@ -270,7 +272,12 @@ class McpClientManager(
             error = error,
         )
 
-        client.connect(transport)
+        try {
+            client.connect(transport)
+        } catch (e: Exception) {
+            process.destroyForcibly()
+            throw e
+        }
 
         return McpConnection(
             config = config,

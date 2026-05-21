@@ -1004,11 +1004,11 @@ class SpolaApiServerTest {
         val listResponse = client.get("/api/checkpoint")
         assertEquals(HttpStatusCode.OK, listResponse.status)
         val listBody = listResponse.bodyAsText()
-        assertTrue(listBody.contains(sessionId), "List should contain our session: $listBody")
+        assertTrue(listBody.contains(sessionId.value), "List should contain our session: $listBody")
         assertTrue(listBody.contains("\"turnNumber\":1"), "Should show turn number: $listBody")
 
         // Resume the session — should return the messages
-        val resumeResponse = client.get("/api/checkpoint/resume/$sessionId")
+        val resumeResponse = client.get("/api/checkpoint/resume/${sessionId.value}")
         assertEquals(HttpStatusCode.OK, resumeResponse.status)
         val resumeBody = resumeResponse.bodyAsText()
         assertTrue(resumeBody.contains("Hello"), "Should contain user message: $resumeBody")

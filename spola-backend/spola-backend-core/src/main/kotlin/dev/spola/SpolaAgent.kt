@@ -51,7 +51,7 @@ class SpolaAgent(
      *   When null, a new random session id is generated.
      */
     suspend fun run(persona: String, goal: String, observer: AgentRunObserver?, sessionId: SessionId? = null): String {
-        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()?.let(::SessionId)
+        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
         conversation.clear()
         conversation.add(SystemMessage(persona))
         conversation.add(UserMessage(goal))
@@ -109,7 +109,7 @@ class SpolaAgent(
         transcript: MutableList<ChatMessage>? = null,
     ): String {
         val messages = transcript ?: conversation
-        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()?.let(::SessionId)
+        val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
         observer?.onStatus("started", "Agent run started")
         try {
             for (turn in 1..config.agent.maxTurns) {
@@ -279,23 +279,9 @@ class SpolaAgent(
         node.isFloat -> node.floatValue()
         node.isBigDecimal -> node.decimalValue()
         node.isBoolean -> node.booleanValue()
-        node.isArray -> node.map { jsonNodeToUntypedValue(it) }
-        node.isObject -> node.fields().asSequence().associate { (key, value) -> key to jsonNodeToUntypedValue(value) }
+        node.isArray -> node.map { jsonNodeToValue(it) }
+        node.isObject -> node.fields().asSequence().associate { (key, value) -> key to jsonNodeToValue(value) }
         node.isNull -> "null"
-        else -> node.toString()
-    }
-
-    private fun jsonNodeToUntypedValue(node: JsonNode): Any? = when {
-        node.isTextual -> node.textValue()
-        node.isInt -> node.intValue()
-        node.isLong -> node.longValue()
-        node.isDouble -> node.doubleValue()
-        node.isFloat -> node.floatValue()
-        node.isBigDecimal -> node.decimalValue()
-        node.isBoolean -> node.booleanValue()
-        node.isArray -> node.map { jsonNodeToUntypedValue(it) }
-        node.isObject -> node.fields().asSequence().associate { (key, value) -> key to jsonNodeToUntypedValue(value) }
-        node.isNull -> null
         else -> node.toString()
     }
 

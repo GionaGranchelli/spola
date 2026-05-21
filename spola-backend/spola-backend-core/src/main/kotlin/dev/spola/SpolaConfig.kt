@@ -1,5 +1,6 @@
 package dev.spola
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.spola.config.AgentConfig
 import dev.spola.config.CustomProviderConfig
 import dev.spola.config.DatabaseConfig
@@ -182,112 +183,140 @@ data class SpolaConfig(
         workflowsDir = workflowsDir,
     )
 
+    @get:JsonIgnore
     val model: String
         get() = provider.defaultModel
 
+    @get:JsonIgnore
     val providerName: String
         get() = provider.defaultProvider
 
+    @get:JsonIgnore
     @Deprecated("Use agent.personaPath", ReplaceWith("agent.personaPath"))
     val personaPath: String?
         get() = agent.personaPath ?: persona.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use agent.maxTurns", ReplaceWith("agent.maxTurns"))
     val maxTurns: Int
         get() = agent.maxTurns
 
+    @get:JsonIgnore
     @Deprecated("Use database.memoryDbPath", ReplaceWith("database.memoryDbPath"))
     val memoryDbPath: String
         get() = database.memoryDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.workflowsDbPath", ReplaceWith("database.workflowsDbPath"))
     val workflowDbPath: String
         get() = database.workflowsDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.schedulerDbPath", ReplaceWith("database.schedulerDbPath"))
     val schedulerDbPath: String
         get() = database.schedulerDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.kanbanDbPath", ReplaceWith("database.kanbanDbPath"))
     val kanbanDbPath: String
         get() = database.kanbanDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.checkpointDbPath", ReplaceWith("database.checkpointDbPath"))
     val checkpointDbPath: String
         get() = database.checkpointDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.jvmIndexDbPath", ReplaceWith("database.jvmIndexDbPath"))
     val jvmIndexDbPath: String
         get() = database.jvmIndexDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.sessionsDbPath", ReplaceWith("database.sessionsDbPath"))
     val sessionsDbPath: String
         get() = database.sessionsDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.agentsDbPath", ReplaceWith("database.agentsDbPath"))
     val agentsDbPath: String
         get() = database.agentsDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use database.skillsDbPath", ReplaceWith("database.skillsDbPath"))
     val skillsDbPath: String
         get() = database.skillsDbPath
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.telegramToken", ReplaceWith("delivery.telegramToken"))
     val telegramBotToken: String?
         get() = delivery.telegramToken.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.smtpHost", ReplaceWith("delivery.smtpHost"))
     val emailSmtpHost: String?
         get() = delivery.smtpHost.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.smtpPort", ReplaceWith("delivery.smtpPort"))
     val emailSmtpPort: Int
         get() = delivery.smtpPort
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.smtpUser", ReplaceWith("delivery.smtpUser"))
     val emailUsername: String?
         get() = delivery.smtpUser.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.smtpPass", ReplaceWith("delivery.smtpPass"))
     val emailPassword: String?
         get() = delivery.smtpPass.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use delivery.fromEmail", ReplaceWith("delivery.fromEmail"))
     val emailFrom: String?
         get() = delivery.fromEmail.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use security.apiKey", ReplaceWith("security.apiKey"))
     val apiKey: String?
         get() = security.apiKey ?: provider.apiKey.ifBlank { null }
 
+    @get:JsonIgnore
     @Deprecated("Use security.insecure", ReplaceWith("security.insecure"))
     val insecure: Boolean
         get() = security.insecure
 
+    @get:JsonIgnore
     @Deprecated("Use provider.customProviders", ReplaceWith("provider.customProviders"))
     val customProviders: List<CustomProviderConfig>
         get() = provider.customProviders
 
+    @get:JsonIgnore
     @Deprecated("Use tts.ttsProvider", ReplaceWith("tts.ttsProvider"))
     val ttsProvider: String
         get() = tts.ttsProvider
 
+    @get:JsonIgnore
     @Deprecated("Use tts.elevenlabsApiKey", ReplaceWith("tts.elevenlabsApiKey"))
     val elevenlabsApiKey: String?
         get() = tts.elevenlabsApiKey
 
+    @get:JsonIgnore
     @Deprecated("Use tts.elevenlabsVoiceId", ReplaceWith("tts.elevenlabsVoiceId"))
     val elevenlabsVoiceId: String
         get() = tts.elevenlabsVoiceId
 
+    @get:JsonIgnore
     @Deprecated("Use metrics.metricsEnabled", ReplaceWith("metrics.metricsEnabled"))
     val metricsEnabled: Boolean
         get() = metrics.metricsEnabled
 
+    @get:JsonIgnore
     @Deprecated("Use metrics.otelEnabled", ReplaceWith("metrics.otelEnabled"))
     val otelEnabled: Boolean
         get() = metrics.otelEnabled
 
+    @get:JsonIgnore
     @Deprecated("Use metrics.otelEndpoint", ReplaceWith("metrics.otelEndpoint"))
     val otelEndpoint: String?
         get() = metrics.otelEndpoint.ifBlank { null }

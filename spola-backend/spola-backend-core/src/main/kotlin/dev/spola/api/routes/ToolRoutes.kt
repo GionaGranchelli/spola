@@ -13,7 +13,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.request.receive
-import kotlinx.serialization.json.JsonPrimitive
 
 fun Route.apiToolRoutes(
     config: SpolaConfig,
@@ -61,14 +60,8 @@ fun Route.apiToolRoutes(
                             ToolParameterType.ENUM -> "enum"
                         },
                         required = param.required,
-                        default = param.defaultValue?.let {
-                            when (it) {
-                                is String -> JsonPrimitive(it)
-                                is Number -> JsonPrimitive(it)
-                                is Boolean -> JsonPrimitive(it)
-                                else -> JsonPrimitive(it.toString())
-                            }
-                        },
+                        default = param.defaultValue?.let { it.toJsonElement() },
+                        enumValues = param.enumValues,
                     )
                 },
                 enabled = enabled,

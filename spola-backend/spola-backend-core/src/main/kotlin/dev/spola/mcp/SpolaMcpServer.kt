@@ -136,7 +136,10 @@ class SpolaMcpServer(
         val properties = buildJsonObject {
             for (param in spolaTool.parameters) {
                 putJsonObject(param.name) {
-                    put("type", JsonPrimitive(param.type.toTypeString()))
+                    when (param.type) {
+                        ToolParameterType.ENUM -> put("type", JsonPrimitive("string"))
+                        else -> put("type", JsonPrimitive(param.type.toTypeString()))
+                    }
                     put("description", JsonPrimitive(param.description))
                     if (param.type == ToolParameterType.ARRAY) {
                         put("items", buildJsonObject { })

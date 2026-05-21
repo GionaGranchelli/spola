@@ -126,7 +126,7 @@ class MainTest {
         )
         val config = buildConfig(cli)
         assertTrue(config.model == "gpt-4o-mini")
-        assertTrue(config.provider == "openai")
+        assertTrue(config.provider.defaultProvider == "openai")
         assertTrue(config.workingDirectory == "/my/workdir")
         assertTrue(config.apiKey == "my-key")
         assertTrue(config.insecure)

@@ -4,14 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib.sh"
 
-RESULTS_DIR="${GOLEM_DIR}/benchmarks/results"
+RESULTS_DIR="${SPOLA_BACKEND_DIR}/benchmarks/results"
 mkdir -p "${RESULTS_DIR}"
 mkdir -p "${RESULTS_DIR}/logs"
 
 # Initialize results file (empty, each benchmark appends one JSON line per run)
 true > "${RESULTS_DIR}/results.json"
 
-echo "=== Golem Benchmark Suite ==="
+echo "=== Spola Benchmark Suite ==="
 echo "Provider: openai-compat"
 echo "Base URL: ${OPENAI_BASE_URL}"
 echo "Model: qwen2.5:0.5b"
@@ -19,16 +19,16 @@ echo "Max turns: 10"
 echo "Timeout: ${TIMEOUT_SEC}s"
 echo ""
 
-# Build Golem first
-echo "Building Golem..."
-cd "${GOLEM_DIR}"
-JAVA_HOME="${JAVA_HOME}" ./gradlew :golem-cli:installDist -q 2>&1
-echo "Golem built successfully."
+# Build Spola first
+echo "Building Spola..."
+cd "${SPOLA_BACKEND_DIR}"
+JAVA_HOME="${JAVA_HOME}" ./gradlew :spola-backend-cli:installDist -q 2>&1
+echo "Spola built successfully."
 echo ""
 
-# Verify Golem CLI exists
-if [ ! -f "${GOLEM_CLI}" ]; then
-    echo "ERROR: Golem CLI not found at ${GOLEM_CLI}"
+# Verify Spola CLI exists
+if [ ! -f "${SPOLA_CLI}" ]; then
+    echo "ERROR: Spola CLI not found at ${SPOLA_CLI}"
     exit 1
 fi
 

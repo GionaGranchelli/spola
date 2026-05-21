@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091
-# Shared functions for Golem benchmark runner
+# Shared functions for Spola benchmark runner
 set -euo pipefail
 
 export JAVA_HOME="${JAVA_HOME:-/home/gionag/.sdkman/candidates/java/21.0.7-tem}"
 export OPENAI_BASE_URL="${OPENAI_BASE_URL:-http://localhost:11434/v1}"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-not-needed}"
 
-GOLEM_DIR="/home/gionag/Development/golem"
-GOLEM_CLI="${GOLEM_DIR}/golem-cli/build/install/golem-cli/bin/golem-cli"
-RESULTS_DIR="${GOLEM_DIR}/benchmarks/results"
+SPOLA_BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SPOLA_CLI="${SPOLA_BACKEND_DIR}/spola-backend-cli/build/install/spola/bin/spola"
+RESULTS_DIR="${SPOLA_BACKEND_DIR}/benchmarks/results"
 TIMEOUT_SEC=300
 
 run_benchmark() {
@@ -23,16 +23,16 @@ run_benchmark() {
     # Create temp dir for this run
     local tmpdir
     tmpdir=$(mktemp -d)
-    cp -r "${GOLEM_DIR}/benchmarks/projects/${project}/." "${tmpdir}/"
+    cp -r "${SPOLA_BACKEND_DIR}/benchmarks/projects/${project}/." "${tmpdir}/"
 
-    # Ensure the .golem directory exists in the temp dir
-    mkdir -p "${tmpdir}/.golem"
+    # Ensure the .spola directory exists in the temp dir
+    mkdir -p "${tmpdir}/.spola"
 
-    # Run Golem in one-shot mode
+    # Run Spola in one-shot mode
     local start
     local end
     local duration_ms
-    local result_file="${tmpdir}/golem_output.txt"
+    local result_file="${tmpdir}/spola_output.txt"
 
     start=$(date +%s%N)
 
@@ -41,7 +41,7 @@ run_benchmark() {
     OPENAI_BASE_URL="${OPENAI_BASE_URL}" \
     OPENAI_API_KEY="${OPENAI_API_KEY}" \
     timeout "${TIMEOUT_SEC}" \
-        "${GOLEM_CLI}" \
+        "${SPOLA_CLI}" \
         --provider openai-compat \
         --model qwen2.5:0.5b \
         --max-turns 10 \
@@ -54,7 +54,7 @@ run_benchmark() {
     duration_ms=$(( (end - start) / 1000000 ))
 
     # Strip logback noise for display
-    echo "  Golem exit code: ${exit_code}"
+    echo "  Spola exit code: ${exit_code}"
     echo "  Output (first 20 lines):"
     grep -v '^[0-9:.,-]\+\s*\[main\]\s' "${result_file}" | grep -v 'logback\|ch.qos\|^$' | head -20 | sed 's/^/    /'
 
@@ -75,6 +75,6 @@ run_benchmark() {
     cp "${result_file}" "${RESULTS_DIR}/logs/${name}.log"
 
     rm -rf "${tmpdir}"
-    cd "${GOLEM_DIR}"
+    cd "${SPOLA_BACKEND_DIR}"
     echo ""
 }

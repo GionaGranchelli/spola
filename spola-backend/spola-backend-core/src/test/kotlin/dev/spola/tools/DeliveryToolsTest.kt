@@ -264,6 +264,7 @@ class DeliveryToolsTest {
         assertNotNull(registry.get("telegram_send"), "telegram_send should be registered via registerTools")
         assertNotNull(registry.get("email_send"), "email_send should be registered via registerTools")
         assertNotNull(registry.get("discord_send"), "discord_send should be registered via registerTools")
+        assertNotNull(registry.get("slack_send"), "slack_send should be registered via registerTools")
     }
 
     @Test
@@ -414,6 +415,116 @@ class DeliveryToolsTest {
 
         assertFalse(result.success)
         assertTrue(result.output.contains("channel_id", ignoreCase = true))
+    }
+
+    @Test
+    fun `slack_send tool is registered with correct structure`() {
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")
+        assertNotNull(tool, "slack_send tool should be registered")
+        assertEquals("slack_send", tool.name)
+        assertTrue(tool.description.contains("Slack"), "Description should mention Slack")
+
+        val paramNames = tool.parameters.map { it.name }
+        assertTrue("webhook_url" in paramNames, "Should have webhook_url parameter")
+        assertTrue("text" in paramNames, "Should have text parameter")
+        assertTrue("channel" in paramNames, "Should have channel parameter")
+
+        val webhookUrlParam = tool.parameters.find { it.name == "webhook_url" }
+        assertNotNull(webhookUrlParam)
+        assertTrue(webhookUrlParam.required, "webhook_url should be required")
+
+        val textParam = tool.parameters.find { it.name == "text" }
+        assertNotNull(textParam)
+        assertTrue(textParam.required, "text should be required")
+
+        val channelParam = tool.parameters.find { it.name == "channel" }
+        assertNotNull(channelParam)
+        assertFalse(channelParam.required, "channel should not be required")
+    }
+
+    @Test
+    fun `slack_send returns error when webhook_url missing`() = runTest {
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")!!
+        val result = tool.execute(mapOf("text" to "hello"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("Missing required", ignoreCase = true))
+    }
+
+    @Test
+    fun `slack_send returns error when text missing`() = runTest {
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")!!
+        val result = tool.execute(mapOf("webhook_url" to "https://hooks.slack.com/services/xxx"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("Missing required", ignoreCase = true))
+    }
+
+    @Test
+    fun `slack_send returns error when text too long`() = runTest {
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")!!
+        val result = tool.execute(
+            mapOf(
+                "webhook_url" to "https://hooks.slack.com/services/xxx",
+                "text" to "x".repeat(40001),
+            ),
+        )
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("too long", ignoreCase = true))
+    }
+
+    @Test
+    fun `slack_send rejects empty webhook_url`() = runTest {
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")!!
+        val result = tool.execute(mapOf("webhook_url" to "", "text" to "hello"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("webhook_url", ignoreCase = true))
+    }
+
+    @Test
+    fun `slack_send with valid args attempts HTTP to Slack webhook`() = runTest {
+        // This test verifies the tool attempts an HTTP call and handles connection failure gracefully
+        val config = SpolaConfig()
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("slack_send")!!
+        // Valid arguments but no real server -> connection error
+        val result = tool.execute(
+            mapOf(
+                "webhook_url" to "https://hooks.slack.com/services/T00/B00/valid-token",
+                "text" to "Test message",
+            ),
+        )
+
+        assertFalse(result.success)
+        // Should fail with connection/timeout, not validation error
+        assertTrue(
+            !result.output.lowercase().contains("missing required"),
+            "Should fail with connection error, not validation. Got: ${result.output}",
+        )
     }
 
     private lateinit var server: HttpServer

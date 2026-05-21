@@ -22,7 +22,7 @@ import java.util.Properties
 private val logger = LoggerFactory.getLogger("dev.spola.tools.DeliveryTools")
 
 /**
- * Register delivery tools: telegram_send, email_send, and discord_send.
+ * Register delivery tools: telegram_send, email_send, discord_send, and slack_send.
  * These tools require configuration via [SpolaConfig] or environment variables.
  */
 fun registerDeliveryTools(
@@ -32,6 +32,7 @@ fun registerDeliveryTools(
     registry.register(telegramSendTool(config))
     registry.register(emailSendTool(config))
     registry.register(discordSendTool(config))
+    registry.register(slackSendTool(config))
 }
 
 private fun telegramSendTool(config: SpolaConfig): Tool {
@@ -266,6 +267,76 @@ private fun resolveDiscordToken(config: SpolaConfig): String? {
     return config.delivery.discordToken.ifBlank { null }
         ?: System.getenv("DISCORD_BOT_TOKEN")
         ?.takeIf { it.isNotBlank() }
+}
+
+private fun slackSendTool(config: SpolaConfig): Tool {
+    return Tool(
+        name = "slack_send",
+        description = "Send a message to a Slack channel via Incoming Webhook. Requires a Slack webhook URL.",
+        parameters = listOf(
+            ToolParameter("webhook_url", "Slack Incoming Webhook URL", ToolParameterType.STRING),
+            ToolParameter("text", "Message text to send (Slack mrkdwn format supported, max 40000 characters)", ToolParameterType.STRING),
+            ToolParameter("channel", "Override channel (e.g. \"#general\"), uses webhook default if omitted", ToolParameterType.STRING, required = false),
+        ),
+        execute = { args ->
+            try {
+                val webhookUrl = (args["webhook_url"] as? String)?.trim()
+                    ?: return@Tool ToolResult.fail("Missing required argument: webhook_url")
+                if (webhookUrl.isEmpty()) return@Tool ToolResult.fail("webhook_url must not be empty")
+
+                val text = (args["text"] as? String)?.trim()
+                    ?: return@Tool ToolResult.fail("Missing required argument: text")
+                if (text.isEmpty()) return@Tool ToolResult.fail("text must not be empty")
+                if (text.length > 40000) return@Tool ToolResult.fail("Message too long: ${text.length} chars (max 40000)")
+
+                val channel = (args["channel"] as? String)?.trim()?.takeIf { it.isNotEmpty() }
+
+                val jsonBody = buildString {
+                    append("{\"text\":\"${escapeJson(text)}\"")
+                    if (channel != null) {
+                        append(",\"channel\":\"${escapeJson(channel)}\"")
+                    }
+                    append("}")
+                }
+
+                val client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build()
+
+                val request = HttpRequest.newBuilder()
+                    .uri(URI.create(webhookUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build()
+
+                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                when {
+                    response.statusCode() in 200..299 -> {
+                        val responseBody = response.body()
+                        ToolResult.ok("$responseBody (HTTP ${response.statusCode()})")
+                    }
+                    response.statusCode() == 400 -> {
+                        val body = response.body().take(500)
+                        ToolResult.fail("Slack webhook returned 400: Bad request — $body")
+                    }
+                    response.statusCode() == 404 -> {
+                        val body = response.body().take(500)
+                        ToolResult.fail("Slack webhook returned 404: Invalid webhook URL — $body")
+                    }
+                    else -> {
+                        ToolResult.fail("Slack webhook returned HTTP ${response.statusCode()}: ${response.body().take(500)}")
+                    }
+                }
+            } catch (e: java.net.http.HttpTimeoutException) {
+                ToolResult.fail("Slack webhook request timed out: ${e.message}")
+            } catch (e: java.net.ConnectException) {
+                ToolResult.fail("Could not connect to Slack webhook: ${e.message}")
+            } catch (e: Exception) {
+                ToolResult.fail("Failed to send Slack message: ${e.message}")
+            }
+        },
+    )
 }
 
 /**

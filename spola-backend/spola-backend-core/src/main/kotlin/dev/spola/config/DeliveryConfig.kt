@@ -9,4 +9,6 @@ data class DeliveryConfig(
     val fromEmail: String = "",
     val telegramToken: String = "",
     val telegramChatId: String = "",
+    val discordToken: String = "",
+    val discordEnabled: Boolean = false, // Reserved for future feature toggle
 )

@@ -11,6 +11,7 @@ import jakarta.mail.Session
 import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -18,8 +19,10 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.Properties
 
+private val logger = LoggerFactory.getLogger("dev.spola.tools.DeliveryTools")
+
 /**
- * Register delivery tools: telegram_send and email_send.
+ * Register delivery tools: telegram_send, email_send, and discord_send.
  * These tools require configuration via [SpolaConfig] or environment variables.
  */
 fun registerDeliveryTools(
@@ -28,6 +31,7 @@ fun registerDeliveryTools(
 ) {
     registry.register(telegramSendTool(config))
     registry.register(emailSendTool(config))
+    registry.register(discordSendTool(config))
 }
 
 private fun telegramSendTool(config: SpolaConfig): Tool {
@@ -179,6 +183,89 @@ private fun resolveEmailConfig(config: SpolaConfig): EmailConfig {
         password = config.delivery.smtpPass.ifBlank { null } ?: System.getenv("EMAIL_PASSWORD")?.takeIf { it.isNotBlank() },
         from = config.delivery.fromEmail.ifBlank { null } ?: System.getenv("EMAIL_FROM")?.takeIf { it.isNotBlank() },
     )
+}
+
+private fun discordSendTool(config: SpolaConfig): Tool {
+    val token = resolveDiscordToken(config)
+    return Tool(
+        name = "discord_send",
+        description = "Send a message via Discord Bot API to a specified channel. Requires DISCORD_BOT_TOKEN env var or config.",
+        parameters = listOf(
+            ToolParameter("channel_id", "Discord channel ID (snowflake)", ToolParameterType.STRING),
+            ToolParameter("text", "Message text to send (max 2000 characters)", ToolParameterType.STRING),
+        ),
+        execute = { args ->
+            try {
+                val channelId = (args["channel_id"] as? String)?.trim()
+                    ?: return@Tool ToolResult.fail("Missing required argument: channel_id")
+                if (channelId.isEmpty()) return@Tool ToolResult.fail("channel_id must not be empty")
+
+                val text = (args["text"] as? String)?.trim()
+                    ?: return@Tool ToolResult.fail("Missing required argument: text")
+                if (text.isEmpty()) return@Tool ToolResult.fail("text must not be empty")
+                if (text.length > 2000) return@Tool ToolResult.fail("Message too long: ${text.length} chars (max 2000)")
+
+                if (token == null) return@Tool ToolResult.fail(
+                    "Discord bot token not configured. Set DISCORD_BOT_TOKEN env var or configure discordToken in DeliveryConfig."
+                )
+
+                val url = "https://discord.com/api/v10/channels/$channelId/messages"
+                val jsonBody = """{"content":"${escapeJson(text)}"}"""
+
+                val client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build()
+
+                val request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bot $token")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build()
+
+                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                when {
+                    response.statusCode() in 200..299 -> {
+                        ToolResult.ok("Discord message sent successfully (channel_id=$channelId, HTTP ${response.statusCode()})")
+                    }
+                    response.statusCode() == 429 -> {
+                        val remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse("?")
+                        val resetAfter = response.headers().firstValue("X-RateLimit-Reset-After").orElse("?")
+                        val body = response.body().take(500)
+                        logger.warn("Discord rate limited: remaining=$remaining, resetAfter=${resetAfter}s")
+                        ToolResult.fail("Discord API returned 429: Rate limited (remaining=$remaining, resetAfter=${resetAfter}s) — $body")
+                    }
+                    response.statusCode() == 401 -> {
+                        ToolResult.fail("Discord API returned 401: Unauthorized — check bot token")
+                    }
+                    response.statusCode() == 400 -> {
+                        val body = response.body().take(500)
+                        ToolResult.fail("Discord API returned 400: Bad request — $body")
+                    }
+                    response.statusCode() == 404 -> {
+                        val body = response.body().take(500)
+                        ToolResult.fail("Discord API returned 404: Not found — channel_id may be invalid — $body")
+                    }
+                    else -> {
+                        ToolResult.fail("Discord API returned HTTP ${response.statusCode()}: ${response.body().take(500)}")
+                    }
+                }
+            } catch (e: java.net.http.HttpTimeoutException) {
+                ToolResult.fail("Discord API request timed out: ${e.message}")
+            } catch (e: java.net.ConnectException) {
+                ToolResult.fail("Could not connect to Discord API: ${e.message}")
+            } catch (e: Exception) {
+                ToolResult.fail("Failed to send Discord message: ${e.message}")
+            }
+        },
+    )
+}
+
+private fun resolveDiscordToken(config: SpolaConfig): String? {
+    return config.delivery.discordToken.ifBlank { null }
+        ?: System.getenv("DISCORD_BOT_TOKEN")
+        ?.takeIf { it.isNotBlank() }
 }
 
 /**

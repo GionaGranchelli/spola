@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import dev.spola.SpolaConfig
 import dev.spola.ToolRegistry
+import dev.spola.config.DeliveryConfig
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress
@@ -262,6 +263,7 @@ class DeliveryToolsTest {
 
         assertNotNull(registry.get("telegram_send"), "telegram_send should be registered via registerTools")
         assertNotNull(registry.get("email_send"), "email_send should be registered via registerTools")
+        assertNotNull(registry.get("discord_send"), "discord_send should be registered via registerTools")
     }
 
     @Test
@@ -304,6 +306,114 @@ class DeliveryToolsTest {
             !result.output.lowercase().contains("missing required"),
             "Should fail with connection error, not validation. Got: ${result.output}",
         )
+    }
+
+    @Test
+    fun `discord_send tool is registered with correct structure`() {
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "test-token"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")
+        assertNotNull(tool, "discord_send tool should be registered")
+        assertEquals("discord_send", tool.name)
+        assertTrue(tool.description.contains("Discord"), "Description should mention Discord")
+
+        val paramNames = tool.parameters.map { it.name }
+        assertTrue("channel_id" in paramNames, "Should have channel_id parameter")
+        assertTrue("text" in paramNames, "Should have text parameter")
+
+        val channelIdParam = tool.parameters.find { it.name == "channel_id" }
+        assertNotNull(channelIdParam)
+        assertTrue(channelIdParam.required, "channel_id should be required")
+
+        val textParam = tool.parameters.find { it.name == "text" }
+        assertNotNull(textParam)
+        assertTrue(textParam.required, "text should be required")
+    }
+
+    @Test
+    fun `discord_send returns error when token not configured`() = runTest {
+        val config = SpolaConfig() // no discord token
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        val result = tool.execute(mapOf("channel_id" to "12345", "text" to "hello"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("token", ignoreCase = true))
+    }
+
+    @Test
+    fun `discord_send returns error when channel_id missing`() = runTest {
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "test-token"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        val result = tool.execute(mapOf("text" to "hello"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("Missing required", ignoreCase = true))
+    }
+
+    @Test
+    fun `discord_send returns error when text missing`() = runTest {
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "test-token"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        val result = tool.execute(mapOf("channel_id" to "12345"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("Missing required", ignoreCase = true))
+    }
+
+    @Test
+    fun `discord_send returns error when text too long`() = runTest {
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "test-token"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        val result = tool.execute(mapOf("channel_id" to "12345", "text" to "x".repeat(2500)))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("too long", ignoreCase = true))
+    }
+
+    @Test
+    fun `discord_send with valid args uses HTTP to Discord API`() = runTest {
+        // This test verifies the tool attempts an HTTP call and handles connection failure gracefully
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "real-token-12345"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        // Valid arguments but no real server -> connection error
+        val result = tool.execute(mapOf("channel_id" to "1234567890", "text" to "Test message"))
+
+        assertFalse(result.success)
+        // Should fail with connection/timeout, not validation error
+        assertTrue(
+            !result.output.lowercase().contains("missing required"),
+            "Should fail with connection error, not validation. Got: ${result.output}",
+        )
+    }
+
+    @Test
+    fun `discord_send rejects empty channel_id`() = runTest {
+        val config = SpolaConfig(delivery = DeliveryConfig(discordToken = "test-token"))
+        val registry = ToolRegistry()
+        registerDeliveryTools(registry, config)
+
+        val tool = registry.get("discord_send")!!
+        val result = tool.execute(mapOf("channel_id" to "", "text" to "hello"))
+
+        assertFalse(result.success)
+        assertTrue(result.output.contains("channel_id", ignoreCase = true))
     }
 
     private lateinit var server: HttpServer

@@ -82,6 +82,7 @@ data class SpolaConfig(
         apiKey: String? = null,
         pairingToken: String? = null,
         telegramBotToken: String? = null,
+        discordBotToken: String? = null,
         emailSmtpHost: String? = null,
         emailSmtpPort: Int = 587,
         emailUsername: String? = null,
@@ -131,6 +132,7 @@ data class SpolaConfig(
             smtpPass = emailPassword.orEmpty(),
             fromEmail = emailFrom.orEmpty(),
             telegramToken = telegramBotToken.orEmpty(),
+            discordToken = discordBotToken.orEmpty(),
         ),
         provider = ProviderConfig(
             apiKey = apiKey.orEmpty(),

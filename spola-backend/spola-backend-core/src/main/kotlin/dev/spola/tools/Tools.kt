@@ -19,4 +19,5 @@ fun registerTools(registry: ToolRegistry, config: SpolaConfig, permissionEnforce
     registerDeliveryTools(registry, config)
     registerTtsTool(registry, config)
     registerIssueTools(registry, config)
+    registerJiraIssueTools(registry, config)
 }

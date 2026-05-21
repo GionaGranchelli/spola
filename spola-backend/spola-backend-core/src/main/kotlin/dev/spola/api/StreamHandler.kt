@@ -9,7 +9,7 @@ import io.ktor.server.sse.ServerSSESession
 import io.ktor.sse.ServerSentEvent
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
+import dev.spola.util.jsonValueToElement
 
 class StreamHandler(
     private val agentRunHandler: AgentRunHandler,
@@ -44,7 +44,7 @@ class StreamHandler(
                             ToolCallEventPayload(
                                 id = toolCall.id,
                                 name = toolCall.name,
-                                arguments = toolCall.arguments.mapValues { JsonPrimitive(it.value.toString()) },
+                                arguments = toolCall.arguments.mapValues { jsonValueToElement(it.value) },
                             ),
                         )
                     }

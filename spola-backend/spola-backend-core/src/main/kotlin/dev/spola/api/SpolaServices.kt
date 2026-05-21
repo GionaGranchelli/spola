@@ -20,11 +20,7 @@ import dev.spola.workflow.WorkflowExecutionStore
 import dev.spola.workflow.WorkflowKanbanService
 import dev.spola.workflow.WorkflowTemplateRegistry
 import dev.spola.workflow.registerBuiltInTemplates
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.supervisorScope
 
 class SpolaServices(
     val config: SpolaConfig,
@@ -70,18 +66,16 @@ class SpolaServices(
     } else {
         null
     }
-    val toolRegistry: Deferred<ToolRegistry> = runBlocking {
-        supervisorScope {
-            async(Dispatchers.Default) {
-                dev.spola.factory.ToolRegistryFactory.buildApiToolRegistry(
-                    config = config,
-                    memoryStore = memoryStore,
-                    jobStore = jobStore,
-                    kanbanStore = kanbanStore,
-                    checkpointManager = checkpointManager,
-                    workflowExecutionService = workflowExecutionService,
-                )
-            }
+    val toolRegistry: ToolRegistry by lazy {
+        runBlocking {
+            dev.spola.factory.ToolRegistryFactory.buildApiToolRegistry(
+                config = config,
+                memoryStore = memoryStore,
+                jobStore = jobStore,
+                kanbanStore = kanbanStore,
+                checkpointManager = checkpointManager,
+                workflowExecutionService = workflowExecutionService,
+            )
         }
     }
     val streamHandler: StreamHandler = StreamHandler(agentRunHandler)

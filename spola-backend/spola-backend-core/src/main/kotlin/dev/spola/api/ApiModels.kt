@@ -10,6 +10,7 @@ import dev.spola.agent.ToolPolicy
 import dev.spola.checkpoint.CheckpointData
 import dev.spola.memory.MemoryEntry
 import dev.spola.scheduler.ScheduledJob
+import dev.spola.toTypeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -427,15 +428,7 @@ internal fun Tool.toSchemaResponse(enabled: Boolean): ToolSchemaResponse = ToolS
 )
 
 internal fun ToolParameter.toSchemaResponse(): ToolParameterSchemaResponse = ToolParameterSchemaResponse(
-    type = when (type) {
-        ToolParameterType.STRING -> "string"
-        ToolParameterType.INTEGER -> "integer"
-        ToolParameterType.NUMBER -> "number"
-        ToolParameterType.BOOLEAN -> "boolean"
-        ToolParameterType.ARRAY -> "array"
-        ToolParameterType.OBJECT -> "object"
-        ToolParameterType.ENUM -> "enum"
-    },
+    type = type.toTypeString(),
     description = description,
     default = defaultValue?.toJsonElement(),
     enumValues = enumValues,
@@ -618,28 +611,8 @@ data class MetricsHistoryResponse(
     val metrics: List<MetricsPointResponse>,
 )
 
-internal fun Any.toJsonElement(preserveNulls: Boolean = false): JsonElement = when (this) {
-    is String -> JsonPrimitive(this)
-    is Number -> JsonPrimitive(this)
-    is Boolean -> JsonPrimitive(this)
-    is List<*> -> if (preserveNulls) {
-        kotlinx.serialization.json.JsonArray(map { it?.toJsonElement(preserveNulls = true) ?: kotlinx.serialization.json.JsonNull })
-    } else {
-        kotlinx.serialization.json.JsonArray(mapNotNull { it?.toJsonElement() })
-    }
-    is Map<*, *> -> kotlinx.serialization.json.buildJsonObject {
-        this@toJsonElement.forEach { (key, value) ->
-            if (key is String) {
-                if (preserveNulls) {
-                    put(key, value?.toJsonElement(preserveNulls = true) ?: kotlinx.serialization.json.JsonNull)
-                } else if (value != null) {
-                    put(key, value.toJsonElement())
-                }
-            }
-        }
-    }
-    else -> JsonPrimitive(toString())
-}
+internal fun Any.toJsonElement(preserveNulls: Boolean = false): JsonElement =
+    dev.spola.util.jsonValueToElement(this, preserveNulls = preserveNulls)
 
 // ── Provider API models ───────────────────────────────
 

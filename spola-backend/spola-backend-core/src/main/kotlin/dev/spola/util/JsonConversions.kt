@@ -25,15 +25,23 @@ fun jsonElementToUntypedValue(element: JsonElement): Any? = when (element) {
 /**
  * Convert a Kotlin value to a kotlinx.serialization JsonElement.
  */
-fun jsonValueToElement(value: Any): JsonElement = when (value) {
+fun jsonValueToElement(value: Any, preserveNulls: Boolean = false): JsonElement = when (value) {
     is String -> JsonPrimitive(value)
     is Number -> JsonPrimitive(value)
     is Boolean -> JsonPrimitive(value)
-    is List<*> -> JsonArray(value.map { it?.let(::jsonValueToElement) ?: JsonNull })
+    is List<*> -> if (preserveNulls) {
+        JsonArray(value.map { it?.let { jsonValueToElement(it, preserveNulls = true) } ?: JsonNull })
+    } else {
+        JsonArray(value.mapNotNull { it?.let(::jsonValueToElement) })
+    }
     is Map<*, *> -> buildJsonObject {
         value.forEach { (key, entryValue) ->
             if (key is String) {
-                put(key, entryValue?.let(::jsonValueToElement) ?: JsonNull)
+                if (preserveNulls) {
+                    put(key, entryValue?.let { jsonValueToElement(it, preserveNulls = true) } ?: JsonNull)
+                } else if (entryValue != null) {
+                    put(key, jsonValueToElement(entryValue))
+                }
             }
         }
     }

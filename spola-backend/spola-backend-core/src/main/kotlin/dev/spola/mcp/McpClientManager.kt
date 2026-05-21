@@ -275,6 +275,7 @@ class McpClientManager(
         try {
             client.connect(transport)
         } catch (e: Exception) {
+            input.close()
             process.destroyForcibly()
             throw e
         }

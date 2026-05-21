@@ -3,6 +3,7 @@ package dev.spola.api
 import dev.spola.SpolaConfig
 import dev.spola.ToolRegistry
 import dev.spola.ToolParameterType
+import dev.spola.toTypeString
 import dev.spola.api.ParameterInfo
 import dev.spola.api.ToolDetailResponse
 import dev.spola.api.ToolToggleRequest
@@ -50,15 +51,7 @@ fun Route.apiToolRoutes(
                     ParameterInfo(
                         name = param.name,
                         description = param.description,
-                        type = when (param.type) {
-                            ToolParameterType.STRING -> "string"
-                            ToolParameterType.INTEGER -> "integer"
-                            ToolParameterType.NUMBER -> "number"
-                            ToolParameterType.BOOLEAN -> "boolean"
-                            ToolParameterType.ARRAY -> "array"
-                            ToolParameterType.OBJECT -> "object"
-                            ToolParameterType.ENUM -> "enum"
-                        },
+                        type = param.type.toTypeString(),
                         required = param.required,
                         default = param.defaultValue?.let { it.toJsonElement() },
                         enumValues = param.enumValues,

@@ -6,6 +6,7 @@ import dev.spola.SpolaConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 
 /**
  * Serialized representation of agent conversation state for checkpoint storage.
@@ -170,7 +171,14 @@ class CheckpointManager(
 
             val stdout = process.inputStream.bufferedReader().readText()
             val stderr = process.errorStream.bufferedReader().readText()
-            val exitCode = process.waitFor()
+            val completed = process.waitFor(5, TimeUnit.SECONDS)
+
+            if (!completed) {
+                process.destroyForcibly()
+                return ""
+            }
+
+            val exitCode = process.exitValue()
 
             if (exitCode != 0) {
                 // git failed (e.g., not a git repo, no commits yet)

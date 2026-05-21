@@ -99,8 +99,9 @@ object YamlWorkflowStepRunner {
         workdir: String,
         permissionEnforcer: PermissionEnforcer?,
     ): ShellStepResult {
+        val sanitizedCmd = sanitizeShellCommand(command)
         val result = executeShellCommand(
-            commandStr = command,
+            commandStr = sanitizedCmd,
             workdirStr = workdir,
             timeoutSec = timeoutSeconds,
             permissionEnforcer = permissionEnforcer,
@@ -129,6 +130,20 @@ object YamlWorkflowStepRunner {
             stdoutText.isNotEmpty() -> "Command failed (exit $exitCode): $stdoutText"
             else -> "Command failed with exit code $exitCode: $command"
         }
+    }
+
+    /**
+     * Sanitize a shell command to prevent shell injection.
+     * Escapes special characters: ; \n \r ` $
+     */
+    private fun sanitizeShellCommand(cmd: String): String {
+        return cmd
+            .replace("\\", "\\\\")
+            .replace(";", "\\;")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("`", "\\`")
+            .replace("$", "\\$")
     }
 
 }

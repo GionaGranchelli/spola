@@ -5,6 +5,7 @@ import dev.spola.Tool
 import dev.spola.ToolParameterType
 import dev.spola.ToolRegistry
 import dev.spola.ToolResult
+import dev.spola.toTypeString
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.server.StdioServerTransport
@@ -135,15 +136,7 @@ class SpolaMcpServer(
         val properties = buildJsonObject {
             for (param in spolaTool.parameters) {
                 putJsonObject(param.name) {
-                    put("type", JsonPrimitive(when (param.type) {
-                        ToolParameterType.STRING -> "string"
-                        ToolParameterType.INTEGER -> "integer"
-                        ToolParameterType.NUMBER -> "number"
-                        ToolParameterType.BOOLEAN -> "boolean"
-                        ToolParameterType.ARRAY -> "array"
-                        ToolParameterType.OBJECT -> "object"
-                        ToolParameterType.ENUM -> "string"
-                    }))
+                    put("type", JsonPrimitive(param.type.toTypeString()))
                     put("description", JsonPrimitive(param.description))
                     if (param.type == ToolParameterType.ARRAY) {
                         put("items", buildJsonObject { })

@@ -119,7 +119,7 @@ fun Application.spolaApiModule(
     val effectiveWorkflowExecutionStore = resolvedServices?.workflowExecutionStore ?: workflowExecutionStore
     val effectiveWorkflowExecutionService = resolvedServices?.workflowExecutionService ?: workflowExecutionService
     val effectiveWorkflowTemplateRegistry = resolvedServices?.workflowTemplateRegistry ?: workflowTemplateRegistry
-    val effectiveToolRegistry = resolvedServices?.toolRegistry?.let { runBlocking { it.await() } } ?: toolRegistry
+    val effectiveToolRegistry = resolvedServices?.toolRegistry ?: toolRegistry
     val effectiveStreamHandler = resolvedServices?.streamHandler ?: streamHandler
     val effectiveRunState = resolvedServices?.runState ?: runState
     val effectiveCheckpointManager = resolvedServices?.checkpointManager ?: checkpointManager

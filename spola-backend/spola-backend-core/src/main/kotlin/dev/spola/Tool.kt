@@ -40,6 +40,16 @@ enum class ToolParameterType {
     ENUM,
 }
 
+internal fun ToolParameterType.toTypeString(): String = when (this) {
+    ToolParameterType.STRING -> "string"
+    ToolParameterType.INTEGER -> "integer"
+    ToolParameterType.NUMBER -> "number"
+    ToolParameterType.BOOLEAN -> "boolean"
+    ToolParameterType.ARRAY -> "array"
+    ToolParameterType.OBJECT -> "object"
+    ToolParameterType.ENUM -> "enum"
+}
+
 /**
  * Result of a tool execution.
  */
@@ -180,10 +190,6 @@ fun ToolParameter.toJsonSchema(): Map<String, Any?> {
     )
 
     when (type) {
-        ToolParameterType.STRING -> schema["type"] = "string"
-        ToolParameterType.INTEGER -> schema["type"] = "integer"
-        ToolParameterType.NUMBER -> schema["type"] = "number"
-        ToolParameterType.BOOLEAN -> schema["type"] = "boolean"
         ToolParameterType.ARRAY -> {
             schema["type"] = "array"
             schema["items"] = emptyMap<String, Any?>()
@@ -198,6 +204,7 @@ fun ToolParameter.toJsonSchema(): Map<String, Any?> {
                 schema["enum"] = enumValues
             }
         }
+        else -> schema["type"] = type.toTypeString()
     }
 
     if (defaultValue != null) {

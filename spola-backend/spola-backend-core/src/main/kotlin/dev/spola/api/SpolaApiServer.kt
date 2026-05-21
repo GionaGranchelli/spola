@@ -1,5 +1,6 @@
 package dev.spola.api
 
+import dev.spola.ApiException
 import dev.spola.SpolaConfig
 import dev.spola.SpolaVersion
 import dev.spola.ToolRegistry
@@ -138,6 +139,9 @@ fun Application.spolaApiModule(
         }
         exception<InvalidApiKeyException> { call, cause ->
             call.respondAuthFailure(cause)
+        }
+        exception<ApiException> { call, cause ->
+            call.respond(cause.statusCode, mapOf("error" to (cause.message ?: "request failed")))
         }
         exception<IllegalArgumentException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to (cause.message ?: "bad request")))

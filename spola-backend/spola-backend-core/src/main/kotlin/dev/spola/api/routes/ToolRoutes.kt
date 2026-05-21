@@ -32,17 +32,16 @@ fun Route.apiToolRoutes(
 
     post("/tools/{name}/toggle") {
         call.enforceBearerAuth(config.security.apiKey)
-        val name = call.parameters["name"] ?: throw IllegalArgumentException("missing tool name")
-        toolRegistry.get(name) ?: throw IllegalArgumentException("tool not found: $name")
+        val name = call.requirePathParameter("name", "tool name")
+        toolRegistry.get(name).orNotFound { "tool not found: $name" }
         val enabled = toolRegistry.toggleEnabled(name)
         call.respond(mapOf("name" to name, "enabled" to enabled))
     }
 
     get("/tools/{name}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val name = call.parameters["name"] ?: throw IllegalArgumentException("missing tool name")
-        val tool = toolRegistry.get(name)
-            ?: throw IllegalArgumentException("tool not found: $name")
+        val name = call.requirePathParameter("name", "tool name")
+        val tool = toolRegistry.get(name).orNotFound { "tool not found: $name" }
         val enabled = toolRegistry.isEnabled(name)
         call.respond(
             ToolDetailResponse(
@@ -75,8 +74,8 @@ fun Route.apiToolRoutes(
 
     put("/tools/{name}/toggle") {
         call.enforceBearerAuth(config.security.apiKey)
-        val name = call.parameters["name"] ?: throw IllegalArgumentException("missing tool name")
-        toolRegistry.get(name) ?: throw IllegalArgumentException("tool not found: $name")
+        val name = call.requirePathParameter("name", "tool name")
+        toolRegistry.get(name).orNotFound { "tool not found: $name" }
         val request = call.receive<ToolToggleRequest>()
         val currently = toolRegistry.isEnabled(name)
         if (request.enabled != currently) {

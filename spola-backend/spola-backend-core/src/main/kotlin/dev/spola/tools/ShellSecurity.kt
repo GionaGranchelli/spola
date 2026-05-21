@@ -175,6 +175,7 @@ internal fun executeShellCommand(
     permissionEnforcer: PermissionEnforcer? = null,
     env: Map<String, String>? = null,
     maxOutputSize: Int = MAX_SHELL_OUTPUT_SIZE,
+    useShell: Boolean = false,
 ): ToolResult {
     val workdir = File(workdirStr)
     if (!workdir.exists() || !workdir.isDirectory) {
@@ -198,7 +199,11 @@ internal fun executeShellCommand(
         return ToolResult.fail(securityError)
     }
 
-    val finalCommand = maybeWrapWithRtk(commandParts.args)
+    val finalCommand = if (useShell) {
+        listOf("/bin/sh", "-c", commandStr)
+    } else {
+        maybeWrapWithRtk(commandParts.args)
+    }
     val process = try {
         ProcessBuilder(finalCommand)
             .directory(workdir)

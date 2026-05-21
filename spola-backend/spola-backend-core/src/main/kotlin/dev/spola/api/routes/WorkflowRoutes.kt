@@ -81,7 +81,7 @@ fun Route.apiWorkflowRoutes(
     // ── Get single execution ───────────────────────────────────
     get("/workflows/executions/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing execution id")
+        val id = call.requirePathParameter("id", "execution id")
         val execution = workflowExecutionService.getExecution(id)
             ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("error" to "Execution not found"))
         call.respond(execution)
@@ -90,8 +90,7 @@ fun Route.apiWorkflowRoutes(
     // ── Approve a workflow execution ───────────────────────────
     post("/workflows/executions/{id}/approve") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"]
-            ?: throw IllegalArgumentException("Missing execution id")
+        val id = call.requirePathParameter("id", "execution id")
         try {
             val approved = workflowExecutionService.approveExecution(id)
             if (approved) {
@@ -113,7 +112,7 @@ fun Route.apiWorkflowRoutes(
     // ── List executions for a scheduler job ────────────────────
     get("/scheduler/jobs/{id}/executions") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing job id")
+        val id = call.requirePathParameter("id", "job id")
         val executions = workflowExecutionStore.listByTrigger("scheduler", id)
         call.respond(mapOf("executions" to executions))
     }
@@ -121,7 +120,7 @@ fun Route.apiWorkflowRoutes(
     // ── List executions for a kanban task ──────────────────────
     get("/kanban/tasks/{id}/executions") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("Missing task id")
+        val id = call.requirePathParameter("id", "task id")
         val executions = workflowExecutionStore.listByTrigger("kanban", id)
         call.respond(mapOf("executions" to executions))
     }

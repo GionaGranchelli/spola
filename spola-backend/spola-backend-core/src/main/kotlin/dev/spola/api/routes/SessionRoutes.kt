@@ -51,23 +51,23 @@ fun Route.apiSessionRoutes(
 
     delete("/session/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
+        val id = call.requirePathParameter("id", "session id")
         sessionStore.delete(id)
         call.respond(HttpStatusCode.NoContent)
     }
 
     get("/session/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
-        val session = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
+        val id = call.requirePathParameter("id", "session id")
+        val session = sessionStore.get(id).orNotFound { "session not found: $id" }
         call.respond(session)
     }
 
     post("/session/{id}/model") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
+        val id = call.requirePathParameter("id", "session id")
         val request = call.receive<SessionModelUpdate>()
-        val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
+        val existing = sessionStore.get(id).orNotFound { "session not found: $id" }
         val updated = existing.copy(modelId = request.modelId, lastActiveAt = System.currentTimeMillis())
         sessionStore.update(updated)
         call.respond(updated)
@@ -75,8 +75,8 @@ fun Route.apiSessionRoutes(
 
     get("/session/{id}/messages") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
-        sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
+        val id = call.requirePathParameter("id", "session id")
+        sessionStore.get(id).orNotFound { "session not found: $id" }
         call.respond(
             sessionStore.getMessages(id).map { message ->
                 CheckpointMessageResponse(role = message.role, content = message.content)
@@ -86,11 +86,13 @@ fun Route.apiSessionRoutes(
 
     post("/session/{id}/run") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
-        val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
+        val id = call.requirePathParameter("id", "session id")
+        val existing = sessionStore.get(id).orNotFound { "session not found: $id" }
         val request = call.receive<AgentRunRequest>()
+        val existingMessages = sessionStore.getMessages(id)
         val completedRun = agentRunHandler.runWithConversation(
             request.copy(model = request.model ?: existing.modelId),
+            preloadedConversation = existingMessages,
         )
         sessionStore.replaceMessages(id, completedRun.conversation)
         sessionStore.update(existing.copy(lastActiveAt = System.currentTimeMillis()))
@@ -104,12 +106,13 @@ fun Route.apiSessionRoutes(
 
     post("/session/{id}/run/stream") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
-        val existing = sessionStore.get(id) ?: throw IllegalArgumentException("session not found: $id")
+        val id = call.requirePathParameter("id", "session id")
+        val existing = sessionStore.get(id).orNotFound { "session not found: $id" }
         val request = call.receive<AgentRunRequest>()
         val effectiveRequest = request.copy(model = request.model ?: existing.modelId)
+        val existingMessages = sessionStore.getMessages(id)
         call.respond(SSEServerContent(call) {
-            streamHandler.stream(this, effectiveRequest) { completedRun ->
+            streamHandler.stream(this, effectiveRequest, existingMessages) { completedRun ->
                 sessionStore.replaceMessages(id, completedRun.conversation)
                 sessionStore.update(existing.copy(lastActiveAt = System.currentTimeMillis()))
             }

@@ -1,5 +1,6 @@
 package dev.spola.api
 
+import dev.spola.ValidationException
 import dev.spola.SpolaConfig
 import dev.spola.SpolaFactory
 import dev.spola.api.AgentCreateRequest
@@ -33,8 +34,8 @@ fun Route.apiAgentCrudRoutes(
 
     get("/agents/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
-        val agent = localAgentStore.get(id) ?: throw IllegalArgumentException("agent not found: $id")
+        val id = call.requirePathParameter("id", "agent id")
+        val agent = localAgentStore.get(id).orNotFound { "agent not found: $id" }
         call.respond(agent.toResponse())
     }
 
@@ -60,8 +61,8 @@ fun Route.apiAgentCrudRoutes(
 
     put("/agents/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
-        val existing = localAgentStore.get(id) ?: throw IllegalArgumentException("agent not found: $id")
+        val id = call.requirePathParameter("id", "agent id")
+        val existing = localAgentStore.get(id).orNotFound { "agent not found: $id" }
         val request = call.receive<AgentUpdateRequest>()
         val updatedToolPolicy = request.toolPolicy ?: existing.toolPolicy
         val updatedMemoryScope = request.memoryScope ?: existing.memoryScope
@@ -95,12 +96,12 @@ fun Route.apiAgentCrudRoutes(
             version = existing.version + 1,
         )
         val result = localAgentStore.update(updated)
-        call.respond(result?.toResponse() ?: throw IllegalArgumentException("agent not found: $id"))
+        call.respond(result.orNotFound { "agent not found: $id" }.toResponse())
     }
 
     delete("/agents/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing agent id")
+        val id = call.requirePathParameter("id", "agent id")
         if (localAgentStore.delete(id)) {
             call.respond(HttpStatusCode.NoContent)
         } else {
@@ -112,9 +113,9 @@ fun Route.apiAgentCrudRoutes(
         call.enforceBearerAuth(config.security.apiKey)
         val request = call.receive<AgentRunAgentRequest>()
         val agentDef = localAgentStore.get(request.agentId)
-            ?: throw IllegalArgumentException("agent not found: ${request.agentId}")
+            .orNotFound { "agent not found: ${request.agentId}" }
         if (!agentDef.enabled) {
-            throw IllegalArgumentException("agent '${request.agentId}' is disabled")
+            throw ValidationException("agent '${request.agentId}' is disabled")
         }
         val instance = SpolaFactory.createFromAgentDefinition(agentDef = agentDef, config = config)
         val result = instance.agent.run(agentDef.systemPrompt, request.goal)

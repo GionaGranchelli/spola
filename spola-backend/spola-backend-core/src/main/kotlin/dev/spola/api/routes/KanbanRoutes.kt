@@ -60,13 +60,13 @@ fun Route.apiKanbanRoutes(
 
     put("/kanban/{id}") {
         call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing card id")
+        val id = call.requirePathParameter("id", "card id")
         val req = call.receive<KanbanUpdateRequest>()
         val task = kanbanStore.update(
             id = id,
             title = req.text,
             status = req.status,
-        ) ?: throw IllegalArgumentException("card not found: $id")
+        ).orNotFound { "card not found: $id" }
         call.respond(
             KanbanCardResponse(
                 id = task.id,
@@ -79,7 +79,7 @@ fun Route.apiKanbanRoutes(
 
     delete("/kanban/{id}") {
         call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing card id")
+        val id = call.requirePathParameter("id", "card id")
         val removed = kanbanStore.remove(id)
         if (!removed) {
             call.respond(HttpStatusCode.NotFound, mapOf("error" to "card not found"))

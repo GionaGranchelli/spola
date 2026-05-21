@@ -297,7 +297,7 @@ internal fun maybeCompressToolResult(
     val finalOutput = "$compressed\n\n[TokenJuice: -${saved} chars]"
     // Only use compressed output if it's actually shorter (footer adds overhead)
     return if (finalOutput.length < result.output.length) {
-        ToolResult(result.success, finalOutput)
+        ToolResult(result.success, finalOutput, result.error)
     } else {
         result
     }

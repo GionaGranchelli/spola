@@ -3,6 +3,9 @@ package dev.spola.api
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.j2se.MatrixToImageWriter
 import com.google.zxing.qrcode.QRCodeWriter
+import dev.spola.NotFoundException
+import dev.spola.ValidationException
+import io.ktor.server.application.ApplicationCall
 import java.io.ByteArrayOutputStream
 import java.net.NetworkInterface
 import javax.imageio.ImageIO
@@ -33,3 +36,12 @@ fun generateQrCode(text: String, size: Int = 300): ByteArray {
     ImageIO.write(image, "png", baos)
     return baos.toByteArray()
 }
+
+fun ApplicationCall.requirePathParameter(name: String, label: String = name): String =
+    parameters[name] ?: throw ValidationException("missing $label")
+
+fun String.toRequiredLong(label: String): Long =
+    toLongOrNull() ?: throw ValidationException("invalid $label: $this")
+
+inline fun <T> T?.orNotFound(message: () -> String): T =
+    this ?: throw NotFoundException(message())

@@ -12,7 +12,7 @@ fun Route.apiWorkflowSessionRoutes(
 ) {
     get("/sessions/{id}/executions") {
         call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
-        val sessionId = call.parameters["id"] ?: throw IllegalArgumentException("missing session id")
+        val sessionId = call.requirePathParameter("id", "session id")
         val executions = executionStore.listBySessionId(sessionId)
         call.respond(mapOf("executions" to executions))
     }

@@ -106,6 +106,7 @@ object YamlWorkflowStepRunner {
             permissionEnforcer = permissionEnforcer,
             env = env,
             maxOutputSize = maxOutputBytes.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(),
+            useShell = true,
         )
         val shellResult = toolResultToShellExecutionResult(result)
         return ShellStepResult(

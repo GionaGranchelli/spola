@@ -6,6 +6,7 @@ import dev.spola.SpolaAgent
 import dev.spola.SpolaConfig
 import dev.spola.SpolaFactory
 import dev.spola.SpolaInstance
+import dev.spola.SystemMessage
 import java.util.concurrent.atomic.AtomicInteger
 
 class AgentRunState {
@@ -47,26 +48,29 @@ class AgentRunHandler(
     }
 
     suspend fun runWithConversation(request: AgentRunRequest): CompletedRun {
+        return runWithConversation(request, preloadedConversation = null)
+    }
+
+    suspend fun runWithConversation(
+        request: AgentRunRequest,
+        preloadedConversation: List<ChatMessage>?,
+    ): CompletedRun {
         require(request.goal.isNotBlank()) { "goal must not be blank" }
 
         return runState.track {
             val instance = instanceFactory(baseConfig, request.model)
             try {
                 val persona = request.persona ?: instance.persona
-                // Inject stored memories into the system prompt
-                val enrichedPersona = try {
-                    val memories = instance.memoryStore.listAll()
-                    if (memories.isNotEmpty()) {
-                        val memoryBlock = memories.joinToString("\n") { "- **${it.key}**: ${it.value}" }
-                        "$persona\n\n## Context from Memory\n$memoryBlock\n\nReview the context above. Use `memory_search` to find more specific facts or `memory_save` to store new ones."
-                    } else {
-                        persona
-                    }
-                } catch (e: Exception) {
-                    persona
+                val enrichedPersona = enrichPersonaWithMemory(instance, persona)
+                val transcript = preloadedConversation?.toMutableList()?.let {
+                    preloadTranscript(it, enrichedPersona)
                 }
-                val result = instance.agent.run(enrichedPersona, request.goal)
-                val conversation = instance.agent.getConversation()
+                val result = if (transcript != null) {
+                    instance.agent.runFull(enrichedPersona, request.goal, transcript)
+                } else {
+                    instance.agent.run(enrichedPersona, request.goal)
+                }
+                val conversation = transcript ?: instance.agent.getConversation()
                 val turns = conversation.filterIsInstance<AssistantMessage>().size
                 CompletedRun(
                     result = result,
@@ -90,6 +94,48 @@ class AgentRunHandler(
         agent: SpolaAgent,
         persona: String,
         goal: String,
+        preloadedConversation: MutableList<ChatMessage>? = null,
         observer: dev.spola.AgentRunObserver? = null,
-    ): String = agent.run(persona, goal, observer)
+    ): String {
+        val transcript = preloadedConversation?.let {
+            preloadTranscript(it, persona)
+        }
+        return if (transcript != null) {
+            agent.runFull(persona, goal, transcript, observer)
+        } else {
+            agent.run(persona, goal, observer)
+        }
+    }
+
+    suspend fun enrichPersonaWithMemory(instance: SpolaInstance, persona: String): String {
+        return try {
+            val memories = instance.memoryStore.listAll()
+            if (memories.isEmpty()) {
+                persona
+            } else {
+                val memoryBlock = memories.joinToString("\n") { "- **${it.key}**: ${it.value}" }
+                "$persona\n\n## Context from Memory\n$memoryBlock\n\nReview the context above. Use `memory_search` to find more specific facts or `memory_save` to store new ones."
+            }
+        } catch (_: Exception) {
+            persona
+        }
+    }
+
+    private fun preloadTranscript(
+        transcript: MutableList<ChatMessage>,
+        persona: String,
+    ): MutableList<ChatMessage> {
+        val existingSystem = transcript.firstOrNull() as? SystemMessage
+        return when {
+            existingSystem == null -> {
+                transcript.add(0, SystemMessage(persona))
+                transcript
+            }
+            existingSystem.content == persona -> transcript
+            else -> {
+                transcript[0] = SystemMessage(persona)
+                transcript
+            }
+        }
+    }
 }

@@ -32,7 +32,7 @@ fun Route.apiMemoryRoutes(
 
     delete("/memory/{key}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val key = call.parameters["key"] ?: throw IllegalArgumentException("missing memory key")
+        val key = call.requirePathParameter("key", "memory key")
         val deleted = memoryStore.delete(key)
         if (!deleted) {
             call.respond(

@@ -1,9 +1,0 @@
-Namespace Refactor Exploration Summary
-=====================================
-Date: 2026-05-18
-Total files containing 'dev.spola': 416
-
-Breakdown:
-- Kotlin source files: 200 files
-- Kotlin script files: 16 files
-- Markdown files: 200 files

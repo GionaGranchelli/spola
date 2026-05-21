@@ -37,7 +37,7 @@ fun Route.apiJobRoutes(
 
     delete("/jobs/{id}") {
         call.enforceBearerAuth(config.security.apiKey)
-        val id = call.parameters["id"] ?: throw IllegalArgumentException("missing job id")
+        val id = call.requirePathParameter("id", "job id")
         val removed = jobStore.remove(id)
         if (!removed) {
             call.respond(

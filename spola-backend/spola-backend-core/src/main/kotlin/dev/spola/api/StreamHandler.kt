@@ -2,6 +2,7 @@ package dev.spola.api
 
 import dev.spola.AgentRunObserver
 import dev.spola.AssistantMessage
+import dev.spola.ChatMessage
 import dev.spola.ToolCall
 import dev.spola.ToolResult
 import io.ktor.server.sse.ServerSSESession
@@ -19,13 +20,14 @@ class StreamHandler(
     suspend fun stream(
         session: ServerSSESession,
         request: AgentRunRequest,
+        preloadedConversation: List<ChatMessage>? = null,
         onComplete: (suspend (AgentRunHandler.CompletedRun) -> Unit)? = null,
     ) {
         agentRunHandler.trackRun {
             val instance = agentRunHandler.createInstance(request)
             try {
                 send(session, "status", StatusEventPayload(status = "started", message = "Creating agent instance"))
-                val persona = request.persona ?: instance.persona
+                val persona = agentRunHandler.enrichPersonaWithMemory(instance, request.persona ?: instance.persona)
                 val observer = object : AgentRunObserver {
                     override suspend fun onStatus(status: String, message: String?) {
                         send(session, "status", StatusEventPayload(status = status, message = message))
@@ -60,13 +62,15 @@ class StreamHandler(
                     }
                 }
 
+                val transcript = preloadedConversation?.toMutableList()
                 val result = agentRunHandler.runAgent(
                     agent = instance.agent,
                     persona = persona,
                     goal = request.goal,
+                    preloadedConversation = transcript,
                     observer = observer,
                 )
-                val conversation = instance.agent.getConversation()
+                val conversation = transcript ?: instance.agent.getConversation()
                 val turns = conversation.filterIsInstance<AssistantMessage>().size
                 onComplete?.invoke(
                     AgentRunHandler.CompletedRun(

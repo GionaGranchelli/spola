@@ -1,7 +1,7 @@
 # SECURITY.md
 
 ## Purpose
-Define the security posture for OpenClaw.
+Define the security posture for Spola Client.
 
 ## Core rules
 - Never run commands implicitly.

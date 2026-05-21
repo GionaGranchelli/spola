@@ -16,8 +16,8 @@ sonarqube {
     properties {
         property("sonar.host.url", "http://localhost:9000")
         property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
-        property("sonar.projectKey", "openclaw-app")
-        property("sonar.projectName", "OpenClaw App")
+        property("sonar.projectKey", "spola-frontend")
+        property("sonar.projectName", "Spola Client")
         property("sonar.sourceEncoding", "UTF-8")
         property("sonar.exclusions", "**/fixtures/**")
     }

@@ -19,8 +19,8 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import dev.spola.app.backend.routes.*
-import dev.spola.app.db.OpenClawDb
-import dev.spola.app.models.OpenClawOptions
+import dev.spola.app.db.SpolaDb
+import dev.spola.app.models.SpolaOptions
 import dev.spola.app.models.PairingInfo
 import dev.spola.app.models.TrustState
 import dev.spola.app.state.AppStateStore
@@ -35,7 +35,7 @@ import java.util.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import java.io.File
 
-private const val DB_URL = "jdbc:sqlite:openclaw.db"
+private const val DB_URL = "jdbc:sqlite:spola.db"
 private const val DEFAULT_BACKEND_PORT = 9090
 private const val BACKEND_PORT_SCAN_WINDOW = 25
 
@@ -114,7 +114,7 @@ private fun handleInitialize(req: McpRequest, json: Json): String {
         put("protocolVersion", "2024-11-05")
         put("capabilities", buildJsonObject {})
         put("serverInfo", buildJsonObject {
-            put("name", "openclaw-app")
+            put("name", "spola-frontend")
             put("version", "1.0.0")
         })
     })
@@ -159,7 +159,7 @@ private fun handleCallTool(req: McpRequest, json: Json): String? {
         return null
     }
 
-    val uploadsRoot = File(System.getProperty("user.home"), ".openclaw/uploads")
+    val uploadsRoot = File(System.getProperty("user.home"), ".spola/uploads")
     val file = File(File(uploadsRoot, sessionId), fileId)
     val content = if (file.exists() && file.isFile) {
         file.readText()
@@ -186,7 +186,7 @@ fun main(args: Array<String>) {
     val driver = JdbcSqliteDriver(DB_URL)
     // Initialize schema
     try {
-        OpenClawDb.Schema.create(driver)
+        SpolaDb.Schema.create(driver)
     } catch (e: Exception) {
         println("[DB] Schema already exists or creation failed: ${e.message}. Attempting migrations...")
         // Simple migration for missing columns
@@ -220,13 +220,13 @@ fun main(args: Array<String>) {
         connection.close()
     }
     
-    val db = OpenClawDb(driver)
+    val db = SpolaDb(driver)
     val stateStore = AppStateStore(db)
 
     val hostIp = InetAddress.getLocalHost().hostAddress
     val existing = stateStore.loadTrustedHost()?.takeIf { it.active }
     val preferredPort = (
-        System.getProperty("openclaw.port")
+        System.getProperty("spola.port")
             ?.trim()
             ?.toIntOrNull()
             ?.takeIf { it in 1..65535 }
@@ -259,7 +259,7 @@ fun main(args: Array<String>) {
     )
 
     println(
-        "\n=== OPENCLAW PAIRING INFO ===\n" +
+        "\n=== SPOLA CLIENT PAIRING INFO ===\n" +
             "Payload: ${Json.encodeToString(PairingInfo.serializer(), pairingPayload)}\n" +
             "=============================\n"
     )
@@ -267,7 +267,7 @@ fun main(args: Array<String>) {
     embeddedServer(Netty, port = serverPort, host = "0.0.0.0") { module(db) }.start(wait = true)
 }
 
-fun Application.module(db: OpenClawDb, servicesOverride: BackendServices? = null) {
+fun Application.module(db: SpolaDb, servicesOverride: BackendServices? = null) {
     val services = servicesOverride ?: BackendServices(db, ollamaClient)
 
     install(ServerContentNegotiation) { json(Json { prettyPrint = true; isLenient = true; ignoreUnknownKeys = true }) }
@@ -283,8 +283,8 @@ fun Application.module(db: OpenClawDb, servicesOverride: BackendServices? = null
             cause.printStackTrace()
             when (path) {
                 "/models" -> call.respondText("[]", ContentType.Application.Json, HttpStatusCode.OK)
-                "/openclaw/options" -> call.respondText(
-                    Json.encodeToString(OpenClawOptions.serializer(), OpenClawOptions()),
+                "/spola/options" -> call.respondText(
+                    Json.encodeToString(SpolaOptions.serializer(), SpolaOptions()),
                     ContentType.Application.Json,
                     HttpStatusCode.OK,
                 )
@@ -295,7 +295,7 @@ fun Application.module(db: OpenClawDb, servicesOverride: BackendServices? = null
 
     routing {
         get("/") {
-            call.respondText("OpenClaw Running")
+            call.respondText("Spola Client Running")
         }
 
         trustRoutes(services)

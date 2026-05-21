@@ -15,7 +15,7 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.spola.app.app.ToolBrowserPane
 import dev.spola.app.app.components.EmptyState
 import dev.spola.app.app.decompose.DashboardComponent
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 @Composable
 fun ToolsPage(
@@ -44,14 +44,14 @@ fun ToolsPage(
         ) {
             Text(
                 "🧰 Tools & MCP",
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 style = MaterialTheme.typography.headlineMedium,
             )
             Spacer(Modifier.weight(1f))
             // Connection indicator
             val currentHost by dashboardComponent.currentHost.collectAsState()
             Surface(
-                color = if (currentHost != null) GolemColors.success.copy(alpha = 0.15f) else GolemColors.error.copy(alpha = 0.15f),
+                color = if (currentHost != null) SpolaColors.success.copy(alpha = 0.15f) else SpolaColors.error.copy(alpha = 0.15f),
                 shape = MaterialTheme.shapes.small,
                 modifier = Modifier.semantics {
                     contentDescription = if (currentHost != null) "Connected to ${currentHost!!.host}:${currentHost!!.port}" else "Disconnected"
@@ -59,7 +59,7 @@ fun ToolsPage(
             ) {
                 Text(
                     text = currentHost?.let { "${it.host}:${it.port}" } ?: "Disconnected",
-                    color = if (currentHost != null) GolemColors.success else GolemColors.error,
+                    color = if (currentHost != null) SpolaColors.success else SpolaColors.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                 )
@@ -67,7 +67,7 @@ fun ToolsPage(
         }
 
         Spacer(Modifier.height(12.dp))
-        HorizontalDivider(color = GolemColors.bgElevated)
+        HorizontalDivider(color = SpolaColors.bgElevated)
         Spacer(Modifier.height(12.dp))
 
         // Tool browser content

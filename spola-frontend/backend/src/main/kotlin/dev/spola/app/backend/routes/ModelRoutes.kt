@@ -9,7 +9,7 @@ import dev.spola.app.backend.BackendServices
 import dev.spola.app.backend.CatalogResponse
 import dev.spola.app.backend.SUPPORTED_PROVIDERS
 import dev.spola.app.models.ModelInfo
-import dev.spola.app.models.OpenClawOptions
+import dev.spola.app.models.SpolaOptions
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
@@ -41,19 +41,19 @@ fun Route.modelRoutes(services: BackendServices) {
         call.respond(SUPPORTED_PROVIDERS)
     }
 
-    get("/openclaw/options") {
+    get("/spola/options") {
         if (TrustAuth.requireTrust(call, services.stateStore) == null) return@get
-        val response = runCatching { services.modelCatalogService.getOpenClawOptions() }
+        val response = runCatching { services.modelCatalogService.getSpolaOptions() }
             .getOrElse {
-                println("OpenClaw options fatal error: ${it.message}")
-                CatalogResponse(value = OpenClawOptions(), warnings = listOf(it.message ?: "unknown error"))
+                println("Spola Client options fatal error: ${it.message}")
+                CatalogResponse(value = SpolaOptions(), warnings = listOf(it.message ?: "unknown error"))
             }
-        response.warnings.forEach { println("OpenClaw options warning: $it") }
+        response.warnings.forEach { println("Spola Client options warning: $it") }
         val payload = runCatching {
-            Json.encodeToString(OpenClawOptions.serializer(), response.value)
+            Json.encodeToString(SpolaOptions.serializer(), response.value)
         }.getOrElse {
-            println("OpenClaw options serialization failure: ${it.message}")
-            Json.encodeToString(OpenClawOptions.serializer(), OpenClawOptions())
+            println("Spola Client options serialization failure: ${it.message}")
+            Json.encodeToString(SpolaOptions.serializer(), SpolaOptions())
         }
         call.respondText(payload, ContentType.Application.Json, HttpStatusCode.OK)
     }

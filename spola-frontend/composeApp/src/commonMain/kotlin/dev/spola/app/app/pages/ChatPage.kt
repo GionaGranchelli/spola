@@ -45,7 +45,7 @@ import dev.spola.app.app.components.EmptyState
 import dev.spola.app.app.components.LoadingSkeletonList
 import dev.spola.app.app.components.ModelSelector
 import dev.spola.app.app.decompose.DashboardComponent
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 import dev.spola.app.models.Message
 import dev.spola.app.models.MessageRole
 import dev.spola.app.models.ModelInfo
@@ -117,7 +117,7 @@ fun ChatPage(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(GolemColors.bg),
+            .background(SpolaColors.bg),
     ) {
         val useOverlaySidebar = maxWidth < 720.dp
         val sessionSidebar: @Composable (Modifier) -> Unit = { sidebarModifier ->
@@ -223,7 +223,7 @@ fun ChatPage(
                             .padding(8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("☰", color = GolemColors.textMuted, fontSize = 16.sp)
+                        Text("☰", color = SpolaColors.textMuted, fontSize = 16.sp)
                     }
                 }
 
@@ -231,7 +231,7 @@ fun ChatPage(
                     modifier = Modifier
                         .width(1.dp)
                         .fillMaxHeight()
-                        .background(GolemColors.bgElevated)
+                        .background(SpolaColors.bgElevated)
                 )
 
                 ChatContent(
@@ -324,7 +324,7 @@ private fun SessionSidebar(
 ) {
     Surface(
         modifier = modifier,
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
@@ -337,7 +337,7 @@ private fun SessionSidebar(
             ) {
                 Text(
                     "Sessions",
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     fontSize = 14.sp,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -345,7 +345,7 @@ private fun SessionSidebar(
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
-                            color = GolemColors.textMuted,
+                            color = SpolaColors.textMuted,
                         )
                     }
                     TextButton(
@@ -356,12 +356,12 @@ private fun SessionSidebar(
                             role = Role.Button
                         },
                     ) {
-                        Text("+ New", fontSize = 12.sp, color = GolemColors.accent)
+                        Text("+ New", fontSize = 12.sp, color = SpolaColors.accent)
                     }
                 }
             }
 
-            HorizontalDivider(color = GolemColors.bgElevated)
+            HorizontalDivider(color = SpolaColors.bgElevated)
 
             // Session list
             if (isLoading) {
@@ -373,7 +373,7 @@ private fun SessionSidebar(
                 EmptyState(
                     emoji = "💬",
                     title = "No sessions yet",
-                    message = "Create a new session to start chatting with the Golem agent.",
+                    message = "Create a new session to start chatting with the Spola agent.",
                     actionLabel = "New Session",
                     onAction = onNewSession,
                     modifier = Modifier.padding(16.dp),
@@ -526,7 +526,7 @@ private fun SessionSidebarItem(
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val bgColor = if (isSelected) GolemColors.accent.copy(alpha = 0.12f) else GolemColors.bgSurface
+    val bgColor = if (isSelected) SpolaColors.accent.copy(alpha = 0.12f) else SpolaColors.bgSurface
 
     Surface(
         modifier = Modifier
@@ -547,7 +547,7 @@ private fun SessionSidebarItem(
             ) {
                 Text(
                     text = session.title,
-                    color = if (isSelected) GolemColors.textPrimary else GolemColors.textSecondary,
+                    color = if (isSelected) SpolaColors.textPrimary else SpolaColors.textSecondary,
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -563,7 +563,7 @@ private fun SessionSidebarItem(
                             role = Role.Button
                         },
                 ) {
-                    Text("×", color = GolemColors.textMuted, fontSize = 14.sp)
+                    Text("×", color = SpolaColors.textMuted, fontSize = 14.sp)
                 }
             }
             Row(
@@ -572,14 +572,14 @@ private fun SessionSidebarItem(
             ) {
                 Text(
                     text = session.modelId.take(20),
-                    color = GolemColors.accent.copy(alpha = 0.7f),
+                    color = SpolaColors.accent.copy(alpha = 0.7f),
                     fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = formatShortTimestamp(session.createdAt),
-                    color = GolemColors.textMuted,
+                    color = SpolaColors.textMuted,
                     fontSize = 10.sp,
                 )
             }
@@ -602,7 +602,7 @@ private fun SessionSidebarItem(
                         role = Role.Button
                     },
                 ) {
-                    Text("Delete", color = GolemColors.error)
+                    Text("Delete", color = SpolaColors.error)
                 }
             },
             dismissButton = {
@@ -632,7 +632,7 @@ private fun ChatStatusBar(
     onToggleSidebar: () -> Unit,
 ) {
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -645,7 +645,7 @@ private fun ChatStatusBar(
             // Sidebar toggle
             Text(
                 text = "☰",
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 16.sp,
                 modifier = Modifier
                     .clickable { onToggleSidebar() }
@@ -665,7 +665,7 @@ private fun ChatStatusBar(
             } else {
                 Text(
                     "No session selected",
-                    color = GolemColors.textMuted,
+                    color = SpolaColors.textMuted,
                     fontSize = 12.sp,
                 )
             }
@@ -677,25 +677,25 @@ private fun ChatStatusBar(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(if (isConnected) GolemColors.success else GolemColors.error),
+                    .background(if (isConnected) SpolaColors.success else SpolaColors.error),
             )
 
             Text(
                 text = if (isConnected) "Connected" else "Disconnected",
-                color = if (isConnected) GolemColors.textSecondary else GolemColors.error,
+                color = if (isConnected) SpolaColors.textSecondary else SpolaColors.error,
                 fontSize = 11.sp,
             )
 
             // Agent status
             Text(
                 text = status.uppercase(),
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 11.sp,
             )
         }
     }
 
-    HorizontalDivider(color = GolemColors.bgElevated)
+    HorizontalDivider(color = SpolaColors.bgElevated)
 }
 
 // ── Chat Messages Area ───────────────────────────────────────────────
@@ -717,13 +717,13 @@ private fun ChatMessagesArea(
     }
 
     Box(
-        modifier = modifier.background(GolemColors.bg),
+        modifier = modifier.background(SpolaColors.bg),
     ) {
         if (messages.isEmpty()) {
             EmptyState(
                 emoji = "💬",
                 title = "Select or create a session",
-                message = "Choose a session from the sidebar or create a new one to start chatting with the Golem agent.",
+                message = "Choose a session from the sidebar or create a new one to start chatting with the Spola agent.",
             )
         } else {
             LazyColumn(
@@ -763,7 +763,7 @@ private fun ToolTimeline(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 12.dp))
-                .background(GolemColors.thinkingBg)
+                .background(SpolaColors.thinkingBg)
                 .clickable { expanded = !expanded }
                 .semantics {
                     contentDescription = if (expanded) "Collapse tool call timeline" else "Expand tool call timeline"
@@ -778,25 +778,25 @@ private fun ToolTimeline(
                 modifier = Modifier
                     .size(10.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(GolemColors.toolRunning),
+                    .background(SpolaColors.toolRunning),
             )
 
             Text(
                 text = "Thinking...",
-                color = GolemColors.textSecondary,
+                color = SpolaColors.textSecondary,
                 fontSize = 12.sp,
             )
 
             Text(
                 text = if (expanded) "▲" else "▼",
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 9.sp,
             )
 
             if (toolEvents.isNotEmpty()) {
                 Text(
                     text = "${toolEvents.filter { it.type == StreamEventType.tool_result }.size} tools used",
-                    color = GolemColors.textMuted,
+                    color = SpolaColors.textMuted,
                     fontSize = 10.sp,
                 )
             }
@@ -812,14 +812,14 @@ private fun ToolTimeline(
             Column(
                 modifier = Modifier
                     .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                    .background(GolemColors.toolCallBg)
+                    .background(SpolaColors.toolCallBg)
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (toolEvents.isEmpty()) {
                     Text(
                         text = "⏳ No tool calls yet…",
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 11.sp,
                         modifier = Modifier.padding(vertical = 4.dp),
                     )
@@ -873,9 +873,9 @@ private fun ToolTimelineItem(
         else -> "✓"
     }
     val iconColor = when {
-        isPending -> GolemColors.toolRunning
-        isError -> GolemColors.toolError
-        else -> GolemColors.toolSuccess
+        isPending -> SpolaColors.toolRunning
+        isError -> SpolaColors.toolError
+        else -> SpolaColors.toolSuccess
     }
 
     Row(
@@ -891,7 +891,7 @@ private fun ToolTimelineItem(
         )
         Text(
             text = toolName,
-            color = GolemColors.textSecondary,
+            color = SpolaColors.textSecondary,
             fontSize = 12.sp,
             modifier = Modifier.weight(1f),
         )
@@ -920,7 +920,7 @@ private fun MessageBubble(message: Message) {
             // Role label
             Text(
                 text = if (isUser) "You" else "Assistant",
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             )
@@ -937,8 +937,8 @@ private fun MessageBubble(message: Message) {
                         )
                     )
                     .background(
-                        if (isUser) GolemColors.userBubble
-                        else GolemColors.assistantBubble
+                        if (isUser) SpolaColors.userBubble
+                        else SpolaColors.assistantBubble
                     )
                     .padding(horizontal = 14.dp, vertical = 10.dp)
                     .semantics {
@@ -950,14 +950,14 @@ private fun MessageBubble(message: Message) {
                 if (content.startsWith("```") || content.startsWith("  ") || content.contains("\n  ")) {
                     Text(
                         text = content,
-                        color = GolemColors.assistantBubbleText,
+                        color = SpolaColors.assistantBubbleText,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
                     )
                 } else {
                     Text(
                         text = content,
-                        color = if (isUser) GolemColors.userBubbleText else GolemColors.assistantBubbleText,
+                        color = if (isUser) SpolaColors.userBubbleText else SpolaColors.assistantBubbleText,
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                     )
@@ -967,7 +967,7 @@ private fun MessageBubble(message: Message) {
             // Timestamp
             Text(
                 text = formatShortTimestamp(message.timestamp),
-                color = GolemColors.textMuted.copy(alpha = 0.6f),
+                color = SpolaColors.textMuted.copy(alpha = 0.6f),
                 fontSize = 10.sp,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             )
@@ -988,10 +988,10 @@ private fun ChatInputBar(
 ) {
     Surface(
         modifier = modifier,
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
     ) {
         Column {
-            HorizontalDivider(color = GolemColors.bgElevated)
+            HorizontalDivider(color = SpolaColors.bgElevated)
 
             Row(
                 modifier = Modifier
@@ -1018,20 +1018,20 @@ private fun ChatInputBar(
                     placeholder = {
                         Text(
                             if (isSessionSelected) "Type a message..." else "Select a session first",
-                            color = GolemColors.textMuted,
+                            color = SpolaColors.textMuted,
                             fontSize = 13.sp,
                         )
                     },
                     textStyle = TextStyle(
-                        color = GolemColors.textPrimary,
+                        color = SpolaColors.textPrimary,
                         fontSize = 14.sp,
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GolemColors.accent.copy(alpha = 0.5f),
-                        unfocusedBorderColor = GolemColors.bgElevated,
-                        cursorColor = GolemColors.accent,
-                        focusedContainerColor = GolemColors.bg,
-                        unfocusedContainerColor = GolemColors.bg,
+                        focusedBorderColor = SpolaColors.accent.copy(alpha = 0.5f),
+                        unfocusedBorderColor = SpolaColors.bgElevated,
+                        cursorColor = SpolaColors.accent,
+                        focusedContainerColor = SpolaColors.bg,
+                        unfocusedContainerColor = SpolaColors.bg,
                     ),
                     minLines = 1,
                     maxLines = 6,
@@ -1061,8 +1061,8 @@ private fun ChatInputBar(
                         },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GolemColors.accent,
-                        disabledContainerColor = GolemColors.accent.copy(alpha = 0.3f),
+                        containerColor = SpolaColors.accent,
+                        disabledContainerColor = SpolaColors.accent.copy(alpha = 0.3f),
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
@@ -1070,7 +1070,7 @@ private fun ChatInputBar(
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
                             strokeWidth = 2.dp,
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                         )
                     } else {
                         Text("Send", fontSize = 13.sp)

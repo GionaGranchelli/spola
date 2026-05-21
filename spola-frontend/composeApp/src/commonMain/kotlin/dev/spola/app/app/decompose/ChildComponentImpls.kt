@@ -11,7 +11,7 @@ import dev.spola.app.models.Message
 import dev.spola.app.models.MessageRole
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
-import dev.spola.app.network.GolemClient
+import dev.spola.app.network.SpolaClient
 import dev.spola.app.state.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,11 +24,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-private const val NO_GOLEM_HOST = "No configured Golem host"
+private const val NO_SPOLA_HOST = "No configured Spola backend host"
 
 class DefaultAgentRunComponent(
     componentContext: ComponentContext,
-    private val clientProvider: () -> GolemClient?,
+    private val clientProvider: () -> SpolaClient?,
     private val reportFailure: (Throwable, String?) -> Unit,
 ) : AgentRunComponent, ComponentContext by componentContext {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -102,7 +102,7 @@ class DefaultAgentRunComponent(
 
         activeRun = scope.launch {
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.streamAgentRun(trimmedGoal, _persona.value.trim().takeIf { it.isNotBlank() }).collect { event ->
                     appendEvent(event)
                     when (event.type) {
@@ -170,7 +170,7 @@ class DefaultAgentRunComponent(
 
 class DefaultToolBrowserComponent(
     componentContext: ComponentContext,
-    private val clientProvider: () -> GolemClient?,
+    private val clientProvider: () -> SpolaClient?,
     private val reportFailure: (Throwable, String?) -> Unit,
 ) : ToolBrowserComponent, ComponentContext by componentContext {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -192,7 +192,7 @@ class DefaultToolBrowserComponent(
         scope.launch {
             _isLoading.value = true
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.getTools().map(ToolInfo::toUiMap)
             }.onSuccess {
                 _tools.value = it
@@ -206,7 +206,7 @@ class DefaultToolBrowserComponent(
 
 class DefaultMemorySearchComponent(
     componentContext: ComponentContext,
-    private val clientProvider: () -> GolemClient?,
+    private val clientProvider: () -> SpolaClient?,
     private val reportFailure: (Throwable, String?) -> Unit,
 ) : MemorySearchComponent, ComponentContext by componentContext {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -234,7 +234,7 @@ class DefaultMemorySearchComponent(
         scope.launch {
             _isLoading.value = true
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.searchMemory(trimmedQuery)
             }.onSuccess {
                 _results.value = it
@@ -251,7 +251,7 @@ class DefaultMemorySearchComponent(
         scope.launch {
             _isLoading.value = true
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.deleteMemory(key)
             }.onSuccess {
                 _results.value = _results.value.filterNot { it.first == key }
@@ -265,7 +265,7 @@ class DefaultMemorySearchComponent(
 
 class DefaultSchedulerListComponent(
     componentContext: ComponentContext,
-    private val clientProvider: () -> GolemClient?,
+    private val clientProvider: () -> SpolaClient?,
     private val reportFailure: (Throwable, String?) -> Unit,
 ) : SchedulerListComponent, ComponentContext by componentContext {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -287,7 +287,7 @@ class DefaultSchedulerListComponent(
         scope.launch {
             _isLoading.value = true
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.getScheduledJobs().map(ScheduledJobResponse::toUiMap)
             }.onSuccess {
                 _jobs.value = it

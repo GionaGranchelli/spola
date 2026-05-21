@@ -19,7 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 import dev.spola.app.models.ModelInfo
 
 /**
@@ -41,7 +41,7 @@ fun ModelSelector(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(GolemColors.bgElevated)
+                .background(SpolaColors.bgElevated)
                 .clickable { expanded = true }
                 .semantics {
                     contentDescription = "Selected model: $modelName. Tap to change model."
@@ -53,7 +53,7 @@ fun ModelSelector(
         ) {
             Text(
                 text = modelName,
-                color = GolemColors.accent,
+                color = SpolaColors.accent,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -61,7 +61,7 @@ fun ModelSelector(
             )
             Text(
                 text = "▼",
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 8.sp,
             )
         }
@@ -92,7 +92,7 @@ fun ModelSelector(
                                 Text(
                                     text = model.provider,
                                     fontSize = 11.sp,
-                                    color = GolemColors.textMuted,
+                                    color = SpolaColors.textMuted,
                                 )
                             }
                         },

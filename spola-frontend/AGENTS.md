@@ -1,7 +1,7 @@
-# AGENTS.md — OpenClaw App v0.0.3
+# AGENTS.md — Spola Client v0.0.3
 
 ## Purpose
-OpenClaw KMP app — Kotlin Multiplatform Compose Desktop/Android client for session-based chat with Golem agent backend running via TramAI & Hermes. Features model selection, chat with Golem agents, Kanban task management, Scheduler, Memory inspection, Tools browser, workflow toggling, and Settings.
+Spola Client KMP app — Kotlin Multiplatform Compose Desktop/Android client for session-based chat with Spola agent backend running via TramAI & Hermes. Features model selection, chat with Spola agents, Kanban task management, Scheduler, Memory inspection, Tools browser, workflow toggling, and Settings.
 
 **Version:** 0.0.3 (versionCode=3)  
 **Last scan:** 46 → 19 SonarQube issues (May 16 2026)
@@ -11,7 +11,7 @@ OpenClaw KMP app — Kotlin Multiplatform Compose Desktop/Android client for ses
 ## Repo shape
 
 ```
-openclaw-app/
+spola-frontend/
 ├── shared/               # KMP library — DTOs, SQLDelight persistence, network client, state store
 ├── backend/              # Ktor HTTP server — session/chat/memory/file Kanban + Workflow APIs
 ├── composeApp/           # Compose Multiplatform UI (Desktop + Android)
@@ -47,15 +47,15 @@ openclaw-app/
 - **APK build:** `./gradlew :composeApp:assembleDebug` → `composeApp/build/outputs/apk/debug/composeApp-debug.apk`
 - **SonarQube:** `./gradlew --no-parallel sonar` (needs `SONAR_TOKEN` or `-Dsonar.token=<token>`)
 - Bump `versionName`+`versionCode` in `composeApp/build.gradle.kts` for each new APK.
-- Backend has pre-existing SQLDelight codegen issue (`OpenClawDb` generation) — not introduced by feature work.
+- Backend has pre-existing SQLDelight codegen issue (`SpolaDb` generation) — not introduced by feature work.
 
 ---
 
 ## Navigation (6 tabs via bottom bar)
-1. **Chat** — Session-based messaging with Golem agents
+1. **Chat** — Session-based messaging with Spola agents
 2. **Kanban** — 3-column task board (todo, in_progress, done), full CRUD via REST API
 3. **Workflows** — List workflow definitions with enable/disable toggle
-4. **Tools** — Browse available Golem tools (fetched from `/api/tools`)
+4. **Tools** — Browse available Spola tools (fetched from `/api/tools`)
 5. **Memory** — View/save persistent memory entries
 6. **Settings** — App configuration (model, provider, API keys, theme)
 
@@ -73,11 +73,11 @@ RootComponent
 
 ### shared (KMP library)
 - **Models.kt** — All API DTOs (session, message, file, model, kanban)
-- **GolemModels.kt** — Agent-specific models (tools, memory, workflows)
-- **GolemClient.kt** — Ktor HTTP client: all `/api/*` calls to Golem backend or Hermes gateway
+- **SpolaModels.kt** — Agent-specific models (tools, memory, workflows)
+- **SpolaClient.kt** — Ktor HTTP client: all `/api/*` calls to Spola backend or Hermes gateway
 - **AppStateStore.kt** — Persisted app configuration (selected model, provider, theme)
 - **DriverFactory.kt** — `expect`/`actual` SQLDelight driver for each platform
-- **OpenClawDb.sq** — 6 tables: ModelEntity, ChatSessionEntity, MessageEntity, AppStateEntity, AuditEventEntity, FileEntity
+- **SpolaDb.sq** — 6 tables: ModelEntity, ChatSessionEntity, MessageEntity, AppStateEntity, AuditEventEntity, FileEntity
 
 ### backend (Ktor server)
 #### Routes
@@ -102,7 +102,7 @@ RootComponent
 - **FlowManager.kt** — Flow orchestration (session lifecycle, streaming)
 
 #### Services
-- ChatRoutingService, ChatProviders, BackendMetaService, ModelCatalogService, OpenClawGatewayChatProvider, SpeechService, TrustAuth
+- ChatRoutingService, ChatProviders, BackendMetaService, ModelCatalogService, SpolaGatewayChatProvider, SpeechService, TrustAuth
 
 #### Repositories
 - SessionRepository, MessageRepository, FileRepository, AuditRepository — SQLDelight-backed
@@ -128,7 +128,7 @@ RootComponent
 | ChatPage.kt:62 | 36 | 15 max |
 | ChatPage.kt:980 | 35 | 15 max |
 | ChatPage.kt:908 | 30 | 15 max |
-| OpenClawRestGatewayClient.kt:47 | 21 | 15 max |
+| SpolaRestGatewayClient.kt:47 | 21 | 15 max |
 | Platform.kt:80 | Empty function | - |
 | Platform.kt:87 | Empty function | - |
 
@@ -156,9 +156,9 @@ RootComponent
 
 ---
 
-## Golem Remote API Server
+## Spola Remote API Server
 - **Host:** `100.76.218.127:8082` (Tailscale)
-- **Mode:** `--api --api-host 0.0.0.0 --insecure --api-key golem-remote-mesh`
+- **Mode:** `--api --api-host 0.0.0.0 --insecure --api-key spola-remote-mesh`
 - **Health:** `GET /health` (returns 404 — use `GET /api/tools` to verify)
 - **Endpoints:** `api/tools` (53 tools), `api/kanban`, `api/workflows`, `api/scheduler`, `api/memory`
 - **Config:** `pairingToken` + `apiKey` both required in camelCase YAML
@@ -171,7 +171,7 @@ RootComponent
 3. **Android polish** (theme, gestures, dark mode)
 4. **Context size overview** in ChatPage (planned Phase 5)
 5. **Memory persistence end-to-end** test (planned Phase 6)
-6. **Scheduler page** UI improvements (currently lists Golem scheduler jobs)
+6. **Scheduler page** UI improvements (currently lists Spola scheduler jobs)
 
 ---
 

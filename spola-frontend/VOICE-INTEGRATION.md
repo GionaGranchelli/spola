@@ -1,12 +1,12 @@
-# Voice Integration Proposal for OpenClaw
+# Voice Integration Proposal for Spola Client
 
 ## Overview
 
-Add voice input (speech-to-text) and voice output (text-to-speech) capabilities to OpenClaw, enabling users to interact with the AI via voice in both the desktop app and Telegram.
+Add voice input (speech-to-text) and voice output (text-to-speech) capabilities to Spola Client, enabling users to interact with the AI via voice in both the desktop app and Telegram.
 
 ## Goals
 
-1. **Voice Input**: Users can speak to OpenClaw; audio is transcribed and sent as a prompt
+1. **Voice Input**: Users can speak to Spola Client; audio is transcribed and sent as a prompt
 2. **Voice Output**: AI responses can be spoken aloud via TTS
 3. **Telegram Voice**: Support voice messages in Telegram integration
 
@@ -31,7 +31,7 @@ Add voice input (speech-to-text) and voice output (text-to-speech) capabilities 
 
 #### Backend: `/speech/transcribe` endpoint
 
-**File**: `backend/src/main/kotlin/it/openclaw/backend/routes/SpeechRoute.kt`
+**File**: `backend/src/main/kotlin/dev/spola/app/backend/routes/SpeechRoute.kt`
 
 ```kotlin
 import io.ktor.server.application.*
@@ -58,7 +58,7 @@ fun Route.speechRoutes(services: BackendServices) {
 
 #### Speech Service
 
-**File**: `backend/src/main/kotlin/it/openclaw/backend/SpeechService.kt`
+**File**: `backend/src/main/kotlin/dev/spola/app/backend/SpeechService.kt`
 
 ```kotlin
 import io.ktor.client.*
@@ -156,7 +156,7 @@ class ElevenLabsTTS(
 
 #### ChatPane additions
 
-**File**: `composeApp/src/commonMain/kotlin/it/openclaw/app/App.kt`
+**File**: `composeApp/src/commonMain/kotlin/dev/spola/app/app/App.kt`
 
 Add voice input button to the chat input area:
 
@@ -198,7 +198,7 @@ fun ChatInput(
 
 #### Voice recording manager
 
-**File**: `composeApp/src/commonMain/kotlin/it/openclaw/app/VoiceManager.kt`
+**File**: `composeApp/src/commonMain/kotlin/dev/spola/app/app/VoiceManager.kt`
 
 ```kotlin
 import androidx.compose.runtime.*
@@ -226,7 +226,7 @@ class VoiceManager {
         return ByteArray(0) // Placeholder
     }
     
-    suspend fun transcribe(audio: ByteArray, client: OpenClawClient): String {
+    suspend fun transcribe(audio: ByteArray, client: SpolaClient): String {
         return withContext(Dispatchers.IO) {
             // Call backend transcription endpoint
             ""
@@ -267,14 +267,14 @@ data class VoiceSettings(
 
 | File | Action |
 |------|--------|
-| `backend/src/main/kotlin/it/openclaw/backend/SpeechService.kt` | New - STT/TTS implementations |
-| `backend/src/main/kotlin/it/openclaw/backend/routes/SpeechRoute.kt` | New - REST endpoints |
-| `backend/src/main/kotlin/it/openclaw/backend/Main.kt` | Modify - register speech routes |
-| `backend/src/main/kotlin/it/openclaw/backend/BackendServices.kt` | Modify - add SpeechService |
-| `shared/src/commonMain/kotlin/it/openclaw/models/Models.kt` | Modify - add VoiceSettings |
-| `shared/src/commonMain/kotlin/it/openclaw/network/OpenClawClient.kt` | Modify - add transcribe/synthesize calls |
-| `composeApp/src/commonMain/kotlin/it/openclaw/app/App.kt` | Modify - add voice input UI |
-| `composeApp/src/commonMain/kotlin/it/openclaw/app/VoiceManager.kt` | New - voice recording logic |
+| `backend/src/main/kotlin/dev/spola/app/backend/SpeechService.kt` | New - STT/TTS implementations |
+| `backend/src/main/kotlin/dev/spola/app/backend/routes/SpeechRoute.kt` | New - REST endpoints |
+| `backend/src/main/kotlin/dev/spola/app/backend/Main.kt` | Modify - register speech routes |
+| `backend/src/main/kotlin/dev/spola/app/backend/BackendServices.kt` | Modify - add SpeechService |
+| `shared/src/commonMain/kotlin/dev/spola/app/models/Models.kt` | Modify - add VoiceSettings |
+| `shared/src/commonMain/kotlin/dev/spola/app/network/SpolaClient.kt` | Modify - add transcribe/synthesize calls |
+| `composeApp/src/commonMain/kotlin/dev/spola/app/app/App.kt` | Modify - add voice input UI |
+| `composeApp/src/commonMain/kotlin/dev/spola/app/app/VoiceManager.kt` | New - voice recording logic |
 
 ## Dependencies
 
@@ -292,10 +292,10 @@ dependencies {
 
 ```properties
 # application.conf (or environment variables)
-openclaw.speech.stt.provider=ollama-whisper
-openclaw.speech.stt.ollama.url=http://localhost:11434
-openclaw.speech.tts.provider=elevenlabs
-openclaw.speech.tts.elevenlabs.api-key=${ELEVENLABS_API_KEY}
+spola.speech.stt.provider=ollama-whisper
+spola.speech.stt.ollama.url=http://localhost:11434
+spola.speech.tts.provider=elevenlabs
+spola.speech.tts.elevenlabs.api-key=${ELEVENLABS_API_KEY}
 ```
 
 ## Testing Plan
@@ -321,4 +321,4 @@ openclaw.speech.tts.elevenlabs.api-key=${ELEVENLABS_API_KEY}
 - Voice activity detection (VAD)
 - Multiple voice options for TTS
 - Voice cloning
-- Custom hotword detection ("Hey OpenClaw")
+- Custom hotword detection ("Hey Spola Client")

@@ -8,34 +8,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 
-private val GolemDarkColorScheme = darkColorScheme(
-    primary = GolemColors.Dark.accent,
-    onPrimary = GolemColors.Dark.userBubbleText,
-    secondary = GolemColors.Dark.accentLight,
-    background = GolemColors.Dark.bg,
-    surface = GolemColors.Dark.bgSurface,
-    surfaceVariant = GolemColors.Dark.bgElevated,
-    onBackground = GolemColors.Dark.textPrimary,
-    onSurface = GolemColors.Dark.textPrimary,
-    onSurfaceVariant = GolemColors.Dark.textSecondary,
-    error = GolemColors.Dark.error,
-    onError = GolemColors.Dark.userBubbleText,
-    outline = GolemColors.Dark.textMuted,
+private val SpolaDarkColorScheme = darkColorScheme(
+    primary = SpolaColors.Dark.accent,
+    onPrimary = SpolaColors.Dark.userBubbleText,
+    secondary = SpolaColors.Dark.accentLight,
+    background = SpolaColors.Dark.bg,
+    surface = SpolaColors.Dark.bgSurface,
+    surfaceVariant = SpolaColors.Dark.bgElevated,
+    onBackground = SpolaColors.Dark.textPrimary,
+    onSurface = SpolaColors.Dark.textPrimary,
+    onSurfaceVariant = SpolaColors.Dark.textSecondary,
+    error = SpolaColors.Dark.error,
+    onError = SpolaColors.Dark.userBubbleText,
+    outline = SpolaColors.Dark.textMuted,
 )
 
-private val GolemLightColorScheme = lightColorScheme(
-    primary = GolemColors.Light.accent,
-    onPrimary = GolemColors.Light.userBubbleText,
-    secondary = GolemColors.Light.accentLight,
-    background = GolemColors.Light.bg,
-    surface = GolemColors.Light.bgSurface,
-    surfaceVariant = GolemColors.Light.bgElevated,
-    onBackground = GolemColors.Light.textPrimary,
-    onSurface = GolemColors.Light.textPrimary,
-    onSurfaceVariant = GolemColors.Light.textSecondary,
-    error = GolemColors.Light.error,
-    onError = GolemColors.Light.userBubbleText,
-    outline = GolemColors.Light.textMuted,
+private val SpolaLightColorScheme = lightColorScheme(
+    primary = SpolaColors.Light.accent,
+    onPrimary = SpolaColors.Light.userBubbleText,
+    secondary = SpolaColors.Light.accentLight,
+    background = SpolaColors.Light.bg,
+    surface = SpolaColors.Light.bgSurface,
+    surfaceVariant = SpolaColors.Light.bgElevated,
+    onBackground = SpolaColors.Light.textPrimary,
+    onSurface = SpolaColors.Light.textPrimary,
+    onSurfaceVariant = SpolaColors.Light.textSecondary,
+    error = SpolaColors.Light.error,
+    onError = SpolaColors.Light.userBubbleText,
+    outline = SpolaColors.Light.textMuted,
 )
 
 /**
@@ -44,18 +44,18 @@ private val GolemLightColorScheme = lightColorScheme(
 val LocalIsDarkMode = staticCompositionLocalOf { true }
 
 @Composable
-fun GolemTheme(
+fun SpolaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val effectiveDark = darkTheme
-    GolemColors.isDarkMode = effectiveDark
+    SpolaColors.isDarkMode = effectiveDark
 
     CompositionLocalProvider(LocalIsDarkMode provides effectiveDark) {
         MaterialTheme(
-            colorScheme = if (effectiveDark) GolemDarkColorScheme else GolemLightColorScheme,
-            typography = GolemTypography,
-            shapes = GolemShapes,
+            colorScheme = if (effectiveDark) SpolaDarkColorScheme else SpolaLightColorScheme,
+            typography = SpolaTypography,
+            shapes = SpolaShapes,
             content = content,
         )
     }

@@ -44,11 +44,11 @@ import androidx.compose.ui.unit.sp
 import dev.spola.app.app.components.EmptyState
 import dev.spola.app.app.components.LoadingSkeletonCard
 import dev.spola.app.app.decompose.DashboardComponent
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 import dev.spola.app.models.TrustState
 import dev.spola.app.models.WorkflowDefinition
 import dev.spola.app.models.WorkflowExecutionRecord
-import dev.spola.app.network.GolemClient
+import dev.spola.app.network.SpolaClient
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
@@ -62,7 +62,7 @@ fun WorkflowsPage(
     modifier: Modifier = Modifier,
 ) {
     val currentHost by dashboardComponent.currentHost.collectAsState()
-    val client = rememberGolemClient(currentHost)
+    val client = rememberSpolaClient(currentHost)
     val scope = rememberCoroutineScope()
     var workflows by remember(currentHost) { mutableStateOf<List<WorkflowDefinition>>(emptyList()) }
     var executions by remember(currentHost) { mutableStateOf<List<WorkflowExecutionRecord>>(emptyList()) }
@@ -147,7 +147,7 @@ fun WorkflowsPage(
             ) {
                 Text(
                     if (currentView == WorkflowsView.DEFINITIONS) "Workflows (${workflows.size})" else "Executions (${executions.size})",
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     fontSize = 18.sp,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -161,7 +161,7 @@ fun WorkflowsPage(
                         Text(
                             "Definitions",
                             fontSize = 12.sp,
-                            color = if (currentView == WorkflowsView.DEFINITIONS) GolemColors.accent else GolemColors.textMuted,
+                            color = if (currentView == WorkflowsView.DEFINITIONS) SpolaColors.accent else SpolaColors.textMuted,
                         )
                     }
                     TextButton(
@@ -174,15 +174,15 @@ fun WorkflowsPage(
                         Text(
                             "Executions",
                             fontSize = 12.sp,
-                            color = if (currentView == WorkflowsView.EXECUTIONS) GolemColors.accent else GolemColors.textMuted,
+                            color = if (currentView == WorkflowsView.EXECUTIONS) SpolaColors.accent else SpolaColors.textMuted,
                         )
                     }
                     if (currentView == WorkflowsView.DEFINITIONS) {
                         Button(
                             onClick = { showCreateDialog = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = GolemColors.accent,
-                                contentColor = GolemColors.bgSurface,
+                                containerColor = SpolaColors.accent,
+                                contentColor = SpolaColors.bgSurface,
                             ),
                             shape = RoundedCornerShape(8.dp),
                         ) {
@@ -194,7 +194,7 @@ fun WorkflowsPage(
 
             if (error != null) {
                 Surface(
-                    color = GolemColors.error.copy(alpha = 0.12f),
+                    color = SpolaColors.error.copy(alpha = 0.12f),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -202,7 +202,7 @@ fun WorkflowsPage(
                 ) {
                     Text(
                         text = error.orEmpty(),
-                        color = GolemColors.textPrimary,
+                        color = SpolaColors.textPrimary,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(12.dp),
                     )
@@ -308,7 +308,7 @@ fun WorkflowsPage(
     if (showRunDialog) {
         AlertDialog(
             onDismissRequest = { showRunDialog = false },
-            title = { Text("Run: $selectedWorkflowName", color = GolemColors.textPrimary) },
+            title = { Text("Run: $selectedWorkflowName", color = SpolaColors.textPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -319,13 +319,13 @@ fun WorkflowsPage(
                         minLines = 3,
                         maxLines = 6,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = GolemColors.textPrimary,
-                            unfocusedTextColor = GolemColors.textPrimary,
-                            focusedBorderColor = GolemColors.accent,
-                            unfocusedBorderColor = GolemColors.bgElevated,
-                            cursorColor = GolemColors.accent,
-                            focusedLabelColor = GolemColors.accent,
-                            unfocusedLabelColor = GolemColors.textMuted,
+                            focusedTextColor = SpolaColors.textPrimary,
+                            unfocusedTextColor = SpolaColors.textPrimary,
+                            focusedBorderColor = SpolaColors.accent,
+                            unfocusedBorderColor = SpolaColors.bgElevated,
+                            cursorColor = SpolaColors.accent,
+                            focusedLabelColor = SpolaColors.accent,
+                            unfocusedLabelColor = SpolaColors.textMuted,
                         ),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -334,7 +334,7 @@ fun WorkflowsPage(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
-                                color = GolemColors.accent,
+                                color = SpolaColors.accent,
                             )
                         }
                     }
@@ -367,8 +367,8 @@ fun WorkflowsPage(
                     },
                     enabled = runGoal.isNotBlank() && !isRunning,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GolemColors.accent,
-                        contentColor = GolemColors.bgSurface,
+                        containerColor = SpolaColors.accent,
+                        contentColor = SpolaColors.bgSurface,
                     ),
                 ) {
                     Text("Run")
@@ -379,7 +379,7 @@ fun WorkflowsPage(
                     onClick = { showRunDialog = false },
                     enabled = !isRunning,
                 ) {
-                    Text("Cancel", color = GolemColors.textMuted)
+                    Text("Cancel", color = SpolaColors.textMuted)
                 }
             },
         )
@@ -397,17 +397,17 @@ fun WorkflowsPage(
     showComingSoon?.let { message ->
         AlertDialog(
             onDismissRequest = { showComingSoon = null },
-            title = { Text("\uD83D\uDD27", color = GolemColors.textPrimary) },
+            title = { Text("\uD83D\uDD27", color = SpolaColors.textPrimary) },
             text = {
                 Text(
                     text = "Workflow definition CRUD is coming in a future update.\n\nTemplate-based workflows are read-only for now — use the Run button to execute them.",
-                    color = GolemColors.textSecondary,
+                    color = SpolaColors.textSecondary,
                     fontSize = 13.sp,
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showComingSoon = null }) {
-                    Text("OK", color = GolemColors.accent)
+                    Text("OK", color = SpolaColors.accent)
                 }
             },
         )
@@ -425,7 +425,7 @@ private fun WorkflowCard(
     onRun: () -> Unit,
 ) {
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -438,7 +438,7 @@ private fun WorkflowCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = workflow.name,
-                        color = GolemColors.textPrimary,
+                        color = SpolaColors.textPrimary,
                         fontSize = 15.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -446,7 +446,7 @@ private fun WorkflowCard(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = workflow.description,
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -454,8 +454,8 @@ private fun WorkflowCard(
                 Button(
                     onClick = onRun,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GolemColors.success.copy(alpha = 0.15f),
-                        contentColor = GolemColors.success,
+                        containerColor = SpolaColors.success.copy(alpha = 0.15f),
+                        contentColor = SpolaColors.success,
                     ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
@@ -468,7 +468,7 @@ private fun WorkflowCard(
                         CircularProgressIndicator(
                             modifier = Modifier.height(24.dp),
                             strokeWidth = 2.dp,
-                            color = GolemColors.accent,
+                            color = SpolaColors.accent,
                         )
                     } else {
                         Switch(
@@ -479,7 +479,7 @@ private fun WorkflowCard(
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = GolemColors.bgElevated)
+            HorizontalDivider(color = SpolaColors.bgElevated)
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -488,7 +488,7 @@ private fun WorkflowCard(
             ) {
                 Text(
                     text = if (workflow.enabled) "Enabled" else "Disabled",
-                    color = if (workflow.enabled) GolemColors.success else GolemColors.textMuted,
+                    color = if (workflow.enabled) SpolaColors.success else SpolaColors.textMuted,
                     fontSize = 11.sp,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -496,19 +496,19 @@ private fun WorkflowCard(
                         onClick = onEdit,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                     ) {
-                        Text("Edit", fontSize = 12.sp, color = GolemColors.accent)
+                        Text("Edit", fontSize = 12.sp, color = SpolaColors.accent)
                     }
                     if (isDeleting) {
                         CircularProgressIndicator(
                             modifier = Modifier.height(18.dp).width(18.dp),
                             strokeWidth = 2.dp,
-                            color = GolemColors.error,
+                            color = SpolaColors.error,
                         )
                     } else {
                         TextButton(
                             onClick = onDelete,
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = GolemColors.error),
+                            colors = ButtonDefaults.textButtonColors(contentColor = SpolaColors.error),
                         ) {
                             Text("Delete", fontSize = 12.sp)
                         }
@@ -525,17 +525,17 @@ private fun ExecutionCard(
     onClick: () -> Unit,
 ) {
     val statusColor = when (execution.status) {
-        "QUEUED" -> GolemColors.warning
-        "RUNNING" -> GolemColors.accent
-        "WAITING_APPROVAL" -> GolemColors.warning
-        "COMPLETED" -> GolemColors.success
-        "FAILED" -> GolemColors.error
-        "CANCELLED" -> GolemColors.textMuted
-        else -> GolemColors.textMuted
+        "QUEUED" -> SpolaColors.warning
+        "RUNNING" -> SpolaColors.accent
+        "WAITING_APPROVAL" -> SpolaColors.warning
+        "COMPLETED" -> SpolaColors.success
+        "FAILED" -> SpolaColors.error
+        "CANCELLED" -> SpolaColors.textMuted
+        else -> SpolaColors.textMuted
     }
 
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -570,7 +570,7 @@ private fun ExecutionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = execution.workflowName,
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -588,7 +588,7 @@ private fun ExecutionCard(
                     if (execution.error != null) {
                         Text(
                             text = execution.error ?: "",
-                            color = GolemColors.error,
+                            color = SpolaColors.error,
                             fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -599,7 +599,7 @@ private fun ExecutionCard(
             }
             Text(
                 text = formatTimestamp(execution.createdAt),
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 11.sp,
             )
         }
@@ -612,13 +612,13 @@ private fun ExecutionDetailDialog(
     onDismiss: () -> Unit,
 ) {
     val statusColor = when (execution.status) {
-        "QUEUED" -> GolemColors.warning
-        "RUNNING" -> GolemColors.accent
-        "WAITING_APPROVAL" -> GolemColors.warning
-        "COMPLETED" -> GolemColors.success
-        "FAILED" -> GolemColors.error
-        "CANCELLED" -> GolemColors.textMuted
-        else -> GolemColors.textMuted
+        "QUEUED" -> SpolaColors.warning
+        "RUNNING" -> SpolaColors.accent
+        "WAITING_APPROVAL" -> SpolaColors.warning
+        "COMPLETED" -> SpolaColors.success
+        "FAILED" -> SpolaColors.error
+        "CANCELLED" -> SpolaColors.textMuted
+        else -> SpolaColors.textMuted
     }
 
     val statusEmoji = when (execution.status) {
@@ -641,7 +641,7 @@ private fun ExecutionDetailDialog(
                 Text(statusEmoji)
                 Text(
                     text = execution.workflowName,
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -653,7 +653,7 @@ private fun ExecutionDetailDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Status:",
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 12.sp,
                     )
                     Text(
@@ -667,12 +667,12 @@ private fun ExecutionDetailDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Template:",
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 12.sp,
                     )
                     Text(
                         text = execution.workflowName,
-                        color = GolemColors.textPrimary,
+                        color = SpolaColors.textPrimary,
                         fontSize = 12.sp,
                     )
                 }
@@ -680,17 +680,17 @@ private fun ExecutionDetailDialog(
                 // ID
                 Text(
                     text = "ID: ${execution.id.take(8)}...",
-                    color = GolemColors.textMuted,
+                    color = SpolaColors.textMuted,
                     fontSize = 11.sp,
                 )
 
-                HorizontalDivider(color = GolemColors.bgElevated)
+                HorizontalDivider(color = SpolaColors.bgElevated)
 
                 // Created
                 execution.createdAt.let {
                     Text(
                         text = "Created: ${formatTimestamp(it)}",
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -699,7 +699,7 @@ private fun ExecutionDetailDialog(
                 execution.startedAt?.let {
                     Text(
                         text = "Started: ${formatTimestamp(it)}",
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -708,7 +708,7 @@ private fun ExecutionDetailDialog(
                 execution.completedAt?.let {
                     Text(
                         text = "Completed: ${formatTimestamp(it)}",
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -717,7 +717,7 @@ private fun ExecutionDetailDialog(
                 execution.triggerSource?.let { source ->
                     Text(
                         text = "Trigger: $source${execution.triggerRef?.let { " ($it)" }.orEmpty()}",
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -726,26 +726,26 @@ private fun ExecutionDetailDialog(
                 execution.sessionId?.let { sid ->
                     Text(
                         text = "Session: ${sid.take(12)}...",
-                        color = GolemColors.textSecondary,
+                        color = SpolaColors.textSecondary,
                         fontSize = 12.sp,
                     )
                 }
 
                 // Error
                 execution.error?.let {
-                    HorizontalDivider(color = GolemColors.bgElevated)
+                    HorizontalDivider(color = SpolaColors.bgElevated)
                     Text(
                         text = "Error:",
-                        color = GolemColors.error,
+                        color = SpolaColors.error,
                         fontSize = 12.sp,
                     )
                     Surface(
-                        color = GolemColors.error.copy(alpha = 0.1f),
+                        color = SpolaColors.error.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp),
                     ) {
                         Text(
                             text = it,
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(8.dp),
                         )
@@ -754,19 +754,19 @@ private fun ExecutionDetailDialog(
 
                 // Result
                 execution.result?.let {
-                    HorizontalDivider(color = GolemColors.bgElevated)
+                    HorizontalDivider(color = SpolaColors.bgElevated)
                     Text(
                         text = "Result:",
-                        color = GolemColors.success,
+                        color = SpolaColors.success,
                         fontSize = 12.sp,
                     )
                     Surface(
-                        color = GolemColors.bgElevated,
+                        color = SpolaColors.bgElevated,
                         shape = RoundedCornerShape(8.dp),
                     ) {
                         Text(
                             text = it.take(500),
-                            color = GolemColors.textSecondary,
+                            color = SpolaColors.textSecondary,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(8.dp),
                             maxLines = 10,
@@ -778,7 +778,7 @@ private fun ExecutionDetailDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = GolemColors.accent)
+                Text("Close", color = SpolaColors.accent)
             }
         },
     )
@@ -798,7 +798,7 @@ private fun WorkflowFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title, color = GolemColors.textPrimary) },
+        title = { Text(title, color = SpolaColors.textPrimary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -807,13 +807,13 @@ private fun WorkflowFormDialog(
                     label = { Text("Name") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = GolemColors.textPrimary,
-                        unfocusedTextColor = GolemColors.textPrimary,
-                        focusedBorderColor = GolemColors.accent,
-                        unfocusedBorderColor = GolemColors.bgElevated,
-                        cursorColor = GolemColors.accent,
-                        focusedLabelColor = GolemColors.accent,
-                        unfocusedLabelColor = GolemColors.textMuted,
+                        focusedTextColor = SpolaColors.textPrimary,
+                        unfocusedTextColor = SpolaColors.textPrimary,
+                        focusedBorderColor = SpolaColors.accent,
+                        unfocusedBorderColor = SpolaColors.bgElevated,
+                        cursorColor = SpolaColors.accent,
+                        focusedLabelColor = SpolaColors.accent,
+                        unfocusedLabelColor = SpolaColors.textMuted,
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -824,13 +824,13 @@ private fun WorkflowFormDialog(
                     minLines = 2,
                     maxLines = 4,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = GolemColors.textPrimary,
-                        unfocusedTextColor = GolemColors.textPrimary,
-                        focusedBorderColor = GolemColors.accent,
-                        unfocusedBorderColor = GolemColors.bgElevated,
-                        cursorColor = GolemColors.accent,
-                        focusedLabelColor = GolemColors.accent,
-                        unfocusedLabelColor = GolemColors.textMuted,
+                        focusedTextColor = SpolaColors.textPrimary,
+                        unfocusedTextColor = SpolaColors.textPrimary,
+                        focusedBorderColor = SpolaColors.accent,
+                        unfocusedBorderColor = SpolaColors.bgElevated,
+                        cursorColor = SpolaColors.accent,
+                        focusedLabelColor = SpolaColors.accent,
+                        unfocusedLabelColor = SpolaColors.textMuted,
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -841,8 +841,8 @@ private fun WorkflowFormDialog(
                 onClick = { onConfirm(name, description) },
                 enabled = isValid,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GolemColors.accent,
-                    contentColor = GolemColors.bgSurface,
+                    containerColor = SpolaColors.accent,
+                    contentColor = SpolaColors.bgSurface,
                 ),
             ) {
                 Text("Save")
@@ -850,7 +850,7 @@ private fun WorkflowFormDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = GolemColors.textMuted)
+                Text("Cancel", color = SpolaColors.textMuted)
             }
         },
     )
@@ -885,10 +885,10 @@ private fun formatTimestamp(millis: Long): String {
 }
 
 @Composable
-private fun rememberGolemClient(currentHost: TrustState?): GolemClient? {
+private fun rememberSpolaClient(currentHost: TrustState?): SpolaClient? {
     val client = remember(currentHost?.trustId, currentHost?.host, currentHost?.port, currentHost?.token) {
         currentHost?.let { trust ->
-            GolemClient(
+            SpolaClient(
                 httpClient = HttpClient(),
                 baseUrl = "http://${trust.host}:${trust.port}/",
                 authToken = trust.token,

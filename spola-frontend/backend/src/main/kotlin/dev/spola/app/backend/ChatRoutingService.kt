@@ -1,6 +1,6 @@
 package dev.spola.app.backend
 
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.models.Message
 import dev.spola.app.models.MessageRole
 import dev.spola.app.models.FileMetadata
@@ -10,7 +10,7 @@ import dev.spola.app.backend.repo.FileRepository
 import java.util.UUID
 
 class ChatRoutingService(
-    private val db: OpenClawDb,
+    private val db: SpolaDb,
     private val stateStore: AppStateStore,
     private val chatProviders: Map<String, ChatProvider>,
     private val messageRepository: MessageRepository,
@@ -40,11 +40,11 @@ class ChatRoutingService(
         onStatus: suspend (String) -> Unit,
         onToken: suspend (String) -> Unit,
     ): Message {
-        val session = db.openClawDbQueries.getSessionById(sessionId).executeAsOneOrNull()
+        val session = db.spolaDbQueries.getSessionById(sessionId).executeAsOneOrNull()
             ?: error("Session not found: $sessionId")
         val modelId = session.modelId
         val providerId = normalizeProviderId(stateStore.loadSessionProvider(sessionId))
-        val sessionSettings = stateStore.loadSessionOpenClawSettings(sessionId)
+        val sessionSettings = stateStore.loadSessionSpolaSettings(sessionId)
         val provider = chatProviders[providerId] ?: chatProviders.getValue(PROVIDER_OLLAMA)
 
         // Fetch history window (e.g., last 10 messages)

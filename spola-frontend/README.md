@@ -1,6 +1,6 @@
-# OpenClaw App
+# Spola Client
 
-Kotlin Multiplatform client for OpenClaw.
+Kotlin Multiplatform client for Spola Client.
 
 ## What it is
 A session-based app for:

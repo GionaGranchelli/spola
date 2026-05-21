@@ -1,7 +1,7 @@
 # DATA-FLOW.md
 
 ## Purpose
-Describe the main data path through OpenClaw.
+Describe the main data path through Spola Client.
 
 ## Flow
 1. Client opens app.

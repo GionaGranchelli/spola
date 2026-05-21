@@ -77,19 +77,19 @@ fun Route.sessionRoutes(services: BackendServices) {
         call.respond(updated)
     }
 
-    get("/session/{id}/openclaw") {
+    get("/session/{id}/spola") {
         if (TrustAuth.requireTrust(call, services.stateStore) == null) return@get
         val sessionId = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
-        call.respond(services.sessionRepository.getOpenClawSettings(sessionId))
+        call.respond(services.sessionRepository.getSpolaSettings(sessionId))
     }
 
-    post("/session/{id}/openclaw") {
+    post("/session/{id}/spola") {
         if (TrustAuth.requireTrust(call, services.stateStore) == null) return@post
         val sessionId = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
-        val settings = call.receive<OpenClawSessionSettings>()
-        services.sessionRepository.saveOpenClawSettings(sessionId, settings)
+        val settings = call.receive<SpolaSessionSettings>()
+        services.sessionRepository.saveSpolaSettings(sessionId, settings)
         services.auditRepository.log(
-            kind = "session.openclaw.update",
+            kind = "session.spola.update",
             sessionId = sessionId,
             details = "agent=${settings.agentId ?: "-"} model=${settings.modelId ?: "-"} mode=${settings.mode ?: "-"} thinking=${settings.thinking ?: "-"}",
         )

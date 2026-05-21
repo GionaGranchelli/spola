@@ -8,7 +8,7 @@ import dev.spola.app.app.randomUUID
 import dev.spola.app.models.ChatSession
 import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.SelectedSessionState
-import dev.spola.app.network.GolemClient
+import dev.spola.app.network.SpolaClient
 import dev.spola.app.state.AppStateStore
 import dev.spola.app.state.currentTimeMillis
 import kotlinx.coroutines.CoroutineScope
@@ -20,11 +20,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-private const val NO_GOLEM_HOST = "No configured Golem host"
+private const val NO_SPOLA_HOST = "No configured Spola backend host"
 
 class DefaultSessionListComponent(
     componentContext: ComponentContext,
-    private val clientProvider: () -> GolemClient?,
+    private val clientProvider: () -> SpolaClient?,
     private val stateStore: AppStateStore?,
     private val reportFailure: (Throwable, String?) -> Unit,
 ) : SessionListComponent, ComponentContext by componentContext {
@@ -74,7 +74,7 @@ class DefaultSessionListComponent(
             _error.value = null
 
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 val sessions = api.getSessions()
                 val models = api.getModels()
                 sessions to models
@@ -158,7 +158,7 @@ class DefaultSessionListComponent(
             )
 
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.createSession(newSession)
             }.onSuccess { created ->
                 println(
@@ -187,7 +187,7 @@ class DefaultSessionListComponent(
             _error.value = null
 
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.deleteSession(sessionId)
             }.onSuccess {
                 _sessions.value = _sessions.value.filterNot { it.id == sessionId }
@@ -210,7 +210,7 @@ class DefaultSessionListComponent(
             _error.value = null
 
             runCatching {
-                val api = clientProvider() ?: error(NO_GOLEM_HOST)
+                val api = clientProvider() ?: error(NO_SPOLA_HOST)
                 api.updateSessionModel(sessionId, modelId)
             }.onSuccess { updated ->
                 // Update the session in our local list

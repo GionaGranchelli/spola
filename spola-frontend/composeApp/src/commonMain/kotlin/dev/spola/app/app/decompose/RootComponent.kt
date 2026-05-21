@@ -10,10 +10,10 @@ import com.arkivanov.decompose.value.Value
 import dev.spola.app.app.randomUUID
 import dev.spola.app.models.PairingInfo
 import dev.spola.app.models.TrustState
-import dev.spola.app.network.GolemClient
+import dev.spola.app.network.SpolaClient
 import dev.spola.app.state.AppStateStore
 import io.ktor.client.HttpClient
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +38,7 @@ interface RootComponent {
 
 class DefaultRootComponent(
     componentContext: ComponentContext,
-    private val db: OpenClawDb? = null,
+    private val db: SpolaDb? = null,
 ) : RootComponent, ComponentContext by componentContext {
     private val navigation = StackNavigation<Config>()
     private val stateStore = if (db != null) AppStateStore(db) else null
@@ -133,7 +133,7 @@ class DefaultPairingComponent(
         scope.launch {
             try {
                 val httpClient = HttpClient()
-                val client = GolemClient(httpClient)
+                val client = SpolaClient(httpClient)
                 val info = client.fetchPairingInfo(serverUrl)
                 httpClient.close()
                 val trust = TrustState(
@@ -218,7 +218,7 @@ class DefaultDashboardComponent(
     private val inMemoryTrust: TrustState? = null,
     private val onOpenPairing: () -> Unit,
 ) : DashboardComponent, ComponentContext by componentContext {
-    private var client: GolemClient? = null
+    private var client: SpolaClient? = null
     private val _currentHost = MutableStateFlow<TrustState?>(null)
     override val currentHost: StateFlow<TrustState?> = _currentHost.asStateFlow()
     private val _trustedHosts = MutableStateFlow<List<TrustState>>(emptyList())
@@ -282,7 +282,7 @@ class DefaultDashboardComponent(
 
     private fun resetClient(trust: TrustState?) {
         client?.close()
-        client = trust?.let { GolemClient(HttpClient(), "http://${it.host}:${it.port}/", it.token) }
+        client = trust?.let { SpolaClient(HttpClient(), "http://${it.host}:${it.port}/", it.token) }
     }
 
     private fun reportFailure(error: Throwable, status: String?) {

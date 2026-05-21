@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.spola.app.app.components.EmptyState
 import dev.spola.app.app.decompose.DashboardComponent
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 @Composable
 fun SettingsPage(
@@ -42,12 +42,12 @@ fun SettingsPage(
         // Header
         Text(
             "⚙️ Settings",
-            color = GolemColors.textPrimary,
+            color = SpolaColors.textPrimary,
             style = MaterialTheme.typography.headlineMedium,
         )
 
         Spacer(Modifier.height(4.dp))
-        HorizontalDivider(color = GolemColors.bgElevated)
+        HorizontalDivider(color = SpolaColors.bgElevated)
         Spacer(Modifier.height(4.dp))
 
         if (dashboardComponent == null) {
@@ -71,12 +71,12 @@ fun SettingsPage(
                     Column {
                         Text(
                             "Server",
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                             fontSize = 14.sp,
                         )
                         Text(
                             currentHost?.let { "${it.host}:${it.port}" } ?: "No server configured",
-                            color = if (currentHost != null) GolemColors.textSecondary else GolemColors.textMuted,
+                            color = if (currentHost != null) SpolaColors.textSecondary else SpolaColors.textMuted,
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
                         )
@@ -86,7 +86,7 @@ fun SettingsPage(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(if (currentHost != null) GolemColors.success else GolemColors.error)
+                            .background(if (currentHost != null) SpolaColors.success else SpolaColors.error)
                             .semantics {
                                 contentDescription = if (currentHost != null) "Connected" else "Disconnected"
                             },
@@ -100,12 +100,12 @@ fun SettingsPage(
                     Column {
                         Text(
                             "Trust ID",
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                             fontSize = 14.sp,
                         )
                         Text(
                             currentHost!!.trustId,
-                            color = GolemColors.textMuted,
+                            color = SpolaColors.textMuted,
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 1,
@@ -120,7 +120,7 @@ fun SettingsPage(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             "Trusted Hosts (${trustedHosts.size})",
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                             fontSize = 14.sp,
                         )
                         trustedHosts.forEach { host ->
@@ -128,7 +128,7 @@ fun SettingsPage(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(GolemColors.bgElevated.copy(alpha = 0.5f))
+                                    .background(SpolaColors.bgElevated.copy(alpha = 0.5f))
                                     .clickable { dashboardComponent.switchHost(host.trustId) }
                                     .semantics {
                                         contentDescription = "Switch to host ${host.host}:${host.port}${if (host.active) ", currently active" else ""}"
@@ -140,14 +140,14 @@ fun SettingsPage(
                             ) {
                                 Text(
                                     "${host.host}:${host.port}",
-                                    color = if (host.active) GolemColors.accent else GolemColors.textSecondary,
+                                    color = if (host.active) SpolaColors.accent else SpolaColors.textSecondary,
                                     fontSize = 13.sp,
                                     fontFamily = FontFamily.Monospace,
                                 )
                                 if (host.active) {
                                     Text(
                                         "Active",
-                                        color = GolemColors.success,
+                                        color = SpolaColors.success,
                                         fontSize = 11.sp,
                                     )
                                 }
@@ -164,7 +164,7 @@ fun SettingsPage(
                 modifier = Modifier
                     .clickable { showThemeDialog = true }
                     .semantics {
-                        contentDescription = "Theme settings — Dark (Golem) currently active"
+                        contentDescription = "Theme settings — Dark (Spola) currently active"
                         role = Role.Button
                     },
             ) {
@@ -176,18 +176,18 @@ fun SettingsPage(
                     Column {
                         Text(
                             "Theme",
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                             fontSize = 14.sp,
                         )
                         Text(
-                            "Dark (Golem) — default",
-                            color = GolemColors.textMuted,
+                            "Dark (Spola) — default",
+                            color = SpolaColors.textMuted,
                             fontSize = 12.sp,
                         )
                     }
                     Text(
                         "→",
-                        color = GolemColors.accent,
+                        color = SpolaColors.accent,
                         fontSize = 16.sp,
                     )
                 }
@@ -196,20 +196,20 @@ fun SettingsPage(
             if (showThemeDialog) {
                 AlertDialog(
                     onDismissRequest = { showThemeDialog = false },
-                    title = { Text("Theme", color = GolemColors.textPrimary) },
+                    title = { Text("Theme", color = SpolaColors.textPrimary) },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 "Select your preferred appearance.",
-                                color = GolemColors.textSecondary,
+                                color = SpolaColors.textSecondary,
                                 fontSize = 13.sp,
                             )
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (!GolemColors.isDarkMode) GolemColors.accent.copy(alpha = 0.12f) else GolemColors.bgElevated)
-                                    .clickable { GolemColors.isDarkMode = false; showThemeDialog = false }
+                                    .background(if (!SpolaColors.isDarkMode) SpolaColors.accent.copy(alpha = 0.12f) else SpolaColors.bgElevated)
+                                    .clickable { SpolaColors.isDarkMode = false; showThemeDialog = false }
                                     .semantics {
                                         contentDescription = "Light theme"
                                         role = Role.Button
@@ -220,16 +220,16 @@ fun SettingsPage(
                             ) {
                                 Text("☀️", fontSize = 20.sp)
                                 Column {
-                                    Text("Light", color = GolemColors.textPrimary, fontSize = 14.sp)
-                                    Text("Light appearance", color = GolemColors.textMuted, fontSize = 11.sp)
+                                    Text("Light", color = SpolaColors.textPrimary, fontSize = 14.sp)
+                                    Text("Light appearance", color = SpolaColors.textMuted, fontSize = 11.sp)
                                 }
                             }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (GolemColors.isDarkMode) GolemColors.accent.copy(alpha = 0.12f) else GolemColors.bgElevated)
-                                    .clickable { GolemColors.isDarkMode = true; showThemeDialog = false }
+                                    .background(if (SpolaColors.isDarkMode) SpolaColors.accent.copy(alpha = 0.12f) else SpolaColors.bgElevated)
+                                    .clickable { SpolaColors.isDarkMode = true; showThemeDialog = false }
                                     .semantics {
                                         contentDescription = "Dark theme"
                                         role = Role.Button
@@ -240,8 +240,8 @@ fun SettingsPage(
                             ) {
                                 Text("🌙", fontSize = 20.sp)
                                 Column {
-                                    Text("Dark (Golem)", color = GolemColors.textPrimary, fontSize = 14.sp)
-                                    Text("Dark appearance", color = GolemColors.textMuted, fontSize = 11.sp)
+                                    Text("Dark (Spola)", color = SpolaColors.textPrimary, fontSize = 14.sp)
+                                    Text("Dark appearance", color = SpolaColors.textMuted, fontSize = 11.sp)
                                 }
                             }
                         }
@@ -254,7 +254,7 @@ fun SettingsPage(
                                 role = Role.Button
                             },
                         ) {
-                            Text("Close", color = GolemColors.accent)
+                            Text("Close", color = SpolaColors.accent)
                         }
                     },
                 )
@@ -274,8 +274,8 @@ fun SettingsPage(
                         role = Role.Button
                     },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GolemColors.error.copy(alpha = 0.15f),
-                    contentColor = GolemColors.error,
+                    containerColor = SpolaColors.error.copy(alpha = 0.15f),
+                    contentColor = SpolaColors.error,
                 ),
                 shape = RoundedCornerShape(8.dp),
             ) {
@@ -285,13 +285,13 @@ fun SettingsPage(
             Spacer(Modifier.height(4.dp))
 
             Surface(
-                color = GolemColors.bgElevated.copy(alpha = 0.5f),
+                color = SpolaColors.bgElevated.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     "This will disconnect from the current server and return to the pairing screen to connect to a different host.",
-                    color = GolemColors.textMuted,
+                    color = SpolaColors.textMuted,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(10.dp),
                 )
@@ -302,8 +302,8 @@ fun SettingsPage(
 
         // Version info
         Text(
-            "OpenClaw App v0.1.0",
-            color = GolemColors.textMuted,
+            "Spola Client v0.1.0",
+            color = SpolaColors.textMuted,
             fontSize = 11.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
@@ -318,7 +318,7 @@ private fun SettingsSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             title.uppercase(),
-            color = GolemColors.accent,
+            color = SpolaColors.accent,
             fontSize = 11.sp,
             letterSpacing = 1.sp,
         )
@@ -333,7 +333,7 @@ private fun SettingsCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(10.dp),
         modifier = modifier.fillMaxWidth(),
     ) {

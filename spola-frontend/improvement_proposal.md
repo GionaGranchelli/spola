@@ -1,8 +1,8 @@
-# Improvement Proposal for OpenClaw App
+# Improvement Proposal for Spola Client
 
 ## Objective
 
-This document ranks the top 5 features that should be implemented next, adds codebase advice to improve development efficiency, and outlines an idea for collaboration between multiple OpenClaw instances across different machines.
+This document ranks the top 5 features that should be implemented next, adds codebase advice to improve development efficiency, and outlines an idea for collaboration between multiple Spola Client instances across different machines.
 
 ---
 
@@ -165,11 +165,11 @@ This saves time later when you debug issues.
 
 ---
 
-## Collaboration Idea for Multiple OpenClaw Instances
+## Collaboration Idea for Multiple Spola Client Instances
 
 ### Goal
 
-Allow multiple OpenClaw instances on different machines to cooperate on a shared task.
+Allow multiple Spola Client instances on different machines to cooperate on a shared task.
 
 Examples:
 - one machine gathers logs
@@ -181,14 +181,14 @@ Examples:
 
 ## Proposed Model: Shared Task Graph
 
-Each OpenClaw instance can act as both:
+Each Spola Client instance can act as both:
 - a **worker** that performs actions
 - a **coordinator** that assigns or observes tasks
 
 ### Core concept
 Create a shared collaboration layer with these primitives:
 
-- **instance**: a machine running OpenClaw
+- **instance**: a machine running Spola Client
 - **task**: a request to do something
 - **artifact**: files, outputs, logs, results
 - **message**: status update or coordination note

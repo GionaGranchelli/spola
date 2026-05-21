@@ -23,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.spola.app.app.navigation.NavigationTab
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 /**
  * Floating bottom tab bar inspired by OpenHuman's design.
@@ -52,7 +52,7 @@ fun BottomTabBar(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(GolemColors.bgSurface.copy(alpha = 0.92f))
+                    .background(SpolaColors.bgSurface.copy(alpha = 0.92f))
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -78,12 +78,12 @@ private fun TabItem(
     onClick: () -> Unit,
 ) {
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) GolemColors.accent.copy(alpha = 0.2f) else Color.Transparent,
+        targetValue = if (isSelected) SpolaColors.accent.copy(alpha = 0.2f) else Color.Transparent,
         animationSpec = tween(200),
         label = "tabBg",
     )
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) GolemColors.accent else GolemColors.tabInactive,
+        targetValue = if (isSelected) SpolaColors.accent else SpolaColors.tabInactive,
         animationSpec = tween(200),
         label = "tabContent",
     )

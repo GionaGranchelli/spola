@@ -1,6 +1,6 @@
-# File Upload Design for OpenClaw App
+# File Upload Design for Spola Client
 
-This document explains how to implement file upload support for an application that interacts with OpenClaw, with a focus on making files available to the agent in a safe, scalable, and practical way.
+This document explains how to implement file upload support for an application that interacts with Spola Client, with a focus on making files available to the agent in a safe, scalable, and practical way.
 
 ## Goal
 
@@ -263,15 +263,15 @@ This feels natural and avoids making the user manage raw links.
 
 ---
 
-## If You Want Real OpenClaw Integration
+## If You Want Real Spola Client Integration
 
-If the goal is to connect this to OpenClaw specifically, the app should likely do one of these:
+If the goal is to connect this to Spola Client specifically, the app should likely do one of these:
 
 - send a message containing a file reference
-- expose a tool that OpenClaw can call to read the file
+- expose a tool that Spola Client can call to read the file
 - provide a signed URL if the assistant runtime supports fetching it
 
-The exact shape depends on how your app is wired into OpenClaw, but the principle stays the same: **store first, reference second, read on demand**.
+The exact shape depends on how your app is wired into Spola Client, but the principle stays the same: **store first, reference second, read on demand**.
 
 ---
 

@@ -29,7 +29,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 /**
  * A command palette action that can be invoked.
@@ -70,7 +70,7 @@ fun CommandPalette(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(GolemColors.bg.copy(alpha = 0.5f))
+                .background(SpolaColors.bg.copy(alpha = 0.5f))
                 .clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                     indication = null,
@@ -120,7 +120,7 @@ private fun CommandPaletteContent(
             .semantics {
                 contentDescription = "Command palette"
             },
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shadowElevation = 16.dp,
         tonalElevation = 4.dp,
     ) {
@@ -142,20 +142,20 @@ private fun CommandPaletteContent(
                 placeholder = {
                     Text(
                         "Search commands…",
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 13.sp,
                     )
                 },
                 textStyle = TextStyle(
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     fontSize = 14.sp,
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GolemColors.accent.copy(alpha = 0.5f),
-                    unfocusedBorderColor = GolemColors.bgElevated,
-                    cursorColor = GolemColors.accent,
-                    focusedContainerColor = GolemColors.bg,
-                    unfocusedContainerColor = GolemColors.bg,
+                    focusedBorderColor = SpolaColors.accent.copy(alpha = 0.5f),
+                    unfocusedBorderColor = SpolaColors.bgElevated,
+                    cursorColor = SpolaColors.accent,
+                    focusedContainerColor = SpolaColors.bg,
+                    unfocusedContainerColor = SpolaColors.bg,
                 ),
                 singleLine = true,
                 shape = RoundedCornerShape(8.dp),
@@ -174,12 +174,12 @@ private fun CommandPaletteContent(
 
             Text(
                 text = "Type to filter commands, Esc to close",
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
 
-            HorizontalDivider(color = GolemColors.bgElevated)
+            HorizontalDivider(color = SpolaColors.bgElevated)
 
             if (filteredActions.isEmpty()) {
                 Box(
@@ -191,7 +191,7 @@ private fun CommandPaletteContent(
                 ) {
                     Text(
                         "No matching commands",
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 13.sp,
                     )
                 }
@@ -259,7 +259,7 @@ private fun CommandPaletteItem(
                 contentDescription = "Command: ${action.label}"
                 role = Role.Button
             },
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(6.dp),
     ) {
         Row(
@@ -275,18 +275,18 @@ private fun CommandPaletteItem(
             )
             Text(
                 text = action.label,
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 fontSize = 13.sp,
                 modifier = Modifier.weight(1f),
             )
             if (action.shortcut.isNotBlank()) {
                 Surface(
-                    color = GolemColors.bgElevated,
+                    color = SpolaColors.bgElevated,
                     shape = RoundedCornerShape(4.dp),
                 ) {
                     Text(
                         text = action.shortcut,
-                        color = GolemColors.textMuted,
+                        color = SpolaColors.textMuted,
                         fontSize = 10.sp,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )

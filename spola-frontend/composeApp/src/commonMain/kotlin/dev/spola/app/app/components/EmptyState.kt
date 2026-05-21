@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 /**
  * Reusable empty state component displayed when a list/page has no content.
@@ -54,14 +54,14 @@ fun EmptyState(
 
             Text(
                 text = title,
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
             )
 
             Text(
                 text = message,
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
             )
@@ -72,8 +72,8 @@ fun EmptyState(
                     onClick = onAction,
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GolemColors.accent,
-                        contentColor = GolemColors.userBubbleText,
+                        containerColor = SpolaColors.accent,
+                        contentColor = SpolaColors.userBubbleText,
                     ),
                     modifier = Modifier.semantics {
                         contentDescription = actionLabel

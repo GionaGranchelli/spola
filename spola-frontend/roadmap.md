@@ -1,6 +1,6 @@
-# OpenClaw Roadmap
+# Spola Client Roadmap
 
-OpenClaw is a Kotlin Multiplatform client for a session-based control plane: chat with different models, run bash commands, and pull/push files through a secure backend host.
+Spola Client is a Kotlin Multiplatform client for a session-based control plane: chat with different models, run bash commands, and pull/push files through a secure backend host.
 
 ## Product vision
 - **Session-centric**: every chat session is first-class.
@@ -74,7 +74,7 @@ Make it pleasant and dependable.
 5. lock down pairing and approval flow
 
 ## Current status
-The repo is already a prototype with good scaffolding, KMP structure, SQLDelight, Ktor, and basic streaming. It is not yet a full multi-session OpenClaw client.
+The repo is already a prototype with good scaffolding, KMP structure, SQLDelight, Ktor, and basic streaming. It is not yet a full multi-session Spola Client.
 
 ## Goal
 Turn the prototype into a secure session-based app where each session can independently chat, choose a model, run commands, and transfer files.

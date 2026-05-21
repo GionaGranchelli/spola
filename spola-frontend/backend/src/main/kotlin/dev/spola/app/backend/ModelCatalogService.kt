@@ -3,10 +3,10 @@ package dev.spola.app.backend
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import dev.spola.app.backend.network.OpenClawRestGatewayClient
+import dev.spola.app.backend.network.SpolaRestGatewayClient
 import dev.spola.app.models.ModelInfo
-import dev.spola.app.models.OpenClawAgentInfo
-import dev.spola.app.models.OpenClawOptions
+import dev.spola.app.models.SpolaAgentInfo
+import dev.spola.app.models.SpolaOptions
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -19,7 +19,7 @@ data class CatalogResponse<T>(
 
 interface ModelCatalogService {
     suspend fun listModels(): CatalogResponse<List<ModelInfo>>
-    suspend fun getOpenClawOptions(): CatalogResponse<OpenClawOptions>
+    suspend fun getSpolaOptions(): CatalogResponse<SpolaOptions>
 }
 
 fun interface OllamaModelSource {
@@ -42,11 +42,11 @@ class KtorOllamaModelSource(
     }
 }
 
-private const val OPENCLAW_PREFIX = "openclaw/"
+private const val SPOLA_PREFIX = "spola/"
 
 class DefaultModelCatalogService(
     private val ollamaModelSource: OllamaModelSource,
-    private val restGatewayClient: OpenClawRestGatewayClient,
+    private val restGatewayClient: SpolaRestGatewayClient,
 ) : ModelCatalogService {
     override suspend fun listModels(): CatalogResponse<List<ModelInfo>> {
         val warnings = mutableListOf<String>()
@@ -55,43 +55,43 @@ class DefaultModelCatalogService(
             .onFailure { warnings += "Ollama models unavailable: ${it.message}" }
             .getOrDefault(emptyList())
 
-        val openClawModels = runCatching { restGatewayClient.getModels() }
-            .onFailure { warnings += "OpenClaw models unavailable: ${it.message}" }
+        val spolaModels = runCatching { restGatewayClient.getModels() }
+            .onFailure { warnings += "Spola Client models unavailable: ${it.message}" }
             .getOrDefault(emptyList())
             .map { model ->
                 ModelInfo(
                     id = model.id,
-                    name = model.id.removePrefix(OPENCLAW_PREFIX),
-                    provider = "openclaw"
+                    name = model.id.removePrefix(SPOLA_PREFIX),
+                    provider = "spola"
                 )
             }
 
-        val merged = dedupeModels(ollamaModels + openClawModels)
+        val merged = dedupeModels(ollamaModels + spolaModels)
             .sortedWith(compareBy<ModelInfo> { it.provider.lowercase() }.thenBy { it.name.lowercase() })
 
         return CatalogResponse(value = merged, warnings = warnings)
     }
 
-    override suspend fun getOpenClawOptions(): CatalogResponse<OpenClawOptions> {
+    override suspend fun getSpolaOptions(): CatalogResponse<SpolaOptions> {
         val warnings = mutableListOf<String>()
 
-        val openClawModels = runCatching { restGatewayClient.getModels() }
-            .onFailure { warnings += "OpenClaw models unavailable: ${it.message}" }
+        val spolaModels = runCatching { restGatewayClient.getModels() }
+            .onFailure { warnings += "Spola Client models unavailable: ${it.message}" }
             .getOrDefault(emptyList())
 
-        // Filter for agents (those that start with openclaw/ and are not openclaw/default or openclaw)
-        val agents = openClawModels
-            .filter { it.id.startsWith(OPENCLAW_PREFIX) && it.id != "${OPENCLAW_PREFIX}default" }
+        // Filter for agents (those that start with spola/ and are not spola/default).
+        val agents = spolaModels
+            .filter { it.id.startsWith(SPOLA_PREFIX) && it.id != "${SPOLA_PREFIX}default" }
             .map { model ->
-                OpenClawAgentInfo(
-                    id = model.id.removePrefix(OPENCLAW_PREFIX),
-                    name = model.id.removePrefix(OPENCLAW_PREFIX),
+                SpolaAgentInfo(
+                    id = model.id.removePrefix(SPOLA_PREFIX),
+                    name = model.id.removePrefix(SPOLA_PREFIX),
                     isDefault = false // Can be improved if we know the default agent
                 )
             }
 
         return CatalogResponse(
-            value = OpenClawOptions(
+            value = SpolaOptions(
                 agents = agents,
                 models = emptyList(),
             ),

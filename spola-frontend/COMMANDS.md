@@ -1,7 +1,7 @@
 # COMMANDS.md
 
 ## Purpose
-Describe how bash command execution should behave in OpenClaw.
+Describe how bash command execution should behave in Spola Client.
 
 ## Principles
 - Commands are explicit user actions.

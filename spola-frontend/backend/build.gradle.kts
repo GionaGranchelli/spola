@@ -41,7 +41,7 @@ dependencies {
 
 ktor {
     fatJar {
-        archiveFileName.set("golem-backend.jar")
+        archiveFileName.set("spola-backend.jar")
     }
 }
 

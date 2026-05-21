@@ -8,7 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.arkivanov.decompose.defaultComponentContext
 import dev.spola.app.app.decompose.DefaultRootComponent
 import dev.spola.app.db.DriverFactory
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 
 class MainActivity : ComponentActivity() {
     private val pickFileLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         initAppContext(this)
 
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
-            android.util.Log.e("OpenClaw", "Uncaught crash", throwable)
+            android.util.Log.e("Spola Client", "Uncaught crash", throwable)
         }
 
         AndroidFilePickerRegistry.setLauncher {
@@ -30,9 +30,9 @@ class MainActivity : ComponentActivity() {
         }
 
         val db = try {
-            OpenClawDb(DriverFactory(this).createDriver())
+            SpolaDb(DriverFactory(this).createDriver())
         } catch (e: Exception) {
-            android.util.Log.e("OpenClaw", "DB init failed, running without persistence", e)
+            android.util.Log.e("Spola Client", "DB init failed, running without persistence", e)
             null
         }
         val root = DefaultRootComponent(defaultComponentContext(), db)

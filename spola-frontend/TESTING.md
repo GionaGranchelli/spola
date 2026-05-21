@@ -1,15 +1,15 @@
-# Golem Desktop App — Testing Guide
+# Spola Client — Testing Guide
 
 ## Quick Start
 
 ```bash
-# 1. Start the Golem backend
-cd ~/Development/golem
+# 1. Start the Spola backend
+cd ~/Development/spola
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--api"
+./gradlew :spola-cli:run --args="--api"
 
 # 2. Start the desktop frontend (separate terminal)
-cd ~/Development/openclaw-app
+cd ~/Development/spola-frontend
 ./gradlew composeApp:run
 ```
 
@@ -17,7 +17,7 @@ cd ~/Development/openclaw-app
 
 ```
 ┌──────────────────────┐     Pairing      ┌──────────────────────┐
-│  Golem Desktop App   │ ◄──────────────► │  Golem Backend       │
+│  Spola Client   │ ◄──────────────► │  Spola backend       │
 │  (Compose Desktop)   │    HTTP/SSE      │  (Ktor :8082)        │
 ├──────────────────────┤                  ├──────────────────────┤
 │  6 Tabs:             │                  │  - Agent runs         │
@@ -33,7 +33,7 @@ cd ~/Development/openclaw-app
 ## UI Test Cases
 
 ### 1. Pairing Flow
-- [ ] App shows "Connect to Golem" screen when not paired
+- [ ] App shows "Connect to Spola" screen when not paired
 - [ ] Auto-Connect with server URL works
 - [ ] Manual JSON paste works
 - [ ] Error shown on invalid JSON
@@ -114,8 +114,8 @@ cd ~/Development/openclaw-app
 
 ```bash
 # Frontend only
-cd ~/Development/openclaw-app && ./gradlew :composeApp:compileKotlinDesktop
+cd ~/Development/spola-frontend && ./gradlew :composeApp:compileKotlinDesktop
 
 # Backend only  
-cd ~/Development/golem && ./gradlew :golem-core:build
+cd ~/Development/spola && ./gradlew :spola-core:build
 ```

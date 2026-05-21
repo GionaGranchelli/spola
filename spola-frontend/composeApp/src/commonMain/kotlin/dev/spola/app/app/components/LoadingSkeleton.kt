@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 
 /**
  * Simple shimmer-like loading skeleton component.
@@ -48,7 +48,7 @@ fun LoadingSkeleton(
             .fillMaxWidth()
             .height(16.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(GolemColors.bgElevated.copy(alpha = shimmerAlpha)),
+            .background(SpolaColors.bgElevated.copy(alpha = shimmerAlpha)),
     )
 }
 
@@ -67,7 +67,7 @@ fun LoadingSkeletonRow(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(GolemColors.bgElevated.copy(alpha = shimmerAlpha)),
+                .background(SpolaColors.bgElevated.copy(alpha = shimmerAlpha)),
         )
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -76,7 +76,7 @@ fun LoadingSkeletonRow(
                     .fillMaxWidth(0.6f)
                     .height(12.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(GolemColors.bgElevated.copy(alpha = shimmerAlpha)),
+                    .background(SpolaColors.bgElevated.copy(alpha = shimmerAlpha)),
             )
             Spacer(Modifier.height(6.dp))
             Box(
@@ -84,7 +84,7 @@ fun LoadingSkeletonRow(
                     .fillMaxWidth(0.9f)
                     .height(10.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(GolemColors.bgElevated.copy(alpha = shimmerAlpha)),
+                    .background(SpolaColors.bgElevated.copy(alpha = shimmerAlpha)),
             )
         }
     }
@@ -117,7 +117,7 @@ fun LoadingSkeletonCard(
             .fillMaxWidth()
             .height(height)
             .clip(RoundedCornerShape(10.dp))
-            .background(GolemColors.bgElevated.copy(alpha = shimmerAlpha)),
+            .background(SpolaColors.bgElevated.copy(alpha = shimmerAlpha)),
     )
 }
 

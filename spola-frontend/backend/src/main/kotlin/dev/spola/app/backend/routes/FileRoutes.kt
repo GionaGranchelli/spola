@@ -17,7 +17,7 @@ import dev.spola.app.models.FileTransferResponse
 import java.io.File
 import java.util.UUID
 
-private val fileRoot = File(System.getProperty("openclaw.fileRoot") ?: System.getProperty("user.home")).canonicalFile
+private val fileRoot = File(System.getProperty("spola.fileRoot") ?: System.getProperty("user.home")).canonicalFile
 
 private fun resolveFilePath(rawPath: String): File? {
     val candidate = File(rawPath)

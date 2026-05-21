@@ -5,7 +5,7 @@ import java.lang.management.ManagementFactory
 
 class BackendMetaService(
     private val version: String = defaultVersion(),
-    private val buildTime: String = System.getProperty("openclaw.buildTime") ?: "unknown",
+    private val buildTime: String = System.getProperty("spola.buildTime") ?: "unknown",
 ) {
     fun current(): BackendMeta {
         return BackendMeta(
@@ -24,7 +24,7 @@ class BackendMetaService(
 }
 
 private fun defaultVersion(): String {
-    return System.getProperty("openclaw.version")
+    return System.getProperty("spola.version")
         ?.takeIf { it.isNotBlank() }
         ?: BackendMetaService::class.java.`package`?.implementationVersion
         ?: "dev"

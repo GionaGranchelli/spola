@@ -5,7 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val GolemTypography = Typography(
+val SpolaTypography = Typography(
     displayLarge = TextStyle(fontSize = 32.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
     displayMedium = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.SemiBold),
     headlineMedium = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold),

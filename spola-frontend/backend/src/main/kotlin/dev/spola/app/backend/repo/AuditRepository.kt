@@ -1,6 +1,6 @@
 package dev.spola.app.backend.repo
 
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.models.AuditEvent
 import java.util.UUID
 
@@ -16,7 +16,7 @@ interface AuditRepository {
     fun getAll(): List<AuditEvent>
 }
 
-class SqlAuditRepository(private val db: OpenClawDb) : AuditRepository {
+class SqlAuditRepository(private val db: SpolaDb) : AuditRepository {
     override fun log(
         kind: String,
         sessionId: String?,
@@ -25,7 +25,7 @@ class SqlAuditRepository(private val db: OpenClawDb) : AuditRepository {
         command: String?,
         details: String?,
     ) {
-        db.openClawDbQueries.insertAuditEvent(
+        db.spolaDbQueries.insertAuditEvent(
             id = UUID.randomUUID().toString(),
             kind = kind,
             sessionId = sessionId,
@@ -38,7 +38,7 @@ class SqlAuditRepository(private val db: OpenClawDb) : AuditRepository {
     }
 
     override fun getAll(): List<AuditEvent> {
-        return db.openClawDbQueries.getAuditEvents().executeAsList().map {
+        return db.spolaDbQueries.getAuditEvents().executeAsList().map {
             AuditEvent(it.id, it.kind, it.sessionId, it.approvalId, it.path, it.command, it.timestamp, it.details)
         }
     }

@@ -1,4 +1,4 @@
-rootProject.name = "OpenClaw"
+rootProject.name = "Spola Client"
 
 pluginManagement {
     repositories {

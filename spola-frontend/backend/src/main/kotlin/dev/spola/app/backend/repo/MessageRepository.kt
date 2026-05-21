@@ -1,6 +1,6 @@
 package dev.spola.app.backend.repo
 
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.models.Message
 import dev.spola.app.models.MessageRole
 import dev.spola.app.models.FileMetadata
@@ -12,11 +12,11 @@ interface MessageRepository {
     fun create(message: Message)
 }
 
-class SqlMessageRepository(private val db: OpenClawDb) : MessageRepository {
+class SqlMessageRepository(private val db: SpolaDb) : MessageRepository {
     private val json = Json { ignoreUnknownKeys = true }
 
     override fun getBySessionId(sessionId: String): List<Message> {
-        return db.openClawDbQueries.getMessagesBySessionId(sessionId).executeAsList().map {
+        return db.spolaDbQueries.getMessagesBySessionId(sessionId).executeAsList().map {
             val attachments = it.attachments?.let { raw ->
                 runCatching { json.decodeFromString<List<FileMetadata>>(raw) }.getOrNull()
             }
@@ -26,7 +26,7 @@ class SqlMessageRepository(private val db: OpenClawDb) : MessageRepository {
 
     override fun create(message: Message) {
         val attachmentsJson = message.attachments?.let { json.encodeToString(it) }
-        db.openClawDbQueries.insertMessage(
+        db.spolaDbQueries.insertMessage(
             message.id,
             message.sessionId,
             message.role.name,

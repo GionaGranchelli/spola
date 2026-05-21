@@ -28,7 +28,7 @@ fun main() {
 
         Window(
             onCloseRequest = ::exitApplication,
-            title = "Golem",
+            title = "Spola",
             state = rememberWindowState(
                 size = DpSize(1280.dp, 900.dp),
             ),

@@ -1,7 +1,7 @@
 # ARCHITECTURE.md
 
 ## Overview
-OpenClaw is a Kotlin Multiplatform app with a desktop-hosted backend. It is designed as a session-centric control surface for chat, model selection, bash command execution, and file transfer.
+Spola Client is a Kotlin Multiplatform app with a desktop-hosted backend. It is designed as a session-centric control surface for chat, model selection, bash command execution, and file transfer.
 
 ## Goals
 - Session-aware chat

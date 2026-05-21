@@ -1,41 +1,41 @@
 package dev.spola.app.state
 
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.models.AuditEvent
-import dev.spola.app.models.OpenClawSessionSettings
+import dev.spola.app.models.SpolaSessionSettings
 import dev.spola.app.models.SelectedSessionState
 import dev.spola.app.models.TrustState
 import dev.spola.app.state.currentTimeMillis
 import kotlinx.serialization.json.Json
 
-class AppStateStore(private val db: OpenClawDb) {
+class AppStateStore(private val db: SpolaDb) {
     private val json = Json { ignoreUnknownKeys = true }
     private fun sessionProviderKey(sessionId: String) = "session-provider:$sessionId"
-    private fun sessionOpenClawKey(sessionId: String) = "session-openclaw:$sessionId"
+    private fun sessionSpolaKey(sessionId: String) = "session-spola:$sessionId"
 
     fun loadSelectedSessionState(): SelectedSessionState? {
-        val raw = db.openClawDbQueries.getAppState("selected-session").executeAsOneOrNull()
+        val raw = db.spolaDbQueries.getAppState("selected-session").executeAsOneOrNull()
         return raw?.let { json.decodeFromString(SelectedSessionState.serializer(), it) }
     }
 
     fun saveSelectedSessionState(state: SelectedSessionState) {
         val payload = json.encodeToString(SelectedSessionState.serializer(), state)
-        db.openClawDbQueries.upsertAppState("selected-session", payload)
+        db.spolaDbQueries.upsertAppState("selected-session", payload)
     }
 
     fun loadTrustedHosts(): List<TrustState> {
-        val raw = db.openClawDbQueries.getAppState("trusted-hosts").executeAsOneOrNull()
+        val raw = db.spolaDbQueries.getAppState("trusted-hosts").executeAsOneOrNull()
         return raw?.let { json.decodeFromString<List<TrustState>>(it) } ?: emptyList()
     }
 
     fun saveTrustedHosts(hosts: List<TrustState>) {
         val payload = json.encodeToString(hosts)
-        db.openClawDbQueries.upsertAppState("trusted-hosts", payload)
+        db.spolaDbQueries.upsertAppState("trusted-hosts", payload)
     }
 
     fun loadTrustedHost(): TrustState? {
         val all = loadTrustedHosts()
-        val activeId = db.openClawDbQueries.getAppState("active-trust-id").executeAsOneOrNull()
+        val activeId = db.spolaDbQueries.getAppState("active-trust-id").executeAsOneOrNull()
         return all.find { it.trustId == activeId } ?: all.find { it.active } ?: all.firstOrNull()
     }
 
@@ -44,7 +44,7 @@ class AppStateStore(private val db: OpenClawDb) {
         val index = all.indexOfFirst { it.trustId == state.trustId }
         if (index != -1) all[index] = state else all.add(state)
         saveTrustedHosts(all)
-        db.openClawDbQueries.upsertAppState("active-trust-id", state.trustId)
+        db.spolaDbQueries.upsertAppState("active-trust-id", state.trustId)
     }
 
     fun revokeTrustedHost() {
@@ -55,33 +55,33 @@ class AppStateStore(private val db: OpenClawDb) {
     }
 
     fun loadSessionProvider(sessionId: String): String? {
-        return db.openClawDbQueries.getAppState(sessionProviderKey(sessionId)).executeAsOneOrNull()
+        return db.spolaDbQueries.getAppState(sessionProviderKey(sessionId)).executeAsOneOrNull()
     }
 
     fun saveSessionProvider(sessionId: String, providerId: String) {
-        db.openClawDbQueries.upsertAppState(sessionProviderKey(sessionId), providerId)
+        db.spolaDbQueries.upsertAppState(sessionProviderKey(sessionId), providerId)
     }
 
     fun clearSessionProvider(sessionId: String) {
-        db.openClawDbQueries.deleteAppState(sessionProviderKey(sessionId))
+        db.spolaDbQueries.deleteAppState(sessionProviderKey(sessionId))
     }
 
-    fun loadSessionOpenClawSettings(sessionId: String): OpenClawSessionSettings? {
-        val raw = db.openClawDbQueries.getAppState(sessionOpenClawKey(sessionId)).executeAsOneOrNull()
-        return raw?.let { json.decodeFromString(OpenClawSessionSettings.serializer(), it) }
+    fun loadSessionSpolaSettings(sessionId: String): SpolaSessionSettings? {
+        val raw = db.spolaDbQueries.getAppState(sessionSpolaKey(sessionId)).executeAsOneOrNull()
+        return raw?.let { json.decodeFromString(SpolaSessionSettings.serializer(), it) }
     }
 
-    fun saveSessionOpenClawSettings(sessionId: String, settings: OpenClawSessionSettings) {
-        val payload = json.encodeToString(OpenClawSessionSettings.serializer(), settings)
-        db.openClawDbQueries.upsertAppState(sessionOpenClawKey(sessionId), payload)
+    fun saveSessionSpolaSettings(sessionId: String, settings: SpolaSessionSettings) {
+        val payload = json.encodeToString(SpolaSessionSettings.serializer(), settings)
+        db.spolaDbQueries.upsertAppState(sessionSpolaKey(sessionId), payload)
     }
 
-    fun clearSessionOpenClawSettings(sessionId: String) {
-        db.openClawDbQueries.deleteAppState(sessionOpenClawKey(sessionId))
+    fun clearSessionSpolaSettings(sessionId: String) {
+        db.spolaDbQueries.deleteAppState(sessionSpolaKey(sessionId))
     }
 
     fun writeAuditEvent(event: AuditEvent) {
-        db.openClawDbQueries.insertAuditEvent(
+        db.spolaDbQueries.insertAuditEvent(
             event.id,
             event.kind,
             event.sessionId,

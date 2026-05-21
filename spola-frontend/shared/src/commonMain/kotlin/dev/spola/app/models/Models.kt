@@ -30,7 +30,7 @@ data class PairingInfoResponse(
 )
 
 @Serializable
-data class OpenClawAgentInfo(
+data class SpolaAgentInfo(
     val id: String,
     val name: String? = null,
     val model: String? = null,
@@ -38,14 +38,14 @@ data class OpenClawAgentInfo(
 )
 
 @Serializable
-data class OpenClawOptions(
-    val agents: List<OpenClawAgentInfo> = emptyList(),
+data class SpolaOptions(
+    val agents: List<SpolaAgentInfo> = emptyList(),
     val models: List<String> = emptyList(),
     val thinkingLevels: List<String> = listOf("off", "minimal", "low", "medium", "high", "xhigh")
 )
 
 @Serializable
-data class OpenClawSessionSettings(
+data class SpolaSessionSettings(
     val agentId: String? = null,
     val modelId: String? = null,
     val mode: String? = null,

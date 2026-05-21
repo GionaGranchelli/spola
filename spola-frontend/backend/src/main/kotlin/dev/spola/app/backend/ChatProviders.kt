@@ -5,7 +5,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import dev.spola.app.models.OpenClawSessionSettings
+import dev.spola.app.models.SpolaSessionSettings
 import dev.spola.app.models.ProviderInfo
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.serialization.Serializable
@@ -25,9 +25,9 @@ val SUPPORTED_PROVIDERS: List<ProviderInfo> = listOf(
         description = "Local Ollama models",
     ),
     ProviderInfo(
-        id = "openclaw-gateway",
-        name = "OpenClaw Gateway",
-        description = "OpenClaw local gateway via REST",
+        id = "spola-gateway",
+        name = "Spola Client Gateway",
+        description = "Spola Client local gateway via REST",
     ),
 )
 
@@ -43,7 +43,7 @@ interface ChatProvider {
         sessionId: String,
         modelId: String,
         messages: List<dev.spola.app.models.Message>,
-        sessionSettings: OpenClawSessionSettings? = null,
+        sessionSettings: SpolaSessionSettings? = null,
         onToken: suspend (String) -> Unit
     ): String
 }
@@ -57,7 +57,7 @@ class OllamaChatProvider(
         sessionId: String,
         modelId: String,
         messages: List<dev.spola.app.models.Message>,
-        sessionSettings: OpenClawSessionSettings?,
+        sessionSettings: SpolaSessionSettings?,
         onToken: suspend (String) -> Unit
     ): String {
         // Simple prompt concatenation for legacy Ollama /api/generate

@@ -8,4 +8,4 @@ Run the exact same app in a **real Xorg session** (login chooser: “Ubuntu on X
 Treat Wayland+NVIDIA as unsupported for now and enforce/document **Xorg session launch** as the workaround (launcher guard + user-facing message). This is the highest-confidence practical fix until upstream AWT/Compose runtime behavior changes.
 
 4. **Does app code still look suspicious?**  
-Low suspicion. Your desktop window setup is straightforward with explicit non-zero size in [Main.kt](/home/gionag/Development/openclaw-app/composeApp/src/desktopMain/kotlin/it/openclaw/app/Main.kt), no unusual undecorated/transparent/pack sequence, and nothing obvious that should produce a `0x0` startup buffer by itself.
+Low suspicion. Your desktop window setup is straightforward with explicit non-zero size in [Main.kt](/home/gionag/Development/spola-frontend/composeApp/src/desktopMain/kotlin/dev/spola/app/app/Main.kt), no unusual undecorated/transparent/pack sequence, and nothing obvious that should produce a `0x0` startup buffer by itself.

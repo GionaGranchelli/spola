@@ -1,7 +1,7 @@
 # API.md
 
 ## Purpose
-This document defines the intended backend surface for OpenClaw.
+This document defines the intended backend surface for Spola Client.
 
 ## Core endpoints
 
@@ -18,17 +18,17 @@ This document defines the intended backend surface for OpenClaw.
 - `DELETE /session/{id}` delete a session and its messages
 
 ### Models
-- `GET /models` list available models (Ollama + OpenClaw agents as models)
+- `GET /models` list available models (Ollama + Spola Client agents as models)
 - `POST /session/{id}/model` set model for a session
 
 ### Providers
 - `GET /providers` list available chat providers
 - `POST /session/{id}/provider` set provider for a session
 
-### OpenClaw provider settings
-- `GET /openclaw/options` list available OpenClaw agents from `~/.openclaw/openclaw.json`
-- `GET /session/{id}/openclaw` fetch per-session OpenClaw settings
-- `POST /session/{id}/openclaw` update per-session OpenClaw settings (`agentId`, `modelId`, `mode`, `thinking`)
+### Spola Client provider settings
+- `GET /spola/options` list available Spola Client agents from `~/.spola/spola.json`
+- `GET /session/{id}/spola` fetch per-session Spola settings
+- `POST /session/{id}/spola` update per-session Spola settings (`agentId`, `modelId`, `mode`, `thinking`)
 
 ### Chat
 - `POST /session/{id}/message` send a message

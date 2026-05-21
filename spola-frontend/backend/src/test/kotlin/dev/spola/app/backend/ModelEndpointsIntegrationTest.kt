@@ -8,10 +8,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import dev.spola.app.backend.network.OpenAiModel
-import dev.spola.app.backend.network.OpenClawRestGatewayClient
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.backend.network.SpolaRestGatewayClient
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.models.ModelInfo
-import dev.spola.app.models.OpenClawOptions
+import dev.spola.app.models.SpolaOptions
 import dev.spola.app.models.TrustState
 import dev.spola.app.state.AppStateStore
 import kotlinx.serialization.json.Json
@@ -36,9 +36,9 @@ class ModelEndpointsIntegrationTest {
                         ModelInfo(id = "gemma4:e2b", name = "gemma4:e2b", provider = "ollama"),
                         ModelInfo(id = "qwen3:8b", name = "qwen3:8b", provider = "ollama"),
                     ),
-                    openClawModels = listOf(
-                        OpenAiModel(id = "openclaw/main", ownedBy = "openclaw"),
-                        OpenAiModel(id = "openclaw/reviewer", ownedBy = "openclaw"),
+                    spolaModels = listOf(
+                        OpenAiModel(id = "spola/main", ownedBy = "spola"),
+                        OpenAiModel(id = "spola/reviewer", ownedBy = "spola"),
                     )
                 ),
                 backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
@@ -54,7 +54,7 @@ class ModelEndpointsIntegrationTest {
 
         assertTrue(models.any { it.id == "gemma4:e2b" && it.provider == "ollama" })
         assertTrue(models.any { it.id == "qwen3:8b" && it.provider == "ollama" })
-        assertTrue(models.any { it.id == "openclaw/main" && it.provider == "openclaw" })
+        assertTrue(models.any { it.id == "spola/main" && it.provider == "spola" })
     }
 
     @Test
@@ -67,7 +67,7 @@ class ModelEndpointsIntegrationTest {
                 ollamaClient = ollamaClient,
                 modelCatalogService = createCatalogService(
                     ollamaError = IllegalStateException("Ollama down"),
-                    openClawError = RuntimeException("Daemon down"),
+                    spolaError = RuntimeException("Daemon down"),
                 ),
                 backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
             )
@@ -83,7 +83,7 @@ class ModelEndpointsIntegrationTest {
     }
 
     @Test
-    fun openClawOptionsEndpointUsesDaemonModels() = testApplication {
+    fun spolaOptionsEndpointUsesDaemonModels() = testApplication {
         val db = createInMemoryDb()
         trust(db)
         application {
@@ -92,9 +92,9 @@ class ModelEndpointsIntegrationTest {
                 ollamaClient = ollamaClient,
                 modelCatalogService = createCatalogService(
                     ollamaModels = emptyList(),
-                    openClawModels = listOf(
-                        OpenAiModel(id = "openclaw/main", ownedBy = "openclaw"),
-                        OpenAiModel(id = "openclaw/reviewer", ownedBy = "openclaw"),
+                    spolaModels = listOf(
+                        OpenAiModel(id = "spola/main", ownedBy = "spola"),
+                        OpenAiModel(id = "spola/reviewer", ownedBy = "spola"),
                     ),
                 ),
                 backendMetaService = BackendMetaService(version = "test", buildTime = "test"),
@@ -102,18 +102,18 @@ class ModelEndpointsIntegrationTest {
             module(db = db, servicesOverride = services)
         }
 
-        val response = client.get("/openclaw/options") {
+        val response = client.get("/spola/options") {
             header(HttpHeaders.Authorization, authHeader)
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        val options = json.decodeFromString<OpenClawOptions>(response.bodyAsText())
+        val options = json.decodeFromString<SpolaOptions>(response.bodyAsText())
         assertEquals(2, options.agents.size)
         assertTrue(options.agents.any { it.id == "main" })
         assertTrue(options.agents.any { it.id == "reviewer" })
     }
 
     @Test
-    fun openClawOptionsEndpointReturns200WhenCatalogServiceThrowsUnexpectedly() = testApplication {
+    fun spolaOptionsEndpointReturns200WhenCatalogServiceThrowsUnexpectedly() = testApplication {
         val db = createInMemoryDb()
         trust(db)
         application {
@@ -123,7 +123,7 @@ class ModelEndpointsIntegrationTest {
                 modelCatalogService = object : ModelCatalogService {
                     override suspend fun listModels(): CatalogResponse<List<ModelInfo>> = CatalogResponse(emptyList())
 
-                    override suspend fun getOpenClawOptions(): CatalogResponse<OpenClawOptions> {
+                    override suspend fun getSpolaOptions(): CatalogResponse<SpolaOptions> {
                         error("unexpected options crash")
                     }
                 },
@@ -132,11 +132,11 @@ class ModelEndpointsIntegrationTest {
             module(db = db, servicesOverride = services)
         }
 
-        val response = client.get("/openclaw/options") {
+        val response = client.get("/spola/options") {
             header(HttpHeaders.Authorization, authHeader)
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        val options = json.decodeFromString<OpenClawOptions>(response.bodyAsText())
+        val options = json.decodeFromString<SpolaOptions>(response.bodyAsText())
         assertTrue(options.agents.isEmpty())
         assertTrue(options.models.isEmpty())
     }
@@ -144,31 +144,31 @@ class ModelEndpointsIntegrationTest {
     private fun createCatalogService(
         ollamaModels: List<ModelInfo> = emptyList(),
         ollamaError: Throwable? = null,
-        openClawModels: List<OpenAiModel> = emptyList(),
-        openClawError: Throwable? = null,
+        spolaModels: List<OpenAiModel> = emptyList(),
+        spolaError: Throwable? = null,
     ): ModelCatalogService {
         val ollamaSource = OllamaModelSource {
             if (ollamaError != null) throw ollamaError
             ollamaModels
         }
-        val restGatewayClient = object : OpenClawRestGatewayClient(
+        val restGatewayClient = object : SpolaRestGatewayClient(
             io.ktor.client.HttpClient(), "http://localhost:18789", "test-token"
         ) {
             override suspend fun getModels(): List<OpenAiModel> {
-                if (openClawError != null) throw openClawError
-                return openClawModels
+                if (spolaError != null) throw spolaError
+                return spolaModels
             }
         }
         return DefaultModelCatalogService(ollamaSource, restGatewayClient)
     }
 
-    private fun createInMemoryDb(): OpenClawDb {
+    private fun createInMemoryDb(): SpolaDb {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        OpenClawDb.Schema.create(driver)
-        return OpenClawDb(driver)
+        SpolaDb.Schema.create(driver)
+        return SpolaDb(driver)
     }
 
-    private fun trust(db: OpenClawDb) {
+    private fun trust(db: SpolaDb) {
         AppStateStore(db).saveTrustedHost(
             TrustState(
                 host = "127.0.0.1",

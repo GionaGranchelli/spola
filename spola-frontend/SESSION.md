@@ -6,7 +6,7 @@ A session is the unit of conversation and execution.
 ## Session owns
 - selected model
 - selected provider
-- selected OpenClaw agent/model settings (when provider is OpenClaw)
+- selected Spola Client agent/model settings (when provider is Spola Client)
 - chat history
 - command history
 - file operation history
@@ -17,7 +17,7 @@ A session is the unit of conversation and execution.
 - resume
 - update model
 - update provider
-- update OpenClaw agent/model settings
+- update Spola Client agent/model settings
 - send message
 - run command
 - transfer file

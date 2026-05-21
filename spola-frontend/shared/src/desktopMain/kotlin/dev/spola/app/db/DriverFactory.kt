@@ -5,6 +5,6 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 
 actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
-        return JdbcSqliteDriver("jdbc:sqlite:golem.db")
+        return JdbcSqliteDriver("jdbc:sqlite:spola.db")
     }
 }

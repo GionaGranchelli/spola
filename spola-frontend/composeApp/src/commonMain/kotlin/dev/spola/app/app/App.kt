@@ -25,13 +25,13 @@ import dev.spola.app.models.ChatSession
 import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
-import dev.spola.app.app.theme.GolemColors
-import dev.spola.app.app.theme.GolemTheme
+import dev.spola.app.app.theme.SpolaColors
+import dev.spola.app.app.theme.SpolaTheme
 
 @Composable
 fun App(component: RootComponent) {
-    GolemTheme(darkTheme = true) {
-        Surface(modifier = Modifier.fillMaxSize(), color = GolemColors.bg) {
+    SpolaTheme(darkTheme = true) {
+        Surface(modifier = Modifier.fillMaxSize(), color = SpolaColors.bg) {
             Children(stack = component.stack) {
                 when (val child = it.instance) {
                     is RootComponent.Child.DashboardChild -> AppShell(dashboardComponent = child.component)
@@ -54,10 +54,10 @@ fun PairingContent(component: PairingComponent) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("Connect to Golem", style = MaterialTheme.typography.headlineMedium)
+        Text("Connect to Spola", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Run `golem --api` on your server, then paste the connection info below, " +
+            "Run `spola --api` on your server, then paste the connection info below, " +
             "or enter the server URL and fetch it automatically.",
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -605,7 +605,7 @@ private fun DashboardHeader(component: DashboardComponent) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Golem Dashboard", style = MaterialTheme.typography.headlineSmall)
+        Text("Spola Client", style = MaterialTheme.typography.headlineSmall)
 
         Box {
             AssistChip(

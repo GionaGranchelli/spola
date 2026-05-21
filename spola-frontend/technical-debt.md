@@ -4,7 +4,7 @@ This file captures the main issues found during the code review, along with prac
 
 ## 1. RootComponent is too large
 **Finding**
-- `composeApp/src/commonMain/kotlin/it/openclaw/app/decompose/RootComponent.kt` is ~950 lines.
+- `composeApp/src/commonMain/kotlin/dev/spola/app/app/decompose/RootComponent.kt` is ~950 lines.
 - It owns session state, trust, files, commands, streaming, retries, and persistence orchestration.
 
 **Advice**
@@ -23,7 +23,7 @@ This file captures the main issues found during the code review, along with prac
 
 ## 2. App.kt is monolithic
 **Finding**
-- `composeApp/src/commonMain/kotlin/it/openclaw/app/App.kt` is ~843 lines.
+- `composeApp/src/commonMain/kotlin/dev/spola/app/app/App.kt` is ~843 lines.
 - Many composables are deeply nested and parameter-heavy.
 
 **Advice**
@@ -133,7 +133,7 @@ This file captures the main issues found during the code review, along with prac
 - `SessionRepositoryTest`
 - `AppStateStoreTest` for trust/session settings
 - `ModelCatalogServiceTest`
-- `OpenClawClient` contract tests
+- `SpolaClient` contract tests
 
 ## Priority order
 1. Split RootComponent

@@ -2,7 +2,7 @@ package dev.spola.app.backend
 
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
-import dev.spola.app.db.OpenClawDb
+import dev.spola.app.db.SpolaDb
 import dev.spola.app.backend.manager.CommandManager
 import dev.spola.app.backend.manager.FlowManager
 import dev.spola.app.backend.repo.*
@@ -24,7 +24,7 @@ import io.ktor.client.plugins.*
 import java.util.concurrent.CopyOnWriteArrayList
 
 class BackendServices(
-    val db: OpenClawDb,
+    val db: SpolaDb,
     val ollamaClient: HttpClient,
     val stateStore: AppStateStore = AppStateStore(db),
     val auditRepository: AuditRepository = SqlAuditRepository(db),
@@ -33,7 +33,7 @@ class BackendServices(
     val fileRepository: FileRepository = SqlFileRepository(db),
     val flowManager: FlowManager = FlowManager(),
     val commandManager: CommandManager = CommandManager(auditRepository, flowManager),
-    val restGatewayClient: OpenClawRestGatewayClient = OpenClawRestGatewayClient(
+    val restGatewayClient: SpolaRestGatewayClient = SpolaRestGatewayClient(
         client = HttpClient(ollamaClient.engine) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -44,8 +44,8 @@ class BackendServices(
                 socketTimeoutMillis = 600000  // 10 minutes
             }
         },
-        baseUrl = "http://127.0.0.1:${OpenClawConfig.getGatewayPort()}",
-        token = OpenClawConfig.getGatewayToken()
+        baseUrl = "http://127.0.0.1:${SpolaConfig.getGatewayPort()}",
+        token = SpolaConfig.getGatewayToken()
     ),
     val modelCatalogService: ModelCatalogService = DefaultModelCatalogService(
         ollamaModelSource = KtorOllamaModelSource(ollamaClient),
@@ -53,7 +53,7 @@ class BackendServices(
     ),
     val chatProviders: Map<String, ChatProvider> = listOf(
         OllamaChatProvider(ollamaClient),
-        OpenClawGatewayChatProvider(restGatewayClient)
+        SpolaGatewayChatProvider(restGatewayClient)
     ).associateBy { it.id },
     val chatRoutingService: ChatRoutingService = ChatRoutingService(db, stateStore, chatProviders, messageRepository, fileRepository),
     val speechService: SpeechService = SpeechService(

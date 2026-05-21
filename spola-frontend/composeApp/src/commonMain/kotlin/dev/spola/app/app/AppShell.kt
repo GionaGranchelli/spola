@@ -26,8 +26,8 @@ import dev.spola.app.app.components.CommandPaletteAction
 import dev.spola.app.app.decompose.DashboardComponent
 import dev.spola.app.app.navigation.NavigationTab
 import dev.spola.app.app.pages.*
-import dev.spola.app.app.theme.GolemColors
-import dev.spola.app.app.theme.GolemTheme
+import dev.spola.app.app.theme.SpolaColors
+import dev.spola.app.app.theme.SpolaTheme
 
 @Composable
 fun AppShell(
@@ -40,7 +40,7 @@ fun AppShell(
 
     // Update the global color mode
     LaunchedEffect(isDarkMode) {
-        GolemColors.isDarkMode = isDarkMode
+        SpolaColors.isDarkMode = isDarkMode
     }
 
     val commandActions = rememberCommandActions(
@@ -60,7 +60,7 @@ fun AppShell(
                 )
             },
     ) {
-        GolemTheme(darkTheme = isDarkMode) {
+        SpolaTheme(darkTheme = isDarkMode) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -169,7 +169,7 @@ private fun ColumnScope.AppShellContent(
                             ChatPage(component = dashboardComponent)
                         } else {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Not connected", color = GolemColors.textMuted)
+                                Text("Not connected", color = SpolaColors.textMuted)
                             }
                         }
                     }
@@ -183,7 +183,7 @@ private fun ColumnScope.AppShellContent(
                         WorkflowsPage(dashboardComponent = dashboardComponent)
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Not connected", color = GolemColors.textMuted)
+                            Text("Not connected", color = SpolaColors.textMuted)
                         }
                     }
                 }
@@ -246,19 +246,19 @@ private fun ErrorFallback(
             )
             Text(
                 text = "Something went wrong",
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 fontSize = 16.sp,
             )
             Text(
                 text = message,
-                color = GolemColors.textMuted,
+                color = SpolaColors.textMuted,
                 fontSize = 13.sp,
                 maxLines = 4,
             )
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = GolemColors.accent,
+                    containerColor = SpolaColors.accent,
                 ),
             ) {
                 Text("Retry")

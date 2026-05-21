@@ -42,10 +42,10 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import dev.spola.app.app.components.EmptyState
 import dev.spola.app.app.components.LoadingSkeletonCard
 import dev.spola.app.app.decompose.DashboardComponent
-import dev.spola.app.app.theme.GolemColors
+import dev.spola.app.app.theme.SpolaColors
 import dev.spola.app.models.KanbanCard
 import dev.spola.app.models.TrustState
-import dev.spola.app.network.GolemClient
+import dev.spola.app.network.SpolaClient
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
@@ -60,7 +60,7 @@ private data class KanbanBoardCallbacks(
 )
 
 private suspend fun refreshKanbanCards(
-    client: GolemClient?,
+    client: SpolaClient?,
     onCardsChange: (List<KanbanCard>) -> Unit,
     onLoadingChange: (Boolean) -> Unit,
     onErrorChange: (String?) -> Unit,
@@ -154,7 +154,7 @@ private fun KanbanBoardContent(
     modifier: Modifier,
     scrollState: androidx.compose.foundation.ScrollState,
     scope: kotlinx.coroutines.CoroutineScope,
-    client: GolemClient?,
+    client: SpolaClient?,
     cards: List<KanbanCard>,
     draft: String,
     isSaving: Boolean,
@@ -187,7 +187,7 @@ private fun KanbanBoardContent(
                 title = "To Do",
                 status = "todo",
                 cards = cards.filter { it.status == "todo" },
-                accent = GolemColors.warning,
+                accent = SpolaColors.warning,
                 onMoveLeft = null,
                 onMoveRight = { card ->
                     scope.launch {
@@ -202,7 +202,7 @@ private fun KanbanBoardContent(
                 title = "In Progress",
                 status = "in_progress",
                 cards = cards.filter { it.status == "in_progress" },
-                accent = GolemColors.accent,
+                accent = SpolaColors.accent,
                 onMoveLeft = { card ->
                     scope.launch { updateCard(client, card, "todo", callbacks.onRefresh).also(callbacks.onErrorChange) }
                 },
@@ -217,7 +217,7 @@ private fun KanbanBoardContent(
                 title = "Done",
                 status = "done",
                 cards = cards.filter { it.status == "done" },
-                accent = GolemColors.success,
+                accent = SpolaColors.success,
                 onMoveLeft = { card ->
                     scope.launch {
                         updateCard(client, card, "in_progress", callbacks.onRefresh).also(callbacks.onErrorChange)
@@ -234,7 +234,7 @@ private fun KanbanBoardContent(
 
 private fun launchCreateCard(
     scope: kotlinx.coroutines.CoroutineScope,
-    client: GolemClient?,
+    client: SpolaClient?,
     draft: String,
     isSaving: Boolean,
     callbacks: KanbanBoardCallbacks,
@@ -258,27 +258,27 @@ private fun launchCreateCard(
 @Composable
 private fun KanbanCardForm(
     scope: kotlinx.coroutines.CoroutineScope,
-    client: GolemClient?,
+    client: SpolaClient?,
     draft: String,
     isSaving: Boolean,
     error: String?,
     callbacks: KanbanBoardCallbacks,
 ) {
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(18.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Kanban Board",
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 fontSize = 18.sp,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Track lightweight work across three stages.",
-                color = GolemColors.textSecondary,
+                color = SpolaColors.textSecondary,
                 fontSize = 12.sp,
             )
             Spacer(modifier = Modifier.height(14.dp))
@@ -292,14 +292,14 @@ private fun KanbanCardForm(
                     onValueChange = callbacks.onDraftChange,
                     modifier = Modifier.weight(1f),
                     placeholder = {
-                        Text("Add a task", color = GolemColors.textMuted, fontSize = 13.sp)
+                        Text("Add a task", color = SpolaColors.textMuted, fontSize = 13.sp)
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = GolemColors.accent.copy(alpha = 0.5f),
-                        unfocusedBorderColor = GolemColors.bgElevated,
-                        focusedContainerColor = GolemColors.bg,
-                        unfocusedContainerColor = GolemColors.bg,
-                        cursorColor = GolemColors.accent,
+                        focusedBorderColor = SpolaColors.accent.copy(alpha = 0.5f),
+                        unfocusedBorderColor = SpolaColors.bgElevated,
+                        focusedContainerColor = SpolaColors.bg,
+                        unfocusedContainerColor = SpolaColors.bg,
+                        cursorColor = SpolaColors.accent,
                     ),
                     shape = RoundedCornerShape(12.dp),
                 )
@@ -307,13 +307,13 @@ private fun KanbanCardForm(
                     onClick = { launchCreateCard(scope, client, draft, isSaving, callbacks) },
                     enabled = draft.isNotBlank() && !isSaving,
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GolemColors.accent),
+                    colors = ButtonDefaults.buttonColors(containerColor = SpolaColors.accent),
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.height(18.dp),
                             strokeWidth = 2.dp,
-                            color = GolemColors.textPrimary,
+                            color = SpolaColors.textPrimary,
                         )
                     } else {
                         Text("Add")
@@ -324,7 +324,7 @@ private fun KanbanCardForm(
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = error,
-                    color = GolemColors.error,
+                    color = SpolaColors.error,
                     fontSize = 12.sp,
                 )
             }
@@ -343,7 +343,7 @@ private fun KanbanColumn(
     onDelete: (KanbanCard) -> Unit,
 ) {
     Surface(
-        color = GolemColors.bgSurface,
+        color = SpolaColors.bgSurface,
         shape = RoundedCornerShape(18.dp),
         modifier = Modifier
             .width(300.dp)
@@ -359,7 +359,7 @@ private fun KanbanColumn(
             ) {
                 Text(
                     text = title,
-                    color = GolemColors.textPrimary,
+                    color = SpolaColors.textPrimary,
                     fontSize = 15.sp,
                 )
                 Surface(
@@ -374,7 +374,7 @@ private fun KanbanColumn(
                     )
                 }
             }
-            HorizontalDivider(color = GolemColors.bgElevated)
+            HorizontalDivider(color = SpolaColors.bgElevated)
             if (cards.isEmpty()) {
                 KanbanColumnEmptyState(status = status)
             } else {
@@ -410,7 +410,7 @@ private fun KanbanColumnEmptyState(status: String) {
                 "in_progress" -> "Nothing active"
                 else -> "No completed cards"
             },
-            color = GolemColors.textMuted,
+            color = SpolaColors.textMuted,
             fontSize = 12.sp,
         )
     }
@@ -425,14 +425,14 @@ private fun KanbanCardItem(
     accent: androidx.compose.ui.graphics.Color,
 ) {
     Surface(
-        color = GolemColors.bg,
+        color = SpolaColors.bg,
         shape = RoundedCornerShape(14.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = card.text,
-                color = GolemColors.textPrimary,
+                color = SpolaColors.textPrimary,
                 fontSize = 13.sp,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
@@ -448,10 +448,10 @@ private fun KanbanCardItem(
                         onClick = { onMoveLeft(card) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = GolemColors.bgElevated),
+                        colors = ButtonDefaults.buttonColors(containerColor = SpolaColors.bgElevated),
                         contentPadding = PaddingValues(vertical = 8.dp),
                     ) {
-                        Text("←", color = GolemColors.textPrimary)
+                        Text("←", color = SpolaColors.textPrimary)
                     }
                 }
                 if (onMoveRight != null) {
@@ -469,7 +469,7 @@ private fun KanbanCardItem(
                     onClick = { onDelete(card) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GolemColors.error.copy(alpha = 0.85f)),
+                    colors = ButtonDefaults.buttonColors(containerColor = SpolaColors.error.copy(alpha = 0.85f)),
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     Text("Delete")
@@ -480,7 +480,7 @@ private fun KanbanCardItem(
 }
 
 private suspend fun updateCard(
-    client: GolemClient?,
+    client: SpolaClient?,
     card: KanbanCard,
     status: String,
     onSuccess: suspend () -> Unit,
@@ -498,7 +498,7 @@ private suspend fun updateCard(
 }
 
 private suspend fun deleteCard(
-    client: GolemClient?,
+    client: SpolaClient?,
     id: String,
     onSuccess: suspend () -> Unit,
 ): String? {
@@ -515,10 +515,10 @@ private suspend fun deleteCard(
 }
 
 @Composable
-private fun rememberKanbanClient(currentHost: TrustState?): GolemClient? {
+private fun rememberKanbanClient(currentHost: TrustState?): SpolaClient? {
     val client = remember(currentHost?.trustId, currentHost?.host, currentHost?.port, currentHost?.token) {
         currentHost?.let { trust ->
-            GolemClient(
+            SpolaClient(
                 httpClient = HttpClient(),
                 baseUrl = "http://${trust.host}:${trust.port}/",
                 authToken = trust.token,

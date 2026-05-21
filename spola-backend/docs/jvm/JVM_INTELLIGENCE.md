@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: JVM Intelligence
-description: Complete documentation for Golem's JVM project intelligence system — scanning, symbols, dependencies, change impact, failure analysis, and incremental indexing.
+description: Complete documentation for Spola's JVM project intelligence system — scanning, symbols, dependencies, change impact, failure analysis, and incremental indexing.
 ---
 
 # JVM Intelligence
 
-Golem's JVM intelligence subsystem transforms the agent into a project-aware developer
+Spola's JVM intelligence subsystem transforms the agent into a project-aware developer
 that understands your Gradle module layout, Kotlin/Java symbols, inter-module dependencies,
 git changes, build output errors, and project conventions. It's the difference between an
 agent blindly editing files and one that knows exactly which module to compile, which tests
@@ -78,11 +78,11 @@ Each Gradle module discovered during scanning:
 
 ```
 data class ProjectModule(
-    val name: String,          // e.g. ":golem-core", ":" for root
+    val name: String,          // e.g. ":spola-backend-core", ":" for root
     val path: String,          // absolute filesystem path
     val isRoot: Boolean,       // true for the root project
-    val sourceDirs: List<String>,    // relative paths like "golem-core/src/main/kotlin"
-    val testDirs: List<String>,      // relative paths like "golem-core/src/test/kotlin"
+    val sourceDirs: List<String>,    // relative paths like "spola-backend-core/src/main/kotlin"
+    val testDirs: List<String>,      // relative paths like "spola-backend-core/src/test/kotlin"
     val plugins: List<String>,       // e.g. "org.jetbrains.kotlin.jvm", "org.jetbrains.kotlin.plugin.serialization:1.9.0"
     val javaVersion: String?,        // e.g. "21" or "17"
     val kotlinVersion: String?,      // e.g. "1.9.0"
@@ -241,8 +241,8 @@ Resolves inter-module dependencies declared via `project()` in build files.
 
 ```
 data class ModuleDependency(
-    val moduleName: String,  // source module (e.g. ":golem-core")
-    val dependency: String,  // target (e.g. ":golem-common") or external artifact string
+    val moduleName: String,  // source module (e.g. ":spola-backend-core")
+    val dependency: String,  // target (e.g. ":spola-common") or external artifact string
     val type: String,        // configuration: "api", "implementation", "compileOnly", "testImplementation", "project", "external"
 )
 ```
@@ -554,16 +554,16 @@ Scanned at: 1715600000000
 Modules (3):
 - : (root)
   path: /home/user/project
-  sources: golem-core/src/main/kotlin
-  tests: golem-core/src/test/kotlin
+  sources: spola-backend-core/src/main/kotlin
+  tests: spola-backend-core/src/test/kotlin
   plugins: org.jetbrains.kotlin.jvm, org.jetbrains.kotlin.plugin.serialization:1.9.0
   versions: Java 21, Kotlin 1.9.0
-- :golem-core
-  path: /home/user/project/golem-core
-  sources: golem-core/src/main/kotlin
-  tests: golem-core/src/test/kotlin
-- :golem-cli
-  path: /home/user/project/golem-cli
+- :spola-backend-core
+  path: /home/user/project/spola-backend-core
+  sources: spola-backend-core/src/main/kotlin
+  tests: spola-backend-core/src/test/kotlin
+- :spola-backend-cli
+  path: /home/user/project/spola-backend-cli
 ```
 
 ---
@@ -574,12 +574,12 @@ Modules (3):
 |-----------|------|----------|-------------|
 | `name` | STRING | yes | Symbol name or substring to search for |
 | `kind` | STRING | no | Filter by kind: CLASS, INTERFACE, OBJECT, FUN, VAL, VAR, ENUM, ANNOTATION |
-| `module` | STRING | no | Filter by Gradle module (e.g. `:golem-core`) |
+| `module` | STRING | no | Filter by Gradle module (e.g. `:spola-backend-core`) |
 
 Output: one line per matching symbol:
 ```
-:golem-core CLASS ImpactAnalyzer golem-core/src/main/kotlin/.../ImpactAnalyzer.kt:12:1 public
-:golem-core FUN analyze golem-core/src/main/kotlin/.../ImpactAnalyzer.kt:13:5 public
+:spola-backend-core CLASS ImpactAnalyzer spola-backend-core/src/main/kotlin/.../ImpactAnalyzer.kt:12:1 public
+:spola-backend-core FUN analyze spola-backend-core/src/main/kotlin/.../ImpactAnalyzer.kt:13:5 public
 ```
 
 ---
@@ -619,12 +619,12 @@ By default (without `use_gradle_command`), parses `build.gradle.kts` files. With
 Output:
 ```
 Dependency graph:
-- :golem-core
-  implementation: :golem-common
-  api: :golem-annotation
-  transitive: :golem-annotation
-- :golem-cli
-  implementation: :golem-core
+- :spola-backend-core
+  implementation: :spola-common
+  api: :spola-annotation
+  transitive: :spola-annotation
+- :spola-backend-cli
+  implementation: :spola-backend-core
 ```
 
 ---
@@ -638,7 +638,7 @@ Dependency graph:
 
 Returns concrete `./gradlew` commands:
 ```
-./gradlew :golem-core:compileKotlin
+./gradlew :spola-backend-core:compileKotlin
 ```
 
 ---
@@ -652,17 +652,17 @@ Reads `git diff HEAD` (or staged/unstaged if no HEAD), maps file changes to modu
 Output:
 ```
 Changed files:
-- MODIFIED golem-core/src/main/kotlin/.../ImpactAnalyzer.kt (5 ++, 2 --)
+- MODIFIED spola-backend-core/src/main/kotlin/.../ImpactAnalyzer.kt (5 ++, 2 --)
 Changed symbols:
-- :golem-core CLASS ImpactAnalyzer .../ImpactAnalyzer.kt:12
-- :golem-core FUN analyze .../ImpactAnalyzer.kt:13
-Impacted modules: :golem-core, :golem-cli
-Compilation scope: :golem-core:compileKotlin, :golem-cli:compileKotlin
+- :spola-backend-core CLASS ImpactAnalyzer .../ImpactAnalyzer.kt:12
+- :spola-backend-core FUN analyze .../ImpactAnalyzer.kt:13
+Impacted modules: :spola-backend-core, :spola-backend-cli
+Compilation scope: :spola-backend-core:compileKotlin, :spola-backend-cli:compileKotlin
 Verification commands:
-- ./gradlew :golem-core:compileKotlin
-- ./gradlew :golem-core:test
-- ./gradlew :golem-cli:compileKotlin
-- ./gradlew :golem-cli:test
+- ./gradlew :spola-backend-core:compileKotlin
+- ./gradlew :spola-backend-core:test
+- ./gradlew :spola-backend-cli:compileKotlin
+- ./gradlew :spola-backend-cli:test
 ```
 
 ---
@@ -679,11 +679,11 @@ Output:
 ```
 2 likely root cause(s) found.
 Root causes:
-- module=:golem-core file=.../MyService.kt symbol=MyClass: Unresolved reference 'SomeType'. Suggestion: Missing import for 'SomeType'. Add `import com.example.SomeType`. Cross-module hint: 'SomeType' may be defined in another module. Check if module ':golem-core' has the correct dependency declared.
-- module=:golem-core file=.../MyServiceTest.kt symbol=MyServiceTest: expected: <42> but was: <0> (assertEquals)
+- module=:spola-backend-core file=.../MyService.kt symbol=MyClass: Unresolved reference 'SomeType'. Suggestion: Missing import for 'SomeType'. Add `import com.example.SomeType`. Cross-module hint: 'SomeType' may be defined in another module. Check if module ':spola-backend-core' has the correct dependency declared.
+- module=:spola-backend-core file=.../MyServiceTest.kt symbol=MyServiceTest: expected: <42> but was: <0> (assertEquals)
 Suggested commands:
-- ./gradlew :golem-core:compileKotlin
-- ./gradlew :golem-core:test
+- ./gradlew :spola-backend-core:compileKotlin
+- ./gradlew :spola-backend-core:test
 ```
 
 ---
@@ -698,8 +698,8 @@ Produces a minimal verification plan after code edits.
 
 Output:
 ```
-Compilation: ./gradlew :golem-core:compileKotlin
-Tests: ./gradlew :golem-core:test
+Compilation: ./gradlew :spola-backend-core:compileKotlin
+Tests: ./gradlew :spola-backend-core:test
 Estimated duration: short
 ```
 
@@ -716,7 +716,7 @@ Estimated duration: short
 
 Save a repo-specific convention:
 ```
-project_insight_save(key="build_commands", value="Always run :golem-core:test --stacktrace for full output")
+project_insight_save(key="build_commands", value="Always run :spola-backend-core:test --stacktrace for full output")
 ```
 
 ---
@@ -753,7 +753,7 @@ Captures the complete history of a session for audit, debugging, or sharing:
 
 ```
 data class ProvenanceBundle(
-    val version: String,           // GolemVersion.VERSION
+    val version: String,           // SpolaVersion.VERSION
     val sessionId: String,
     val toolCalls: List<ProvenanceToolCall>,
     val codeDiff: String,          // git diff HEAD at checkpoint time
@@ -782,25 +782,25 @@ data class ProvenanceBundle(
 
 ## 12. CLI Commands
 
-All under `golem project`:
+All under `spola project`:
 
 ```
-golem project scan     — Force a full JVM project reindex
-golem project overview — Print the JVM module tree
-golem project symbol   — Lookup a JVM symbol
+spola project scan     — Force a full JVM project reindex
+spola project overview — Print the JVM module tree
+spola project symbol   — Lookup a JVM symbol
 ```
 
-### golem project scan
+### spola project scan
 
 Forces a full rescan. Output:
 ```
 Indexed 3 module(s) in /home/user/project
 : | sources=1 tests=1 deps=0
-:golem-core | sources=1 tests=1 deps=12
-:golem-cli | sources=1 tests=1 deps=5
+:spola-backend-core | sources=1 tests=1 deps=12
+:spola-backend-cli | sources=1 tests=1 deps=5
 ```
 
-### golem project overview
+### spola project overview
 
 Reads the index (rescans if directory changed). Output:
 ```
@@ -808,37 +808,37 @@ Project: /home/user/project
 Modules (2):
 - : (root)
   path: /home/user/project
-  sources: golem-core/src/main/kotlin
-  tests: golem-core/src/test/kotlin
+  sources: spola-backend-core/src/main/kotlin
+  tests: spola-backend-core/src/test/kotlin
   plugins: org.jetbrains.kotlin.jvm
-- :golem-cli
-  path: /home/user/project/golem-cli
+- :spola-backend-cli
+  path: /home/user/project/spola-backend-cli
 ```
 
-### golem project symbol <name>
+### spola project symbol <name>
 
 | Option | Description |
 |--------|-------------|
-| `--module` | Filter by Gradle module, e.g. `:golem-core` |
+| `--module` | Filter by Gradle module, e.g. `:spola-backend-core` |
 | `--kind` | Filter by symbol kind |
 
 Output:
 ```
-:golem-core CLASS ImpactAnalyzer .../ImpactAnalyzer.kt:12:1
-:golem-core FUN analyze .../ImpactAnalyzer.kt:13:5
+:spola-backend-core CLASS ImpactAnalyzer .../ImpactAnalyzer.kt:12:1
+:spola-backend-core FUN analyze .../ImpactAnalyzer.kt:13:5
 ```
 
 ---
 
 ## 13. Configuration
 
-JVM intelligence is configured via `~/.golem/config.yaml` or CLI flags.
+JVM intelligence is configured via `~/.spola/config.yaml` or CLI flags.
 
 ### Config file fields
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `jvm-index-db` | `./.golem/jvm-index.db` | Path to the SQLite database for project index + symbol storage |
+| `jvm-index-db` | `./.spola/jvm-index.db` | Path to the SQLite database for project index + symbol storage |
 | `jvm-index-auto-refresh` | `true` | Enable incremental file watching and auto-refresh |
 
 ### CLI flags
@@ -849,9 +849,9 @@ JVM intelligence is configured via `~/.golem/config.yaml` or CLI flags.
 
 ### Default paths
 
-- JVM index DB: `./.golem/jvm-index.db`
-- Project insights DB: `./.golem/jvm-index.db.insights`
-- Dependency cache DB: `./.golem/dependency-cache.db`
+- JVM index DB: `./.spola/jvm-index.db`
+- Project insights DB: `./.spola/jvm-index.db.insights`
+- Dependency cache DB: `./.spola/dependency-cache.db`
 
 ---
 
@@ -868,14 +868,14 @@ Injects project context into the agent's planning loop:
 
 ## 15. Complete Walkthrough: Fresh Clone to Production Edit
 
-What happens when you start Golem in a fresh clone of a JVM project:
+What happens when you start Spola in a fresh clone of a JVM project:
 
 **Phase 1 — First tool call triggers scan**
 
 ```
 $ git clone https://github.com/example/my-project
 $ cd my-project
-$ golem "add authentication module"
+$ spola "add authentication module"
 
 Agent calls jvm_project_overview
   → Snapshot is null → full scan triggered
@@ -892,7 +892,7 @@ Agent calls jvm_project_overview
 Agent calls jvm_symbol_search(name="UserRepository", kind="CLASS")
   → Index is 1 second old, not stale → cached lookup
   → SQL: SELECT * FROM symbols WHERE name LIKE '%UserRepository%' AND kind='CLASS'
-  → Returns class location at golem-core/src/.../UserRepository.kt:42
+  → Returns class location at spola-backend-core/src/.../UserRepository.kt:42
 ```
 
 **Phase 3 — Dependency-aware editing**
@@ -944,9 +944,9 @@ Developer saves UserRepository.kt in IDE
 **Phase 7 — Verification plan after fixes**
 
 ```
-Agent calls jvm_verify_plan(paths="golem-core/src/.../UserRepository.kt, golem-core/src/.../UserService.kt")
+Agent calls jvm_verify_plan(paths="spola-backend-core/src/.../UserRepository.kt, spola-backend-core/src/.../UserService.kt")
   → JvmPatchPreflight checks impacted modules
-  → Returns: ./gradlew :golem-core:compileKotlin, ./gradlew :golem-core:test
+  → Returns: ./gradlew :spola-backend-core:compileKotlin, ./gradlew :spola-backend-core:test
   → Estimated: "short" (single module affected)
 ```
 
@@ -1023,5 +1023,5 @@ See the main API documentation for tool execution details.
 | `tools/JvmProjectTools.kt` | 9 LLM-accessible JVM intelligence tools |
 | `tools/ProjectInsightTools.kt` | 3 insight CRUD tools |
 | `tools/ProvenanceTools.kt` | 3 provenance export tools |
-| `cli/ProjectCommands.kt` | CLI `golem project` subcommands |
+| `cli/ProjectCommands.kt` | CLI `spola project` subcommands |
 | `config/ConfigLoader.kt` | Config loading (jvm-index-db path) |

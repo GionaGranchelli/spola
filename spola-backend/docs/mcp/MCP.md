@@ -1,20 +1,20 @@
-# Golem MCP (Model Context Protocol)
+# Spola MCP (Model Context Protocol)
 
 ## Overview
 
-Golem provides **bidirectional MCP support** — it can act as both an **MCP Server**
+Spola provides **bidirectional MCP support** — it can act as both an **MCP Server**
 (exposing its tools to any MCP client) and an **MCP Client** (consuming tools from
-external MCP servers and merging them into Golem's tool registry).
+external MCP servers and merging them into Spola's tool registry).
 
 The Model Context Protocol (MCP) is an open standard that lets AI applications
-discover and call tools across different systems. Golem's implementation uses
+discover and call tools across different systems. Spola's implementation uses
 the official Kotlin MCP SDK.
 
 ---
 
 ## MCP Server Mode
 
-Expose all of Golem's built-in tools (filesystem, shell, web search, memory, etc.)
+Expose all of Spola's built-in tools (filesystem, shell, web search, memory, etc.)
 to any MCP client — Claude Desktop, Cursor, VS Code extensions, Codex CLI, and
 any other MCP-aware application.
 
@@ -22,19 +22,19 @@ any other MCP-aware application.
 
 ```bash
 # stdio transport (default) — for local MCP clients
-golem --mcp
+spola --mcp
 
 # Or using the mcp subcommand
-golem mcp
+spola mcp
 
 # SSE transport on port 8091 (for network clients)
-golem --mcp --mcp-transport sse --mcp-port 8091
+spola --mcp --mcp-transport sse --mcp-port 8091
 
 # SSE with API key authentication
-golem --mcp --mcp-transport sse --api-key my-secret
+spola --mcp --mcp-transport sse --api-key my-secret
 
 # Bind to all interfaces for remote SSE access
-golem --mcp --mcp-transport sse --mcp-port 8091 --host 0.0.0.0 --api-key my-secret
+spola --mcp --mcp-transport sse --mcp-port 8091 --host 0.0.0.0 --api-key my-secret
 ```
 
 ### Transport Modes
@@ -49,7 +49,7 @@ golem --mcp --mcp-transport sse --mcp-port 8091 --host 0.0.0.0 --api-key my-secr
 - **No LLM provider needed** — MCP server mode only registers and exposes tools.
   No API keys for OpenAI/Anthropic/etc. are required.
 - **Working directory** — Honors the configured `workingDirectory` from config.
-- **All tools are exposed** — Every tool in Golem's registry is automatically
+- **All tools are exposed** — Every tool in Spola's registry is automatically
   serialized to MCP's tool format with JSON Schema parameters.
 
 ### stdio Transport
@@ -64,11 +64,11 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "golem": {
-      "command": "/path/to/golem-cli",
+    "spola": {
+      "command": "/path/to/spola",
       "args": ["--mcp"],
       "env": {
-        "GOLEM_WORKING_DIR": "/home/user/my-project"
+        "SPOLA_WORKING_DIR": "/home/user/my-project"
       }
     }
   }
@@ -80,9 +80,9 @@ Add to your `claude_desktop_config.json`:
 In Cursor's MCP server settings:
 
 ```
-Name: Golem
+Name: Spola
 Type: command
-Command: /path/to/golem-cli --mcp
+Command: /path/to/spola --mcp
 ```
 
 #### Connecting from VS Code (GitHub Copilot)
@@ -93,8 +93,8 @@ Configure in VS Code's MCP settings:
 {
   "mcp": {
     "servers": {
-      "golem": {
-        "command": "/path/to/golem-cli",
+      "spola": {
+        "command": "/path/to/spola",
         "args": ["--mcp"]
       }
     }
@@ -106,7 +106,7 @@ Configure in VS Code's MCP settings:
 
 The SSE transport runs an HTTP server (default port `8091`) that uses
 Server-Sent Events for MCP communication. This allows network clients to
-connect to Golem's MCP server remotely.
+connect to Spola's MCP server remotely.
 
 ```
 http://{host}:{port}/mcp
@@ -132,7 +132,7 @@ http://192.168.1.100:8091/mcp?apiKey=my-secret
 
 ### Tools Exposed
 
-Every tool registered in Golem's tool registry is automatically available as
+Every tool registered in Spola's tool registry is automatically available as
 an MCP tool. The full set includes (but is not limited to):
 
 | Tool | Description |
@@ -166,15 +166,15 @@ Plus any custom or MCP client-registered tools.
 
 ## MCP Client Mode
 
-Golem can connect to **external MCP servers**, discover their tools, and register
+Spola can connect to **external MCP servers**, discover their tools, and register
 them into its own tool registry with namespaced names (`mcp_{serverName}_{toolName}`).
-This allows Golem's agents to use tools from any MCP server seamlessly.
+This allows Spola's agents to use tools from any MCP server seamlessly.
 
 ### Configuration
 
 MCP server connections are configured via a JSON file at:
 
-**`~/.golem/mcp-servers.json`**
+**`~/.spola/mcp-servers.json`**
 
 ```json
 [
@@ -215,19 +215,19 @@ MCP server connections are configured via a JSON file at:
 
 ### How It Works
 
-1. **Startup** — Golem reads `~/.golem/mcp-servers.json`
-2. **Connect** — For each enabled server, Golem spawns the command process and
+1. **Startup** — Spola reads `~/.spola/mcp-servers.json`
+2. **Connect** — For each enabled server, Spola spawns the command process and
    connects via the MCP stdio protocol
-3. **Discover** — Golem calls the server's `tools/list` RPC to discover available tools
-4. **Register** — Each tool is registered in Golem's registry with the name
+3. **Discover** — Spola calls the server's `tools/list` RPC to discover available tools
+4. **Register** — Each tool is registered in Spola's registry with the name
    `mcp_{serverName}_{toolName}` (e.g., `mcp_filesystem_read_file`)
-5. **Use** — Golem's agents can now call these tools like any built-in tool
+5. **Use** — Spola's agents can now call these tools like any built-in tool
 
 Tool description is prefixed with `[MCP:serverName]` for easy identification.
 
 ### Adding an MCP Server at Runtime
 
-MCP servers can be added dynamically using Golem's internal API:
+MCP servers can be added dynamically using Spola's internal API:
 
 ```kotlin
 mcpClientManager.addServer(
@@ -251,7 +251,7 @@ mcpClientManager.removeServer("my-server")
 
 ### Auto-Reconnect
 
-If a tool call fails because the MCP server disconnected, Golem attempts a
+If a tool call fails because the MCP server disconnected, Spola attempts a
 single automatic reconnect before returning the error to the agent.
 
 ### Tool Name Scoping
@@ -270,9 +270,9 @@ prefixed with `mcp_{serverName}_`. For example:
 
 ## Architecture
 
-### GolemMcpServer (Server Mode)
+### SpolaMcpServer (Server Mode)
 
-Located at: `golem-core/src/main/kotlin/dev/golem/mcp/GolemMcpServer.kt`
+Located at: `spola-backend-core/src/main/kotlin/dev/spola/mcp/SpolaMcpServer.kt`
 
 The server mode follows this flow:
 
@@ -281,7 +281,7 @@ MCP Client (Claude Desktop, Cursor, etc.)
        │
        ▼  stdin/stdout (stdio) or HTTP/SSE (sse)
 ┌──────────────────────────────┐
-│     GolemMcpServer           │
+│     SpolaMcpServer           │
 │  ┌──────────────────────┐    │
 │  │   MCP Server SDK     │    │
 │  │  (Server + Transport)│    │
@@ -293,7 +293,7 @@ MCP Client (Claude Desktop, Cursor, etc.)
 │  └──────────┬───────────┘    │
 │             │                │
 │  ┌──────────▼───────────┐    │
-│  │  Golem Tools          │    │
+│  │  Spola Tools          │    │
 │  │  (read_file, shell,   │    │
 │  │   web_search, ...)    │    │
 │  └──────────────────────┘    │
@@ -304,10 +304,10 @@ Key internals:
 
 - **`buildServer()`** — Creates the MCP `Server` instance with `ServerCapabilities(tools = ...)`.
   Iterates through the tool registry and calls `mcpServer.addTool()` for each tool.
-- **`buildToolSchema(golemTool)`** — Converts Golem's `ToolParameter` list to MCP's
+- **`buildToolSchema(spolaTool)`** — Converts Spola's `ToolParameter` list to MCP's
   `ToolSchema` JSON Schema format. Handles string/integer/boolean types, required flags,
   and default values.
-- **`executeGolemTool(tool, arguments)`** — Receives `JsonElement` arguments from the MCP
+- **`executeSpolaTool(tool, arguments)`** — Receives `JsonElement` arguments from the MCP
   SDK, converts them to Kotlin types via `jsonElementToValue()`, and calls `tool.execute()`.
 - **`jsonElementToValue(element)`** — Recursively converts `JsonPrimitive` values:
   strings stay strings, numbers become Int/Long, booleans are detected by content.
@@ -316,12 +316,12 @@ Key internals:
 
 ### McpClientManager (Client Mode)
 
-Located at: `golem-core/src/main/kotlin/dev/golem/mcp/McpClientManager.kt`
+Located at: `spola-backend-core/src/main/kotlin/dev/spola/mcp/McpClientManager.kt`
 
 The client mode follows this flow:
 
 ```
-Golem Agent / Tool Registry
+Spola Agent / Tool Registry
        │
        │  mcp_filesystem_read_file, mcp_github_create_issue, ...
        │
@@ -360,12 +360,12 @@ Key internals:
 - **`registerServerTools()`** — Calls `client.listTools()`, creates a `Tool` for each
   with the namespaced name `mcp_{serverName}_{toolName}`, and registers it in the
   shared `ToolRegistry`.
-- **`convertInputSchema()`** — Converts MCP's JSON Schema format back to Golem's
+- **`convertInputSchema()`** — Converts MCP's JSON Schema format back to Spola's
   `ToolParameter` list. Handles `string`, `integer`, `boolean` types and `required` arrays.
 - **`executeMcpTool()`** — Calls `connection.client.callTool()` on the remote server.
   If the connection is lost, attempts one auto-reconnect before failing.
 - **`saveConfig()` / `loadConfig()`** — Persists the server list to
-  `~/.golem/mcp-servers.json` so connections survive restarts.
+  `~/.spola/mcp-servers.json` so connections survive restarts.
 - **`connectAllFromConfig()`** — Called at startup; iterates enabled configs,
   connects each, and returns the list of successful connections.
 - **`shutdown()`** — Disconnects all servers, destroys processes, clears the
@@ -373,14 +373,14 @@ Key internals:
 
 ### McpRunner (Entry Point)
 
-Located at: `golem-core/src/main/kotlin/dev/golem/mcp/McpRunner.kt`
+Located at: `spola-backend-core/src/main/kotlin/dev/spola/mcp/McpRunner.kt`
 
 The `runMcpServer()` function is the entry point for MCP mode. It:
 
 1. Sets up the working directory from config
-2. Creates a `MemoryStore`, `GolemJobStore`, `CheckpointManager`, and `JvmIndexCoordinator`
+2. Creates a `MemoryStore`, `SpolaJobStore`, `CheckpointManager`, and `JvmIndexCoordinator`
 3. Builds the MCP-specific tool registry via `ToolRegistryFactory.buildMcpToolRegistry()`
-4. Creates the `GolemMcpServer` instance
+4. Creates the `SpolaMcpServer` instance
 5. Starts either stdio or SSE transport based on the `transport` parameter
 
 For SSE transport, it additionally:
@@ -437,19 +437,19 @@ leave orphaned processes in edge cases (e.g., JVM crash).
 
 ## Examples
 
-### Example 1: Expose Golem Tools to Claude Desktop
+### Example 1: Expose Spola Tools to Claude Desktop
 
 ```bash
-# 1. Start Golem in MCP mode
-golem --mcp
+# 1. Start Spola in MCP mode
+spola --mcp
 ```
 
 ```json
 // 2. Add to claude_desktop_config.json
 {
   "mcpServers": {
-    "golem": {
-      "command": "/usr/local/bin/golem-cli",
+    "spola": {
+      "command": "/usr/local/bin/spola",
       "args": ["--mcp"]
     }
   }
@@ -459,7 +459,7 @@ golem --mcp
 ### Example 2: Connect to External Filesystem MCP Server
 
 ```json
-// ~/.golem/mcp-servers.json
+// ~/.spola/mcp-servers.json
 [
   {
     "name": "filesystem",
@@ -471,13 +471,13 @@ golem --mcp
 ]
 ```
 
-Golem's agents can now call `mcp_filesystem_read_file`, `mcp_filesystem_write_file`,
+Spola's agents can now call `mcp_filesystem_read_file`, `mcp_filesystem_write_file`,
 etc. alongside built-in tools.
 
 ### Example 3: Build a Custom MCP Client Integration
 
 ```kotlin
-// Inside Golem's startup sequence, external MCP servers are auto-connected
+// Inside Spola's startup sequence, external MCP servers are auto-connected
 val mcpClientManager = McpClientManager(toolRegistry)
 mcpClientManager.connectAllFromConfig()
 // All tools from external servers are now available with mcp_ prefix
@@ -487,7 +487,7 @@ mcpClientManager.connectAllFromConfig()
 
 ```bash
 # Start SSE server on port 8091 with API key
-golem --mcp --mcp-transport sse --mcp-port 8091 --api-key my-key
+spola --mcp --mcp-transport sse --mcp-port 8091 --api-key my-key
 ```
 
 Then connect from any MCP client:

@@ -1,26 +1,26 @@
 services:
-  golem-api:
-    image: golem:local
+  spola-backend-api:
+    image: spola-backend:local
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /golem
+    working_dir: /spola-backend
     environment:
-      GOLEM_API_KEY: ${GOLEM_API_KEY}
+      SPOLA_API_KEY: ${SPOLA_API_KEY}
     command:
       [
-        "./golem-cli/build/install/golem-cli/bin/golem-cli",
+        "./spola-backend-cli/build/install/spola/bin/spola",
         "--api",
         "--api-port",
         "8082",
         "--dir",
-        "/golem/workspace",
+        "/spola-backend/workspace",
       ]
     env_file:
       - .env
     volumes:
-      - ./.golem:/golem/.golem
-      - ./workspace:/golem/workspace
+      - ./.spola:/spola-backend/.spola
+      - ./workspace:/spola-backend/workspace
     ports:
       - "127.0.0.1:8082:8082"
     healthcheck:
@@ -30,17 +30,17 @@ services:
       retries: 5
       start_period: 20s
 
-  golem-mcp:
-    image: golem:local
+  spola-backend-mcp:
+    image: spola-backend:local
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /golem
+    working_dir: /spola-backend
     environment:
-      GOLEM_API_KEY: ${GOLEM_API_KEY}
+      SPOLA_API_KEY: ${SPOLA_API_KEY}
     command:
       [
-        "./golem-cli/build/install/golem-cli/bin/golem-cli",
+        "./spola-backend-cli/build/install/spola/bin/spola",
         "--mcp",
         "--mcp-transport",
         "sse",
@@ -49,13 +49,13 @@ services:
         "--mcp-port",
         "8091",
         "--dir",
-        "/golem/workspace",
+        "/spola-backend/workspace",
       ]
     env_file:
       - .env
     volumes:
-      - ./.golem:/golem/.golem
-      - ./workspace:/golem/workspace
+      - ./.spola:/spola-backend/.spola
+      - ./workspace:/spola-backend/workspace
     ports:
       - "127.0.0.1:8091:8091"
     healthcheck:

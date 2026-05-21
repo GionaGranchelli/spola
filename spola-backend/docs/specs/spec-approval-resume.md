@@ -1,7 +1,7 @@
 # SPEC: Approval Resume Path (WAITING_APPROVAL → RUNNING)
 
 > **Status:** Draft
-> **Context:** golem-core (WorkflowExecutionService, YamlWorkflowCompiler, WorkflowRoutes, WorkflowCommands)
+> **Context:** spola-backend-core (WorkflowExecutionService, YamlWorkflowCompiler, WorkflowRoutes, WorkflowCommands)
 > **Dependencies:** TramAI orchestration 0.3.0
 
 ## Problem
@@ -73,7 +73,7 @@ gateStep(name = step.id) { state, _ ->
 
 **New imports:**
 ```kotlin
-import dev.spola.GolemFactory
+import dev.spola.SpolaFactory
 import dev.tramai.orchestration.WorkflowGateRejectedException
 import dev.tramai.orchestration.WorkflowCheckpoint
 import dev.tramai.orchestration.WorkflowContext
@@ -103,22 +103,22 @@ suspend fun runExecution(record: WorkflowExecutionRecord): String {
     val template = workflowRegistry.resolve(claimed.workflowName)
     val workflow = template.build(config, executionInput.goal, executionInput.parametersJson)
 
-    val checkpointDir = System.getProperty("java.io.tmpdir") + "/golem-workflows"
-    val persistence: WorkflowPersistence<GolemState>? =
-        GolemFactory.configurePersistence(
+    val checkpointDir = System.getProperty("java.io.tmpdir") + "/spola-workflows"
+    val persistence: WorkflowPersistence<SpolaState>? =
+        SpolaFactory.configurePersistence(
             checkpointDir = checkpointDir,
             deleteCheckpointOnCompletion = true,
         )
 
     // Create context so we can capture workflowId for resume
     val workflowContext = WorkflowContext()
-    val metrics = dev.spola.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
-    val tracer = dev.spola.GolemTracer(
+    val metrics = dev.spola.metrics.SpolaMetrics(isEnabled = config.metricsEnabled)
+    val tracer = dev.spola.SpolaTracer(
         otelEnabled = config.otelEnabled,
         otelEndpoint = config.otelEndpoint,
         otelServiceName = config.otelServiceName,
     )
-    val observer = GolemWorkflowObserver(
+    val observer = SpolaWorkflowObserver(
         metrics = metrics,
         tracer = tracer,
         chatService = chatService,
@@ -128,7 +128,7 @@ suspend fun runExecution(record: WorkflowExecutionRecord): String {
 
     return try {
         val result = workflow.run(
-            initialState = GolemState.initial(
+            initialState = SpolaState.initial(
                 goal = executionInput.goal,
                 config = config,
                 workflowNestingDepth = 1,
@@ -196,8 +196,8 @@ suspend fun approveExecution(executionId: String): Boolean {
         val template = workflowRegistry.resolve(updated.workflowName)
         val workflow = template.build(config, executionInput.goal, executionInput.parametersJson)
 
-        val checkpointDir = System.getProperty("java.io.tmpdir") + "/golem-workflows"
-        val persistence = GolemFactory.configurePersistence(
+        val checkpointDir = System.getProperty("java.io.tmpdir") + "/spola-workflows"
+        val persistence = SpolaFactory.configurePersistence(
             checkpointDir = checkpointDir,
             deleteCheckpointOnCompletion = true,
         )
@@ -207,7 +207,7 @@ suspend fun approveExecution(executionId: String): Boolean {
             ?: throw IllegalStateException(
                 "Checkpoint not found for workflow '${updated.workflowName}' execution '$executionId'"
             )
-        val rawState = persistence.stateCodec.decode(checkpoint.statePayload) as GolemState
+        val rawState = persistence.stateCodec.decode(checkpoint.statePayload) as SpolaState
         val patchedState = rawState.copy(
             intermediateResults = rawState.intermediateResults +
                 ("__approval_granted" to "true")
@@ -226,13 +226,13 @@ suspend fun approveExecution(executionId: String): Boolean {
             expectedRevision = checkpoint.revision,
         )
 
-        val metrics = dev.spola.metrics.GolemMetrics(isEnabled = config.metricsEnabled)
-        val tracer = dev.spola.GolemTracer(
+        val metrics = dev.spola.metrics.SpolaMetrics(isEnabled = config.metricsEnabled)
+        val tracer = dev.spola.SpolaTracer(
             otelEnabled = config.otelEnabled,
             otelEndpoint = config.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
-        val observer = GolemWorkflowObserver(
+        val observer = SpolaWorkflowObserver(
             metrics = metrics,
             tracer = tracer,
             chatService = chatService,

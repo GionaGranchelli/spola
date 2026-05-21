@@ -1,23 +1,23 @@
-# Golem Architecture
+# Spola Architecture
 
-**Version:** 0.1.0 | **Modules:** `golem-core` + `golem-cli` | **LLM Layer:** TramAI
+**Version:** 0.1.0 | **Modules:** `spola-backend-core` + `spola-backend-cli` | **LLM Layer:** TramAI
 
 ## Module Map
 
-Golem is a multi-module Gradle project with a clean split:
+Spola is a multi-module Gradle project with a clean split:
 
-### `golem-core`
+### `spola-backend-core`
 
-The engine. Contains everything that makes Golem work:
+The engine. Contains everything that makes Spola work:
 
-- **Agent Loop** — `GolemAgent.kt`: the ReAct loop (think-act-observe cycle)
-- **Configuration** — `GolemConfig.kt`: data class with every knob (model, provider, paths, security)
-- **Factory** — `GolemFactory.kt`: thin orchestrator that delegates to 4 sub-factories
+- **Agent Loop** — `SpolaAgent.kt`: the ReAct loop (think-act-observe cycle)
+- **Configuration** — `SpolaConfig.kt`: data class with every knob (model, provider, paths, security)
+- **Factory** — `SpolaFactory.kt`: thin orchestrator that delegates to 4 sub-factories
 - **Tool System** — `Tool.kt` / `ToolRegistry.kt`: tools as data classes with execute lambdas
 - **Runner** — `Runner.kt`: `runOneShot()` and `runRepl()` entry points
 - **Chat** — `ChatMessage.kt`: system/user/assistant/tool message types
 - **Memory** — SQLite-backed (`memory_save` / `memory_search` tools)
-- **Persona** — PersonaLoader + PersonaStore (Persona Pocket: `~/.golem/people/*.md`)
+- **Persona** — PersonaLoader + PersonaStore (Persona Pocket: `~/.spola/people/*.md`)
 - **Scheduler** — Cron-based job scheduler backed by SQLite
 - **Checkpoint** — Conversation checkpoint/resume via SQLite
 - **JVM Intelligence** — Project scanning, symbol search, dependency tracing
@@ -25,15 +25,15 @@ The engine. Contains everything that makes Golem work:
 - **Workflow** — TramAI orchestration integration
 - **API Server** — Ktor-based REST API (port 8082)
 - **MCP** — Both server (expose tools) and client (consume external MCP servers)
-- **Plugin System** — `~/.golem/plugins/` JAR loader
+- **Plugin System** — `~/.spola/plugins/` JAR loader
 - **Delivery** — Telegram / Email notification tools
 - **TTS** — Text-to-speech (Edge, ElevenLabs)
 - **Observability** — Prometheus metrics + OpenTelemetry tracing
 - **Agent Definitions** — Custom agents with scoped permissions (filesystem, shell, network)
 
-### `golem-cli`
+### `spola-backend-cli`
 
-The CLI entry point. Thin — parses args via picocli, then delegates to `golem-core`.
+The CLI entry point. Thin — parses args via picocli, then delegates to `spola-backend-core`.
 
 - **Main.kt** — `@Command` root with all global flags and subcommand registrations
 - **Subcommands** — `agent`, `config`, `mcp`, `pairing`, `persona`, `process`, `project`, `remote`, `scheduler`, `skill`, `workflow`, `team`
@@ -42,7 +42,7 @@ The CLI entry point. Thin — parses args via picocli, then delegates to `golem-
 
 ```
 ┌────────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────────────┐
-│ User/CLI   │───▶│  Runner  │───▶│  Factory │───▶│   GolemAgent         │
+│ User/CLI   │───▶│  Runner  │───▶│  Factory │───▶│   SpolaAgent         │
 │ (goal text)│    │one-shot  │    │wires all │    │   (ReAct Loop)       │
 └────────────┘    │or REPL   │    │depts     │    └──────┬───────────────┘
                   └──────────┘    └──────────┘           │
@@ -77,7 +77,7 @@ for turn in 1..maxTurns:
 throw MaxTurnsExceeded(maxTurns)
 ```
 
-Key details from `GolemAgent.kt` — line 70-117:
+Key details from `SpolaAgent.kt` — line 70-117:
 
 - **Observer pattern** — `AgentRunObserver` callbacks for `onStatus`, `onToken`, `onToolCall`, `onToolResult`, `onLlmCall`, `onLlmResult`, `onError`. The REPL's `ConsoleObserver` prints tool execution in real-time.
 - **Retry** — Tools are retried once on failure (ADR-002).
@@ -86,9 +86,9 @@ Key details from `GolemAgent.kt` — line 70-117:
 
 ### Factory Wiring
 
-`GolemFactory` delegates to 4 focused factories:
+`SpolaFactory` delegates to 4 focused factories:
 
-1. **AgentFactory** — Creates `GolemAgent` + `GolemInstance`. Loads persona (from file, Persona Pocket, or auto-detected). Wraps observer with MetricsObserver + GolemTracerObserver. Resolves the LLM provider.
+1. **AgentFactory** — Creates `SpolaAgent` + `SpolaInstance`. Loads persona (from file, Persona Pocket, or auto-detected). Wraps observer with MetricsObserver + SpolaTracerObserver. Resolves the LLM provider.
 2. **ProviderResolver** — Maps provider names (`openai`, `anthropic`, `openai-compat`, `ollama`, `google`) to TramAI `ModelProvider` instances. Reads API keys from environment, config, or `ProviderStore`.
 3. **ToolRegistryFactory** — Builds the `ToolRegistry` with all default tools. Variants for: default agents, agent definitions (with permission scoping), API server, and MCP server.
 4. **WorkflowFactory** — Creates and runs TramAI workflows with persistence, observers, and metrics.
@@ -129,11 +129,11 @@ The initial persona is augmented with stored memories at startup (auto-injected 
 
 ### 4. Persona as a File
 
-The persona (system prompt) is loaded from a file — `AGENTS.md`, `CLAUDE.md`, or `~/.golem/people/*.md` with YAML frontmatter. No hardcoded persona in code. The Persona Pocket feature (`persona list/show/sync`) manages multiple named personas in a SQLite store.
+The persona (system prompt) is loaded from a file — `AGENTS.md`, `CLAUDE.md`, or `~/.spola/people/*.md` with YAML frontmatter. No hardcoded persona in code. The Persona Pocket feature (`persona list/show/sync`) manages multiple named personas in a SQLite store.
 
 ### 5. TramAI as LLM Layer
 
-Golem uses TramAI's `ModelProvider` interface and `ProviderRegistry` for LLM calls, but does NOT use TramAI's `@AiService` proxy or orchestration module. The ReAct loop is hand-rolled. This gives Golem full control over conversation state, tool execution, and checkpointing.
+Spola uses TramAI's `ModelProvider` interface and `ProviderRegistry` for LLM calls, but does NOT use TramAI's `@AiService` proxy or orchestration module. The ReAct loop is hand-rolled. This gives Spola full control over conversation state, tool execution, and checkpointing.
 
 ### 6. Deterministic Process Engine
 
@@ -149,14 +149,14 @@ Workflows are typed DAGs, not free-form prompts. AI fills variables within bound
 - **Orchestration** — `workflow_run`, `agent_run`, `agent_create/list/get/update/delete`
 - **Process** — Process DAG execution (compile, test, git_commit, human_approval)
 - **Scheduler** — `scheduler_add`, `scheduler_list`, `scheduler_remove`
-- **MCP** — Client: consume external MCP tools; Server: expose Golem tools via MCP
+- **MCP** — Client: consume external MCP tools; Server: expose Spola tools via MCP
 - **Delivery** — `telegram_notify`, `email_send`
 - **TTS** — Text-to-speech tools
 - **Checkpoint** — `checkpoint_save`, `checkpoint_list`, `checkpoint_resume`
 
 ## Plugin System
 
-JAR-based plugins in `~/.golem/plugins/`. Each plugin can register tools into the `ToolRegistry`. Plugins are loaded at startup by `PluginLoader` when `config.pluginsEnabled` is true.
+JAR-based plugins in `~/.spola/plugins/`. Each plugin can register tools into the `ToolRegistry`. Plugins are loaded at startup by `PluginLoader` when `config.pluginsEnabled` is true.
 
 ## Security Model
 

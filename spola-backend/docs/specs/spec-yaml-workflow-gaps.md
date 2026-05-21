@@ -2,7 +2,7 @@
 
 > **Status:** ✅ **Completed** — All 5+1 implementation gaps filled
 > **Target:** 3 features + 2 prerequisites + 1 deferred feature
-> **Context:** `/home/gionag/Development/golem`
+> **Context:** `/home/gionag/Development/spola`
 
 ## Executive Summary
 
@@ -120,7 +120,7 @@ Use `localStep` execution, NOT actual AI agent steps (matching existing test con
 
 ### Problem
 
-Currently in `YamlWorkflowCompiler.kt`, `resolveRuntimeTemplates()` is called at step registration time (workflow build time) with an empty `stepOutputs` map. The `golemAgentStep` and `parallelAgentsStep` functions accept `(GolemState) -> String` goal lambdas that execute at runtime, but the compiler passes a pre-resolved string instead of using the lambda form.
+Currently in `YamlWorkflowCompiler.kt`, `resolveRuntimeTemplates()` is called at step registration time (workflow build time) with an empty `stepOutputs` map. The `spolaAgentStep` and `parallelAgentsStep` functions accept `(SpolaState) -> String` goal lambdas that execute at runtime, but the compiler passes a pre-resolved string instead of using the lambda form.
 
 ### Fix
 
@@ -131,7 +131,7 @@ Change the goal lambda to read from `state.intermediateResults` at runtime:
 val resolvedGoal = WorkflowParameterResolver.resolveRuntimeTemplates(
     step.goal, stepOutputs  // stepOutputs is empty at build time!
 )
-golemAgentStep(
+spolaAgentStep(
     name = step.id,
     persona = { step.persona ?: "..." },
     goal = { resolvedGoal },  // Pre-resolved — WRONG
@@ -142,7 +142,7 @@ golemAgentStep(
 )
 
 // Use:
-golemAgentStep(
+spolaAgentStep(
     name = step.id,
     persona = { step.persona ?: "..." },
     goal = { state ->
@@ -183,7 +183,7 @@ This ensures `{{step.analyze.output}}` resolves when step.analyze's output is ac
 ### Requirements
 
 #### `local` step
-- Identity pass-through on `GolemState` (immutable, no expression evaluation).
+- Identity pass-through on `SpolaState` (immutable, no expression evaluation).
 - MVP only — safe default.
 
 #### `shell` step
@@ -207,7 +207,7 @@ This ensures `{{step.analyze.output}}` resolves when step.analyze's output is ac
 
 ### Implementation
 
-**Reuse existing shell execution logic** (do NOT add a second ProcessBuilder path). Check if `GolemAgent` or `Tool` infrastructure has a shell utility. If not, use `kotlin.runCatching { ProcessBuilder("sh", "-c", command).start() }`.
+**Reuse existing shell execution logic** (do NOT add a second ProcessBuilder path). Check if `SpolaAgent` or `Tool` infrastructure has a shell utility. If not, use `kotlin.runCatching { ProcessBuilder("sh", "-c", command).start() }`.
 
 ### Tests
 
@@ -307,8 +307,8 @@ Feature 4: composite step type                                      → ✅ Done
    ├── Runtime depth guard (max 10), withTimeout, try/catch
    └── Integration tests (7: basic, missing ref, cycle, deep chain, diamond)
 ```
-After each feature: ./gradlew :golem-core:test
-After ALL: ./gradlew :golem-core:test :golem-cli:test
+After each feature: ./gradlew :spola-backend-core:test
+After ALL: ./gradlew :spola-backend-core:test :spola-backend-cli:test
 ```
 
 ---
@@ -320,7 +320,7 @@ After ALL: ./gradlew :golem-core:test :golem-cli:test
 3. **Sorter tests** — Pure algorithm tests on `ResolvedStep` lists.
 4. **Compiler integration tests** — Build the workflow, run with `localStep` content, verify `state.intermediateResults`.
 5. **Shell tests** — Isolated, platform-safe (`echo`, `exit` commands only).
-6. **Full suite after each change** — `./gradlew :golem-core:test` catches regressions.
+6. **Full suite after each change** — `./gradlew :spola-backend-core:test` catches regressions.
 
 ---
 

@@ -1,6 +1,6 @@
 # Agent System
 
-Golem's custom agent system lets you define **named, isolated agent configurations** — each with its own system prompt, provider routing, tool permissions, memory scope, and budget. This separates *agent identity* (what it is and what it can do) from *model selection* (which LLM powers it).
+Spola's custom agent system lets you define **named, isolated agent configurations** — each with its own system prompt, provider routing, tool permissions, memory scope, and budget. This separates *agent identity* (what it is and what it can do) from *model selection* (which LLM powers it).
 
 ---
 
@@ -20,7 +20,7 @@ A custom agent is an `AgentDefinition` data class with **25 fields** covering:
 - **Budget** — cost limit, timeout
 - **Lifecycle** — enabled/disabled, tags, timestamps
 
-Agents are persisted in **SQLite** (via `SqliteAgentStore`) and can also be imported/exported as **YAML files** in `~/.golem/agents/`.
+Agents are persisted in **SQLite** (via `SqliteAgentStore`) and can also be imported/exported as **YAML files** in `~/.spola/agents/`.
 
 ---
 
@@ -319,7 +319,7 @@ interface AgentStore : AutoCloseable {
 ### Connection Setup
 
 ```kotlin
-val store = SqliteAgentStore("/home/user/.golem/agents.db")
+val store = SqliteAgentStore("/home/user/.spola/agents.db")
 // Internally connects to jdbc:sqlite:<dbPath> with org.sqlite.JDBC driver
 // Auto-creates the agent_definitions table via SchemaUtils.create()
 ```
@@ -328,12 +328,12 @@ val store = SqliteAgentStore("/home/user/.golem/agents.db")
 
 ## 9. YAML File Import/Export
 
-`AgentLoader` handles YAML I/O from `~/.golem/agents/`. Each `.yaml` or `.yml` file becomes one agent. The filename stem is used as the agent id if not specified in YAML.
+`AgentLoader` handles YAML I/O from `~/.spola/agents/`. Each `.yaml` or `.yml` file becomes one agent. The filename stem is used as the agent id if not specified in YAML.
 
 ### Complete YAML Example
 
 ```yaml
-# ~/.golem/agents/security-reviewer.yaml
+# ~/.spola/agents/security-reviewer.yaml
 id: security-reviewer
 name: Security Reviewer
 description: Audits code for security vulnerabilities
@@ -383,7 +383,7 @@ tags:
 ### AgentLoader Operations
 
 ```kotlin
-// Load all YAML agents from ~/.golem/agents/ (or custom path)
+// Load all YAML agents from ~/.spola/agents/ (or custom path)
 val agents: List<AgentDefinition> = AgentLoader.loadFromDirectory()
 
 // Load a single file
@@ -501,7 +501,7 @@ Parameters:
 
 ### agent_run
 
-Runs a custom agent with a specific goal. **Note:** This tool returns a message directing the user to use the API server — it requires `POST /api/agents/run` on a running Golem API server (`golem --api --api-key <key>`).
+Runs a custom agent with a specific goal. **Note:** This tool returns a message directing the user to use the API server — it requires `POST /api/agents/run` on a running Spola API server (`spola --api --api-key <key>`).
 
 ```
 Parameters:
@@ -514,9 +514,9 @@ Parameters:
 ## 11. CLI Commands
 
 ```
-golem agent list                          # List all custom agents
-golem agent show <id>                     # Show full agent definition
-golem agent create                        # Create a new agent
+spola agent list                          # List all custom agents
+spola agent show <id>                     # Show full agent definition
+spola agent create                        # Create a new agent
   --id <id>                                # Unique identifier (required)
   --name <name>                            # Human-readable name (required)
   --system-prompt|-i <text>               # System prompt (required)
@@ -531,17 +531,17 @@ golem agent create                        # Create a new agent
   --memory <scope>                        # Memory scope (default: global)
   --tags <tag1,tag2>                      # Comma-separated tags
 
-golem agent update <id>                   # Update an agent (partial)
+spola agent update <id>                   # Update an agent (partial)
   --name, --desc, --system-prompt, --model, --provider, --fs, --enable
 
-golem agent delete <id>                   # Delete an agent
-golem agent run <id> <goal>               # Run an agent with a goal
+spola agent delete <id>                   # Delete an agent
+spola agent run <id> <goal>               # Run an agent with a goal
 ```
 
 ### Example: Create security reviewer from CLI
 
 ```bash
-golem agent create \
+spola agent create \
   --id security-reviewer \
   --name "Security Reviewer" \
   -i "You audit code for vulnerabilities..." \
@@ -558,14 +558,14 @@ golem agent create \
 ### Example: Run a custom agent
 
 ```bash
-golem agent run security-reviewer "Audit src/auth/LoginController.kt for vulnerabilities"
+spola agent run security-reviewer "Audit src/auth/LoginController.kt for vulnerabilities"
 ```
 
-### What happens during `golem agent run`
+### What happens during `spola agent run`
 
 1. `SqliteAgentStore.get(agentId)` loads the definition from `agents.db`
 2. Checks `agentDef.enabled` — disabled agents are rejected
-3. `GolemFactory.createFromAgentDefinition()` builds a full `GolemInstance`:
+3. `SpolaFactory.createFromAgentDefinition()` builds a full `SpolaInstance`:
    - `ProviderStore` resolves provider credentials
    - `PermissionEnforcer` wraps the definition
    - Tool registry is filtered per `toolPolicy` and permissions
@@ -655,7 +655,7 @@ Response:
 
 ## 13. Complete Example: security-reviewer Agent
 
-### YAML definition (`~/.golem/agents/security-reviewer.yaml`)
+### YAML definition (`~/.spola/agents/security-reviewer.yaml`)
 
 ```yaml
 id: security-reviewer
@@ -708,13 +708,13 @@ tags:
 
 ```bash
 # List available agents
-golem agent list
+spola agent list
 
 # Show security reviewer details
-golem agent show security-reviewer
+spola agent show security-reviewer
 
 # Run it
-golem agent run security-reviewer "Scan the authentication module"
+spola agent run security-reviewer "Scan the authentication module"
 
 # Via API
 curl -X POST http://localhost:8080/api/agents/run \
@@ -732,7 +732,7 @@ curl -X POST http://localhost:8080/api/agents/run \
 2. `ProviderStore` resolves `anthropic` provider credentials from `ANTHROPIC_API_KEY`
 3. `PermissionEnforcer` wraps the definition for runtime checks
 4. `ToolRegistryFactory` builds a filtered tool registry (only listed tools, no shell, read-only filesystem)
-5. `AgentFactory.createFromAgentDefinition()` creates a `GolemInstance` with the agent's `systemPrompt` as its persona
+5. `AgentFactory.createFromAgentDefinition()` creates a `SpolaInstance` with the agent's `systemPrompt` as its persona
 6. The ReAct loop runs with the agent's model, temperature, maxTurns, and permission constraints
 7. On failure of primary `anthropic/claude-sonnet-4`, it falls back to `openai/gpt-4o`
 
@@ -758,4 +758,4 @@ data class AgentRuntimeConfig(
 )
 ```
 
-`AgentPermissions` is used for registry filtering. `AgentRuntimeConfig` carries model parameter overrides into the `GolemAgent` constructor.
+`AgentPermissions` is used for registry filtering. `AgentRuntimeConfig` carries model parameter overrides into the `SpolaAgent` constructor.

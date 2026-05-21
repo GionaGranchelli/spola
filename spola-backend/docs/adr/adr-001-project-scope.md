@@ -1,4 +1,4 @@
-# ADR-001: Golem — Autonomous Coding Agent on the JVM
+# ADR-001: Spola — Autonomous Coding Agent on the JVM
 
 - **Status:** accepted
 - **Owner:** maintainer
@@ -17,25 +17,25 @@ Building an agent requires composing these primitives into an autonomous loop.
 
 ## Decision
 
-Create **Golem** — a standalone JVM-based autonomous coding agent — as a separate
-project that consumes TramAI as a library dependency. Golem is not a TramAI module;
+Create **Spola** — a standalone JVM-based autonomous coding agent — as a separate
+project that consumes TramAI as a library dependency. Spola is not a TramAI module;
 it is an independent application built on TramAI's stable API.
 
 ## Architecture
 
-Golem follows a layered architecture:
+Spola follows a layered architecture:
 
 ```
 ┌──────────────────────────────────────┐
-│          golem-cli (REPL)            │  ← UI layer
+│          spola-backend-cli (REPL)            │  ← UI layer
 ├──────────────────────────────────────┤
-│   golem-core                         │
+│   spola-backend-core                         │
 │  ├─ AgentLoop (ReAct)                │  ← Core loop
 │  ├─ ToolRegistry                     │  ← Tool infrastructure
 │  ├─ tools/ (File, Shell, Search)     │  ← Built-in tools
 │  ├─ MemoryStore (SQLite)             │  ← Persistent memory
 │  ├─ PersonaLoader (AGENTS.md)        │  ← Persona system
-│  └─ GolemConfig                      │  ← Configuration
+│  └─ SpolaConfig                      │  ← Configuration
 ├──────────────────────────────────────┤
 │          TramAI (library)             │  ← LLM infrastructure
 └──────────────────────────────────────┘
@@ -43,8 +43,8 @@ Golem follows a layered architecture:
 
 ## Non-Goals
 
-- Becoming a TramAI module (Golem is an application, not a library)
-- Replacing Claude Code or Hermes (Golem is JVM-native for Spring/Kotlin teams)
+- Becoming a TramAI module (Spola is an application, not a library)
+- Replacing Claude Code or Hermes (Spola is JVM-native for Spring/Kotlin teams)
 - Distributed execution (future concern)
 
 ## Design Principles
@@ -52,5 +52,5 @@ Golem follows a layered architecture:
 1. **Tools are functions** — each tool is a typed function `(args) -> result`, not a class hierarchy
 2. **Memory is explicit** — no hidden agent state; memory tools are first-class tools
 3. **Persona is a file** — AGENTS.md/CLAUDE.md loaded at startup, injectable
-4. **TramAI is the LLM layer** — Golem uses TramAI for providers and tool calling, not for orchestration
+4. **TramAI is the LLM layer** — Spola uses TramAI for providers and tool calling, not for orchestration
 5. **Testability first** — every component has a test proving its behavior

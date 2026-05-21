@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test Golem MCP server via stdio using java -cp (avoids Gradle's IO interception)."""
+"""Test Spola MCP server via stdio using java -cp (avoids Gradle's IO interception)."""
 
 import json
 import subprocess
@@ -10,7 +10,7 @@ import glob
 import pathlib
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-GOLEM_DIR = os.path.join(SCRIPT_DIR, "..")
+SPOLA_BACKEND_DIR = os.path.join(SCRIPT_DIR, "..")
 
 def find_jar(directory, pattern):
     """Find a jar file matching the pattern."""
@@ -24,12 +24,12 @@ def main():
     jars = []
 
     # Core jar
-    core_jar = find_jar(os.path.join(GOLEM_DIR, "golem-core"), "golem-core-*.jar")
+    core_jar = find_jar(os.path.join(SPOLA_BACKEND_DIR, "spola-backend-core"), "spola-backend-core-*.jar")
     if core_jar:
         jars.append(core_jar)
 
     # CLI jar
-    cli_jar = find_jar(os.path.join(GOLEM_DIR, "golem-cli"), "golem-cli-*.jar")
+    cli_jar = find_jar(os.path.join(SPOLA_BACKEND_DIR, "spola-backend-cli"), "spola-backend-cli-*.jar")
     if cli_jar:
         jars.append(cli_jar)
 
@@ -58,7 +58,7 @@ def main():
     java = os.path.join(java_home, "bin", "java")
 
     proc = subprocess.Popen(
-        [java, "-cp", classpath, "dev.golem.cli.MainKt", "--mcp", "--mcp-transport", "stdio"],
+        [java, "-cp", classpath, "dev.spola.cli.MainKt", "--mcp", "--mcp-transport", "stdio"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

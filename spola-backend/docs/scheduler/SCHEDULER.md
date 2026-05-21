@@ -2,12 +2,12 @@
 
 ## Overview
 
-Golem's scheduler provides cron-based job execution. Jobs run Golem agent sessions on a schedule — perfect for recurring tasks like daily code analysis, weekly dependency checks, or periodic system maintenance.
+Spola's scheduler provides cron-based job execution. Jobs run Spola agent sessions on a schedule — perfect for recurring tasks like daily code analysis, weekly dependency checks, or periodic system maintenance.
 
 The scheduler is built on:
-- **GolemScheduler** — Polling loop that checks for due jobs every 5 seconds
-- **GolemJobStore** — SQLite-backed job persistence
-- **GolemCronParser** — Parses 5-field cron expressions
+- **SpolaScheduler** — Polling loop that checks for due jobs every 5 seconds
+- **SpolaJobStore** — SQLite-backed job persistence
+- **SpolaCronParser** — Parses 5-field cron expressions
 - **SchedulerTools** — LLM-accessible tools for job management
 
 ## Data Model
@@ -27,19 +27,19 @@ data class ScheduledJob(
 
 ## Architecture
 
-### GolemScheduler
+### SpolaScheduler
 
 The scheduler runs a polling loop in a coroutine scope:
 
 1. Every 5 seconds, calls `jobStore.getDueJobs(now)` to find enabled jobs whose `nextRunAt <= now`
-2. For each due job, creates a Golem agent via `GolemFactory.create()` and runs the job's goal
-3. After execution (success or failure), calculates the next fire time using `GolemCronParser`
+2. For each due job, creates a Spola agent via `SpolaFactory.create()` and runs the job's goal
+3. After execution (success or failure), calculates the next fire time using `SpolaCronParser`
 4. Updates `nextRunAt` and `lastRunAt` in the job store
 
 ```kotlin
-val scheduler = GolemScheduler(
-    jobStore = SqliteGolemJobStore("/path/to/scheduler.db"),
-    config = GolemConfig(),
+val scheduler = SpolaScheduler(
+    jobStore = SqliteSpolaJobStore("/path/to/scheduler.db"),
+    config = SpolaConfig(),
 )
 scheduler.start()  // Begin polling loop
 // ... later ...
@@ -48,10 +48,10 @@ scheduler.stop()   // Graceful shutdown
 
 The scheduler uses `CoroutineScope(SupervisorJob() + Dispatchers.Default)` so one failing job doesn't affect others. The `pollInterval` defaults to 5 seconds but is configurable.
 
-### GolemJobStore Interface
+### SpolaJobStore Interface
 
 ```kotlin
-interface GolemJobStore : AutoCloseable {
+interface SpolaJobStore : AutoCloseable {
     suspend fun add(name: String, goal: String,
         cronExpression: String, enabled: Boolean = true): ScheduledJob
     suspend fun remove(id: String): Boolean
@@ -63,7 +63,7 @@ interface GolemJobStore : AutoCloseable {
 }
 ```
 
-### SqliteGolemJobStore
+### SqliteSpolaJobStore
 
 SQLite implementation using Exposed ORM with a `scheduled_jobs` table:
 
@@ -81,7 +81,7 @@ Table: scheduled_jobs
 
 Auto-creates the database file and parent directories on initialization. Jobs are listed ordered by `nextRunAt ASC`.
 
-### GolemCronParser
+### SpolaCronParser
 
 Parses standard 5-field cron expressions into TramAI's `CronSchedule`:
 
@@ -103,7 +103,7 @@ Valid expressions:
 
 ## Agent Tools
 
-The scheduler is exposed to the Golem agent via three tools registered by `registerSchedulerTools()`.
+The scheduler is exposed to the Spola agent via three tools registered by `registerSchedulerTools()`.
 
 ### scheduler_add
 
@@ -178,28 +178,28 @@ scheduler_remove(id="550e8400-e29b-41d4-a716-446655440000")
 ## CLI Reference
 
 ```
-golem scheduler add --name <name> --cron <expr> <goal>
-golem scheduler list
-golem scheduler remove <id>
+spola scheduler add --name <name> --cron <expr> <goal>
+spola scheduler list
+spola scheduler remove <id>
 ```
 
 ### Examples
 
 ```bash
 # Add a daily maintenance job
-golem scheduler add --name "Daily cleanup" --cron "0 6 * * 1-5" \
+spola scheduler add --name "Daily cleanup" --cron "0 6 * * 1-5" \
   "Run code cleanup and fix lint warnings"
 
 # Add a weekly security scan
-golem scheduler add --name "Security scan" --cron "0 10 * * 1" \
+spola scheduler add --name "Security scan" --cron "0 10 * * 1" \
   "Review all dependencies for security advisories"
 
 # List all jobs
-golem scheduler list
+spola scheduler list
 # Output: job-id-1 | Daily cleanup | enabled=true | next=2026-05-15T06:00:00Z | cron=0 6 * * 1-5
 
 # Remove a job
-golem scheduler remove job-id-1
+spola scheduler remove job-id-1
 ```
 
 ## API Reference
@@ -267,10 +267,10 @@ Remove a scheduled job.
 
 ## Daemon Mode
 
-The scheduler runs as part of Golem's daemon mode:
+The scheduler runs as part of Spola's daemon mode:
 
 ```bash
-golem --daemon
+spola --daemon
 ```
 
 This starts the scheduler polling loop, kanban store, and other background services. The daemon keeps running until interrupted (Ctrl+C) or killed.
@@ -280,7 +280,7 @@ This starts the scheduler polling loop, kanban store, and other background servi
 Scheduled jobs can run process templates. The goal of a scheduled job is simply the goal string passed to the agent — the agent can then use tools to invoke process workflows:
 
 ```bash
-golem scheduler add --name "Weekly refactor" --cron "0 3 * * 0" \
+spola scheduler add --name "Weekly refactor" --cron "0 3 * * 0" \
   "Run the refactor process template on the codebase to improve code quality"
 ```
 

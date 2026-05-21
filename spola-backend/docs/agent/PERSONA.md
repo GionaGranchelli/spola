@@ -1,18 +1,18 @@
 # Persona System
 
-Golem's persona system lets you define **who the agent is** — its identity, role, behavior guidelines, and expertise area. Personas are files, not database records. The system uses a discovery chain, a filesystem-backed "Persona Pocket", and auto-injection into every session.
+Spola's persona system lets you define **who the agent is** — its identity, role, behavior guidelines, and expertise area. Personas are files, not database records. The system uses a discovery chain, a filesystem-backed "Persona Pocket", and auto-injection into every session.
 
 ---
 
 ## 1. Overview
 
-The persona is the **system prompt** — the foundational instruction that shapes the agent's behavior. Golem supports three layers of persona configuration:
+The persona is the **system prompt** — the foundational instruction that shapes the agent's behavior. Spola supports three layers of persona configuration:
 
 | Layer | Source | When It's Used |
 |-------|--------|----------------|
 | 1 | `AGENTS.md` or `CLAUDE.md` in working directory | Default discovery |
 | 2 | Explicit `--persona` flag or `persona` config key | Override |
-| 3 | **Persona Pocket** (`~/.golem/people/*.md`) | Active persona activation |
+| 3 | **Persona Pocket** (`~/.spola/people/*.md`) | Active persona activation |
 | 4 | Built-in default persona | Fallback if nothing else found |
 
 These layers **combine** — the Persona Pocket active persona is prepended to the base system prompt, creating a stack:
@@ -21,7 +21,7 @@ These layers **combine** — the Persona Pocket active persona is prepended to t
 ▶ Active Persona: security-engineer
   Role: Security Engineer
   Tags: security, code-review
-  (prose from ~/.golem/people/security-engineer.md)
+  (prose from ~/.spola/people/security-engineer.md)
 
 ▷ Base persona from AGENTS.md or default
 ```
@@ -62,7 +62,7 @@ PersonaLoader.load(workingDirectory = "/home/user/project")
 If no file is found, the built-in default is used:
 
 ```text
-You are Golem, a JVM-based autonomous coding agent.
+You are Spola, a JVM-based autonomous coding agent.
 You help users build, debug, and understand Java/Kotlin projects.
 You have access to tools: read, write, search files, run shell commands,
 and maintain memory across sessions...
@@ -70,14 +70,14 @@ and maintain memory across sessions...
 
 ---
 
-## 3. Persona Pocket — `~/.golem/people/*.md`
+## 3. Persona Pocket — `~/.spola/people/*.md`
 
-The Persona Pocket is a directory of markdown files at `~/.golem/people/`. Each `.md` file is a reusable persona profile with **YAML frontmatter** and a **prose body**.
+The Persona Pocket is a directory of markdown files at `~/.spola/people/`. Each `.md` file is a reusable persona profile with **YAML frontmatter** and a **prose body**.
 
 ### Directory Structure
 
 ```
-~/.golem/people/
+~/.spola/people/
 ├── security-engineer.md
 ├── python-expert.md
 ├── database-admin.md
@@ -129,7 +129,7 @@ The name is derived from the filename.
 
 ### What Happens on Sync
 
-`PersonaStore.syncFromDirectory()` scans `~/.golem/people/` and for each `.md` file:
+`PersonaStore.syncFromDirectory()` scans `~/.spola/people/` and for each `.md` file:
 
 1. Reads the file content
 2. If it starts with `---`, extracts YAML frontmatter between `---` markers, parses fields
@@ -160,10 +160,10 @@ Table: personas
 ### Store Operations
 
 ```kotlin
-val store = PersonaStore("/home/user/.golem/persona.db")
+val store = PersonaStore("/home/user/.spola/persona.db")
 
-// Sync from filesystem (scans ~/.golem/people/*.md)
-store.syncFromDirectory("/home/user/.golem/people")
+// Sync from filesystem (scans ~/.spola/people/*.md)
+store.syncFromDirectory("/home/user/.spola/people")
 
 // Get a persona by name
 val persona: PersonaRecord? = store.get("security-engineer")
@@ -201,7 +201,7 @@ data class PersonaRecord(
 ### Sync Algorithm
 
 ```kotlin
-store.syncFromDirectory("~/.golem/people")
+store.syncFromDirectory("~/.spola/people")
 // 1. Lists all *.md files in the directory
 // 2. For each file:
 //    - Parse YAML frontmatter (between --- markers)
@@ -321,49 +321,49 @@ A persona can be activated three ways.
 
 ```bash
 # Activate a persona from Persona Pocket
-golem --persona-name security-engineer
+spola --persona-name security-engineer
 
 # Activate a persona with a custom AGENTS.md
-golem --persona-name security-engineer --persona ./my-agents.md
+spola --persona-name security-engineer --persona ./my-agents.md
 ```
 
 ### Config File — `persona-name` in config.yaml
 
 ```yaml
-# ~/.golem/config.yaml
+# ~/.spola/config.yaml
 persona-name: security-engineer
 persona: ./AGENTS.md              # base persona file override
 ```
 
 ### API — `personaName` in request body
 
-When running via the API, the active persona name is part of the `GolemConfig` and can be set per-request.
+When running via the API, the active persona name is part of the `SpolaConfig` and can be set per-request.
 
 ### Configuration Fields
 
-All three paths map to `GolemConfig` fields:
+All three paths map to `SpolaConfig` fields:
 
 | Config Field | Type | Source | Default |
 |-------------|------|--------|---------|
 | `personaPath` | String? | From `--persona` flag or config `persona` | null (auto-discover) |
 | `activePersonaName` | String? | From `--persona-name` flag or config `persona-name` | null (no pocket persona) |
-| `personaDbPath` | String | Config default | `~/.golem/persona.db` |
-| `peopleDir` | String | Config default | `~/.golem/people` |
+| `personaDbPath` | String | Config default | `~/.spola/persona.db` |
+| `peopleDir` | String | Config default | `~/.spola/people` |
 
 ---
 
 ## 8. CLI Commands
 
 ```
-golem persona list          # List all personas (syncs from filesystem first)
-golem persona show <name>   # Show full persona details
-golem persona sync           # Sync personas from people directory
+spola persona list          # List all personas (syncs from filesystem first)
+spola persona show <name>   # Show full persona details
+spola persona sync           # Sync personas from people directory
 ```
 
 ### persona list
 
 ```bash
-$ golem persona list
+$ spola persona list
 Personas:
 ------------------------------------------------------------
   security-engineer (active)
@@ -386,7 +386,7 @@ The active persona is marked with `(active)` based on `config.activePersonaName`
 ### persona show
 
 ```bash
-$ golem persona show security-engineer
+$ spola persona show security-engineer
 Name: security-engineer
 Role: Security Engineer
 Tags: security, code-review, owasp
@@ -402,8 +402,8 @@ You specialize in:
 ### persona sync
 
 ```bash
-$ golem persona sync
-Syncing from: /home/user/.golem/people
+$ spola persona sync
+Syncing from: /home/user/.spola/people
 Sync complete.
 Total personas: 3
 ```
@@ -415,7 +415,7 @@ Total personas: 3
 ### Step 1: Create the persona file
 
 ```markdown
-# ~/.golem/people/security-engineer.md
+# ~/.spola/people/security-engineer.md
 ---
 name: security-engineer
 role: Security Engineer
@@ -443,11 +443,11 @@ Be thorough but practical. Not every theoretical vulnerability needs fixing.
 
 ```bash
 # Via CLI
-golem --persona-name security-engineer "Review src/auth/ for vulnerabilities"
+spola --persona-name security-engineer "Review src/auth/ for vulnerabilities"
 
 # Via config
-echo 'persona-name: security-engineer' >> ~/.golem/config.yaml
-golem "Review src/auth/ for vulnerabilities"
+echo 'persona-name: security-engineer' >> ~/.spola/config.yaml
+spola "Review src/auth/ for vulnerabilities"
 ```
 
 ### Step 3: What the agent sees
@@ -459,7 +459,7 @@ Tags: security, code-review, owasp
 
 You are a senior application security engineer with deep expertise in...
 
-You are Golem, a JVM-based autonomous coding agent...
+You are Spola, a JVM-based autonomous coding agent...
 [default persona or AGENTS.md content]
 
 ## Context from Memory (auto-loaded)
@@ -469,7 +469,7 @@ You are Golem, a JVM-based autonomous coding agent...
 ### Step 4: Run a custom agent with this persona
 
 ```bash
-golem agent run security-reviewer \
+spola agent run security-reviewer \
   "Audit src/auth/LoginController.kt for vulnerabilities"
 ```
 

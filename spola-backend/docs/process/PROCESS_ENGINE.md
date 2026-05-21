@@ -2,7 +2,7 @@
 
 ## Overview
 
-Golem's Process Engine is a deterministic DAG (Directed Acyclic Graph) runner. Unlike free-form agent conversations, process templates enforce a fixed execution plan where every step is typed, bounded, and predictable. The AI is just one node type in the graph alongside deterministic steps like `compile_project`, `git_commit`, and human approval gates.
+Spola's Process Engine is a deterministic DAG (Directed Acyclic Graph) runner. Unlike free-form agent conversations, process templates enforce a fixed execution plan where every step is typed, bounded, and predictable. The AI is just one node type in the graph alongside deterministic steps like `compile_project`, `git_commit`, and human approval gates.
 
 **Why a Process Engine?**
 
@@ -22,14 +22,14 @@ The process engine has four core components:
 | **ProcessRunner** | Orchestrates template resolution, run lifecycle, gate polling, and retry loops |
 | **ProcessTemplates** | Stateless workflow definitions using TramAI's `workflow` DSL |
 | **GateDecisionStore** | SQLite-backed store for human approval decisions |
-| **GolemProcessPluginRegistry** | Registration of all deterministic plugin executors |
+| **SpolaProcessPluginRegistry** | Registration of all deterministic plugin executors |
 
 ### ProcessRunner
 
 `ProcessRunner` is the main entry point. It:
 
-1. Resolves a template name to a `Workflow<GolemState, GolemState>` via `ProcessTemplates`
-2. Creates a `GolemState` with the given goal and config
+1. Resolves a template name to a `Workflow<SpolaState, SpolaState>` via `ProcessTemplates`
+2. Creates a `SpolaState` with the given goal and config
 3. Runs the workflow, handling three special results:
 
    - **`gate_pending`** — Polls `GateDecisionStore` every 5 seconds (max 1 hour) until a human approves or rejects
@@ -50,9 +50,9 @@ SQLite-backed persistence for human approval gates. Uses Exposed ORM with a `gat
 - `decide(runId, stepName, decision, notes)` — Write a decision from CLI or API
 - `hasExpired(runId, stepName, ttlSeconds)` — Check if a pending gate exceeded its TTL
 
-### GolemProcessPluginRegistry
+### SpolaProcessPluginRegistry
 
-Created at startup via `GolemProcessPluginRegistry.create()`. Registers all built-in executor factories into an `ExternalStepExecutorRegistry`:
+Created at startup via `SpolaProcessPluginRegistry.create()`. Registers all built-in executor factories into an `ExternalStepExecutorRegistry`:
 
 - `compile_project`
 - `run_tests`
@@ -81,7 +81,7 @@ init → implement → verify_compile
 
 **Usage:**
 ```bash
-golem process run feature "Add rate limiting middleware to the API gateway"
+spola process run feature "Add rate limiting middleware to the API gateway"
 ```
 
 The AI steps use these personas:
@@ -108,7 +108,7 @@ init → implement → verify_compile
 
 **Usage:**
 ```bash
-golem process run hotfix "Fix null pointer in user login endpoint"
+spola process run hotfix "Fix null pointer in user login endpoint"
 ```
 
 No code review step. Faster turnaround. The AI persona emphasizes "quickly and safely."
@@ -128,7 +128,7 @@ init → analyze → check_plan_gate
 
 **Usage:**
 ```bash
-golem process run refactor "Extract payment processing into a separate module"
+spola process run refactor "Extract payment processing into a separate module"
 ```
 
 Two human gates: `plan_gate` (approve the analysis before code is written) and `final_gate` (approve the final result). The analyze step uses an "architect" persona and explicitly avoids making changes.
@@ -141,7 +141,7 @@ Compiles a Gradle project. Runs `./gradlew <project>:<tasks>`.
 
 | Config | Default | Description |
 |--------|---------|-------------|
-| `project` | *required* | Gradle project path, e.g. `:golem-core` |
+| `project` | *required* | Gradle project path, e.g. `:spola-backend-core` |
 | `tasks` | `compileKotlin compileJava` | Gradle tasks to run |
 
 **Result map:**
@@ -176,7 +176,7 @@ Runs tests for a Gradle project. Runs `./gradlew <project>:test --no-build-cache
 
 | Config | Default | Description |
 |--------|---------|-------------|
-| `project` | *required* | Gradle project path, e.g. `:golem-core` |
+| `project` | *required* | Gradle project path, e.g. `:spola-backend-core` |
 
 **Result map:**
 ```kotlin
@@ -205,7 +205,7 @@ Stages all changes and commits. Uses list-based git commands (no shell injection
 
 | Config | Default | Description |
 |--------|---------|-------------|
-| `message` | `"Auto-commit from Golem Process Engine"` | Commit message |
+| `message` | `"Auto-commit from Spola Process Engine"` | Commit message |
 
 **Result map:**
 ```kotlin
@@ -327,55 +327,55 @@ Each template uses specific gate step names:
 
 ```bash
 # Approve a gate (step name "gate")
-golem process approve <run-id> --notes "LGTM"
+spola process approve <run-id> --notes "LGTM"
 
 # Reject a gate
-golem process reject <run-id> --notes "Needs more tests"
+spola process reject <run-id> --notes "Needs more tests"
 
 # For refactor plan gates, step name is "plan_gate"
-golem process approve <run-id> --notes "Plan approved"
+spola process approve <run-id> --notes "Plan approved"
 
 # For refactor final gates, step name is "final_gate"
-golem process reject <run-id> --notes "Revert and rethink"
+spola process reject <run-id> --notes "Revert and rethink"
 ```
 
 ## CLI Reference
 
 ```
-golem process list          — List available templates
-golem process run <tmpl> <goal>  — Run a process template
-golem process status <id>   — Check run status
-golem process cancel <id>   — Cancel a running process
-golem process approve <id>  — Approve a gate decision
-golem process reject <id>   — Reject a gate decision
+spola process list          — List available templates
+spola process run <tmpl> <goal>  — Run a process template
+spola process status <id>   — Check run status
+spola process cancel <id>   — Cancel a running process
+spola process approve <id>  — Approve a gate decision
+spola process reject <id>   — Reject a gate decision
 ```
 
 ### Examples
 
 ```bash
 # List available templates
-golem process list
+spola process list
 # Output: Available process templates: feature, hotfix, refactor
 
 # Run a feature process
-golem process run feature "Add request logging interceptor"
+spola process run feature "Add request logging interceptor"
 # Output: Run: proc_a1b2c3d4
 #   template: feature-process
 #   status: RUNNING
 #   result: n/a
 
 # Check status
-golem process status proc_a1b2c3d4
+spola process status proc_a1b2c3d4
 # Output: Run: proc_a1b2c3d4
 #   template: feature-process
 #   status: RUNNING
 #   step: gate
 
 # Approve the gate
-golem process approve proc_a1b2c3d4 --notes "Looks good"
+spola process approve proc_a1b2c3d4 --notes "Looks good"
 
 # Cancel if needed
-golem process cancel proc_a1b2c3d4
+spola process cancel proc_a1b2c3d4
 ```
 
 ## API Reference
@@ -389,7 +389,7 @@ Start a process run.
 {
   "template": "feature",
   "goal": "Add rate limiting middleware",
-  "project": ":golem-core"
+  "project": ":spola-backend-core"
 }
 ```
 
@@ -452,8 +452,8 @@ object ProcessTemplates {
     fun deployWorkflow(
         pluginRegistry: ExternalStepExecutorRegistry,
         gateStore: GateDecisionStore,
-    ): Workflow<GolemState, GolemState> {
-        return workflow<GolemState>("deploy-process", "1.0") {
+    ): Workflow<SpolaState, SpolaState> {
+        return workflow<SpolaState>("deploy-process", "1.0") {
             localStep("init") { state, _ ->
                 state.copy(currentPhase = "build", result = "")
             }
@@ -525,7 +525,7 @@ object ProcessTemplates {
 Then register it in `ProcessRunner.resolveWorkflow()`:
 
 ```kotlin
-private fun resolveWorkflow(template: String): Workflow<GolemState, GolemState> {
+private fun resolveWorkflow(template: String): Workflow<SpolaState, SpolaState> {
     return when (template.lowercase()) {
         "feature" -> ProcessTemplates.featureWorkflow(pluginRegistry, gateStore)
         "hotfix" -> ProcessTemplates.hotfixWorkflow(pluginRegistry, gateStore)
@@ -564,7 +564,7 @@ class DockerBuildExecutorFactory : ExternalStepExecutorFactory {
 Register it:
 
 ```kotlin
-val registry = GolemProcessPluginRegistry.create()
+val registry = SpolaProcessPluginRegistry.create()
 registry.register(DockerBuildExecutorFactory())
 ```
 

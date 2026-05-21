@@ -1,14 +1,14 @@
 # SPEC: Deterministic Process Engine (Light n8n)
 
 **Status:** Final (post-3-AI review)
-**Target:** Golem master branch
+**Target:** Spola master branch
 **Estimated effort:** 5-7 days (single developer)
 
 ---
 
 ## 1. Motivation
 
-Golem currently runs agents in one-shot mode — user types a goal, agent runs until it decides it's done. There's no guarantee the agent:
+Spola currently runs agents in one-shot mode — user types a goal, agent runs until it decides it's done. There's no guarantee the agent:
 - Runs verification (compile/test) before declaring done
 - Follows a review step
 - Produces documentation
@@ -28,12 +28,12 @@ This spec defines a deterministic process engine where:
 
 ```
 User (CLI / API)
-  │  "golem process run feature 'add rate limiting'"
+  │  "spola process run feature 'add rate limiting'"
   ▼
 TramAI Workflow Engine ─── deterministic Kotlin code
   │
-  ├── Step 1: golem_agent("implement")
-  │     └── GolemAgent runs ReAct loop with tools=[file]
+  ├── Step 1: spola_agent("implement")
+  │     └── SpolaAgent runs ReAct loop with tools=[file]
   │     └── Output: files changed, summary
   │
   ├── Step 2: compile_project("verify")
@@ -41,8 +41,8 @@ TramAI Workflow Engine ─── deterministic Kotlin code
   │     └── Output: exit_code, output
   │
   ├── branch(exit_code == 0) →
-  │     ├── PASS → Step 3a: golem_agent("review")
-  │     │         └── GolemAgent runs with tools=[file.read]
+  │     ├── PASS → Step 3a: spola_agent("review")
+  │     │         └── SpolaAgent runs with tools=[file.read]
   │     └── FAIL → Step 3b: git_revert + Telegram notify
   │
   ├── Step 4: human_approval("gate")
@@ -58,22 +58,22 @@ TramAI Workflow Engine ─── deterministic Kotlin code
 
 ## 3. Workflow Engine Foundation
 
-**Already exists** in TramAI's `tramai-orchestration` module (already a Golem dependency).
+**Already exists** in TramAI's `tramai-orchestration` module (already a Spola dependency).
 
 **Step types used:**
 
 | Step Type | Purpose | Provided By | Notes |
 |-----------|---------|-------------|-------|
-| `aiStep` | LLM agent execution (GolemAgent) | TramAI + Golem wrapper | Bounded by StopPolicy |
-| `pluginStep` | Custom deterministic action | Golem plugins | **Must use explicit merge function** — default merge requires Map state, not GolemState |
-| `branchStep` | Conditional routing | TramAI | **Forward-only** — no goto/loop. Use retry counters in GolemState for loops |
+| `aiStep` | LLM agent execution (SpolaAgent) | TramAI + Spola wrapper | Bounded by StopPolicy |
+| `pluginStep` | Custom deterministic action | Spola plugins | **Must use explicit merge function** — default merge requires Map state, not SpolaState |
+| `branchStep` | Conditional routing | TramAI | **Forward-only** — no goto/loop. Use retry counters in SpolaState for loops |
 | `gateStep` | Human approval | TramAI | **Synchronous** — use delayStep loop for polling, not gateStep |
 | `parallelStep` | Fan-out execution | TramAI | For multi-agent review |
 | `delayStep` | Wait and resume | TramAI | Used for gate polling loop |
 
 ### Critical Implementation Notes (from code review)
 
-**pluginStep merge:** Every `pluginStep` call MUST include an explicit merge function because `GolemState` is a data class, not a `Map`:
+**pluginStep merge:** Every `pluginStep` call MUST include an explicit merge function because `SpolaState` is a data class, not a `Map`:
 
 ```kotlin
 pluginStep("verify", type = "compile_project") { state, result, _ ->
@@ -89,11 +89,11 @@ pluginStep("verify", type = "compile_project") { state, result, _ ->
 }
 ```
 
-**Loop patterns:** Because `branchStep` is forward-only, retry loops use a retry counter in `GolemState`:
+**Loop patterns:** Because `branchStep` is forward-only, retry loops use a retry counter in `SpolaState`:
 
 ```kotlin
 // Track retries
-data class GolemState(
+data class SpolaState(
     // ... existing fields ...
     val retryCount: Int = 0,
     val maxRetries: Int = 3,
@@ -148,7 +148,7 @@ class CompileProjectExecutorFactory : ExternalStepExecutorFactory {
 ```
 
 **Config options:**
-- `project` (required) — Gradle project path, e.g. `:golem-core`
+- `project` (required) — Gradle project path, e.g. `:spola-backend-core`
 - `tasks` (optional) — custom Gradle tasks, defaults to `compileKotlin compileJava`
 
 ### 4.2 `run_tests`
@@ -177,7 +177,7 @@ class GitCommitExecutorFactory : ExternalStepExecutorFactory {
     override val typeId = "git_commit"
 
     override fun create() = ExternalStepExecutor { spec ->
-        val message = spec["message"] as? String ?: "Auto-commit from Golem"
+        val message = spec["message"] as? String ?: "Auto-commit from Spola"
         // Use list-based git command to prevent shell injection
         runShell("git add -A")
         runShell("git", listOf("commit", "-m", message), timeoutSeconds = 30)
@@ -208,7 +208,7 @@ class TelegramNotifyExecutorFactory : ExternalStepExecutorFactory {
     override val typeId = "telegram_notify"
     override fun create() = ExternalStepExecutor { spec ->
         val message = spec["message"] as? String ?: ""
-        // Send via Golem's existing Telegram delivery system
+        // Send via Spola's existing Telegram delivery system
         telegramService.send(message)
         mapOf("sent" to true)
     }
@@ -290,7 +290,7 @@ localStep("check_gate_ttl") { state ->
 
 ## 6. Composite Workflow Templates
 
-Built using existing `workflow { ... }` DSL. Each uses retry counters in `GolemState` for fix loops. Agent selection per step is configured via `GolemState.perStepAgent` map.
+Built using existing `workflow { ... }` DSL. Each uses retry counters in `SpolaState` for fix loops. Agent selection per step is configured via `SpolaState.perStepAgent` map.
 
 ### 6.1 `feature` workflow (3-AI pipeline)
 
@@ -374,21 +374,21 @@ Built using existing `workflow { ... }` DSL. Each uses retry counters in `GolemS
 ## 7. CLI Surface
 
 ```
-golem process list                      # List available process templates
-golem process run <template> [goal]     # Run a process with a goal
-golem process status <run-id>           # Check status of a running process
-golem process cancel <run-id>           # Cancel a running process
-golem process approve <run-id> [notes]  # Approve a pending gate step
-golem process reject <run-id> [notes]   # Reject a pending gate step
+spola process list                      # List available process templates
+spola process run <template> [goal]     # Run a process with a goal
+spola process status <run-id>           # Check status of a running process
+spola process cancel <run-id>           # Cancel a running process
+spola process approve <run-id> [notes]  # Approve a pending gate step
+spola process reject <run-id> [notes]   # Reject a pending gate step
 ```
 
-**Note:** `golem process validate` and `golem process run <definition.yaml>` are NOT included in MVP. YAML parsing is deferred. All process definitions are Kotlin DSL templates only.
+**Note:** `spola process validate` and `spola process run <definition.yaml>` are NOT included in MVP. YAML parsing is deferred. All process definitions are Kotlin DSL templates only.
 
 **Examples:**
 ```bash
-golem process run feature "add rate limiting to the API"
-golem process status proc_abc123
-golem process approve proc_abc123 "Looks good, ship it"
+spola process run feature "add rate limiting to the API"
+spola process status proc_abc123
+spola process approve proc_abc123 "Looks good, ship it"
 ```
 
 ---
@@ -403,7 +403,7 @@ Content-Type: application/json
   "template": "feature",
   "goal": "add rate limiting to the API",
   "config": {
-    "project": ":golem-core"
+    "project": ":spola-backend-core"
   }
 }
 ```
@@ -446,14 +446,14 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
    - `GitRevertExecutor.kt` (15 lines)
    - `TelegramNotifyExecutor.kt` (15 lines)
 
-3. **Create `GolemProcessPluginRegistry.kt`** (~35 lines)
+3. **Create `SpolaProcessPluginRegistry.kt`** (~35 lines)
    - Registers all plugins into an `ExternalStepExecutorRegistry`
-   - Factory method called at startup in `GolemFactory`
+   - Factory method called at startup in `SpolaFactory`
 
 ### Phase 2 — Process Templates + Gate Store (Days 2-4)
 
-4. **Create `GolemState` extensions** for process engine (~30 lines)
-   - Add `retryCount: Int`, `maxRetries: Int`, `currentPhase: String`, `perStepAgent: Map<String, String>` to `GolemState`
+4. **Create `SpolaState` extensions** for process engine (~30 lines)
+   - Add `retryCount: Int`, `maxRetries: Int`, `currentPhase: String`, `perStepAgent: Map<String, String>` to `SpolaState`
    - Add merge helper for pluginStep results
 
 5. **Create `GateDecisionStore.kt`** (~60 lines)
@@ -466,7 +466,7 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
    - `feature()` — 3-AI pipeline with compile + review gates + fix loops
    - `hotfix()` — 2-AI pipeline, compile + test, no review
    - `refactor()` — plan-approval-gate + implementation + review + final-gate
-   - Each uses `workflow<GolemState> { ... }` DSL with explicit merge functions on pluginStep calls
+   - Each uses `workflow<SpolaState> { ... }` DSL with explicit merge functions on pluginStep calls
 
 7. **Create `ProcessRunner.kt`** (~100 lines)
    - Takes a template name + goal → resolves template → creates `Workflow` → runs with persistence
@@ -476,11 +476,11 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
 ### Phase 3 — CLI + API (Days 4-5)
 
 8. **Create `ProcessCommand.kt`** (~150 lines)
-   - `golem process list` — lists available templates from registry
-   - `golem process run` — resolves template, calls ProcessRunner
-   - `golem process status` — queries WorkflowPersistence for run state
-   - `golem process cancel` — calls cancel on running Workflow
-   - `golem process approve/reject` — writes to GateDecisionStore
+   - `spola process list` — lists available templates from registry
+   - `spola process run` — resolves template, calls ProcessRunner
+   - `spola process status` — queries WorkflowPersistence for run state
+   - `spola process cancel` — calls cancel on running Workflow
+   - `spola process approve/reject` — writes to GateDecisionStore
 
 9. **Create `ProcessRoutes.kt`** (~80 lines)
    - `POST /api/processes/run` — accepts template + goal + config
@@ -490,12 +490,12 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
 
 ### Phase 4 — Wiring + Tests (Days 5-7)
 
-10. **Wire into `GolemFactory` / startup** (~20 lines)
+10. **Wire into `SpolaFactory` / startup** (~20 lines)
     - Initialize `ExternalStepExecutorRegistry` with plugins
     - Pass to `WorkflowFactory.createWorkflow()`
 
-11. **Wire `GolemApiServer` + `Main.kt`** (~15 lines)
-    - Register `ProcessRoutes` in GolemApiServer
+11. **Wire `SpolaApiServer` + `Main.kt`** (~15 lines)
+    - Register `ProcessRoutes` in SpolaApiServer
     - Register `ProcessCommand` in Main.kt subcommands
 
 12. **Tests** (~200 lines)
@@ -512,29 +512,29 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `golem-core/.../process/ProcessRunner.kt` | 100 | Execute + persist workflows |
-| `golem-core/.../process/ProcessTemplates.kt` | 130 | 3 workflow templates with retry loops |
-| `golem-core/.../process/GateDecisionStore.kt` | 60 | SQLite-backed gate approval store |
-| `golem-core/.../process/GolemProcessPluginRegistry.kt` | 35 | Plugin registration |
-| `golem-core/.../process/plugins/CompileProjectExecutor.kt` | 30 | `compile_project` plugin |
-| `golem-core/.../process/plugins/RunTestsExecutor.kt` | 30 | `run_tests` plugin |
-| `golem-core/.../process/plugins/GitCommitExecutor.kt` | 25 | `git_commit` plugin (list-based) |
-| `golem-core/.../process/plugins/GitRevertExecutor.kt` | 15 | `git_revert` plugin |
-| `golem-core/.../process/plugins/TelegramNotifyExecutor.kt` | 15 | `telegram_notify` plugin |
-| `golem-cli/.../cli/ProcessCommand.kt` | 150 | CLI subcommand (list/run/status/cancel/approve/reject) |
-| `golem-core/.../api/routes/ProcessRoutes.kt` | 80 | API endpoints |
+| `spola-backend-core/.../process/ProcessRunner.kt` | 100 | Execute + persist workflows |
+| `spola-backend-core/.../process/ProcessTemplates.kt` | 130 | 3 workflow templates with retry loops |
+| `spola-backend-core/.../process/GateDecisionStore.kt` | 60 | SQLite-backed gate approval store |
+| `spola-backend-core/.../process/SpolaProcessPluginRegistry.kt` | 35 | Plugin registration |
+| `spola-backend-core/.../process/plugins/CompileProjectExecutor.kt` | 30 | `compile_project` plugin |
+| `spola-backend-core/.../process/plugins/RunTestsExecutor.kt` | 30 | `run_tests` plugin |
+| `spola-backend-core/.../process/plugins/GitCommitExecutor.kt` | 25 | `git_commit` plugin (list-based) |
+| `spola-backend-core/.../process/plugins/GitRevertExecutor.kt` | 15 | `git_revert` plugin |
+| `spola-backend-core/.../process/plugins/TelegramNotifyExecutor.kt` | 15 | `telegram_notify` plugin |
+| `spola-backend-cli/.../cli/ProcessCommand.kt` | 150 | CLI subcommand (list/run/status/cancel/approve/reject) |
+| `spola-backend-core/.../api/routes/ProcessRoutes.kt` | 80 | API endpoints |
 | **TOTAL NEW** | **~770** | |
 
 ### Modified files
 
 | File | Changes |
 |------|---------|
-| `GolemState.kt` | Add `retryCount`, `maxRetries`, `currentPhase`, `perStepAgent` fields |
-| `WorkflowSteps.kt` | (Optional) Add `golemAgentStepWithAgent(name)` overload for per-step agent selection |
-| `GolemFactory.kt` | Wire `ExternalStepExecutorRegistry` into `WorkflowFactory` |
-| `GolemApiServer.kt` | Register `ProcessRoutes` |
+| `SpolaState.kt` | Add `retryCount`, `maxRetries`, `currentPhase`, `perStepAgent` fields |
+| `WorkflowSteps.kt` | (Optional) Add `spolaAgentStepWithAgent(name)` overload for per-step agent selection |
+| `SpolaFactory.kt` | Wire `ExternalStepExecutorRegistry` into `WorkflowFactory` |
+| `SpolaApiServer.kt` | Register `ProcessRoutes` |
 | `Main.kt` | Register `ProcessCommand` subcommand |
-| `GolemConfig.kt` | (Optional) Add `processDbPath` for gate store |
+| `SpolaConfig.kt` | (Optional) Add `processDbPath` for gate store |
 
 ### NOT modified
 
@@ -551,8 +551,8 @@ The gate endpoint writes to `GateDecisionStore` (SQLite-backed). The polling loo
 1. **No YAML process definition parser.** Kotlin DSL only. YAML parsing may be added after the engine proves itself.
 2. **No visual UI.** CLI + API only.
 3. **Gates use `delayStep` + polling loop**, NOT `gateStep`. The synchronous `gateStep` cannot wait for external input.
-4. **All `pluginStep` calls use explicit merge functions.** Default merge requires `Map` state, not `GolemState`.
-5. **Retry loops use retry counters in `GolemState`**, not inline goto/loop constructs. `branchStep` is forward-only.
+4. **All `pluginStep` calls use explicit merge functions.** Default merge requires `Map` state, not `SpolaState`.
+5. **Retry loops use retry counters in `SpolaState`**, not inline goto/loop constructs. `branchStep` is forward-only.
 6. **Plugin steps route through existing shell security.** No bare `ProcessBuilder`. Use `ShellTool.kt` blocked commands/interpreters.
 7. **Git commands use list-based execution** to prevent command injection via commit messages.
 8. **Ketkanban is NOT removed.** It coexists. The process engine replaces the orchestration use case (automated pipelines). Kanban retains task management.

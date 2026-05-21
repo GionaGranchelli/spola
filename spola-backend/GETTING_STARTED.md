@@ -1,13 +1,13 @@
-# Golem — Getting Started
+# Spola — Getting Started
 
-> **Golem is a JVM autonomous coding agent.** One agent loop, four interfaces: CLI, REST API, Web Dashboard, and MCP.
+> **Spola is a JVM autonomous coding agent.** One agent loop, four interfaces: CLI, REST API, Web Dashboard, and MCP.
 
 ```bash
 # Prerequisites: Java 21+
-git clone https://github.com/nousresearch/golem.git
-cd golem
+git clone https://github.com/nousresearch/spola.git
+cd spola
 ./gradlew build
-./gradlew :golem-cli:installDist
+./gradlew :spola-backend-cli:installDist
 ```
 
 ## Quick Start
@@ -15,13 +15,13 @@ cd golem
 ```bash
 # One-shot mode
 export OPENAI_API_KEY="sk-..."
-./golem-cli/build/install/golem-cli/bin/golem-cli "explain the architecture"
+./spola-backend-cli/build/install/spola/bin/spola "explain the architecture"
 
 # Interactive REPL (ANSI colors, tool timeline, streaming)
-./golem-cli/build/install/golem-cli/bin/golem-cli
+./spola-backend-cli/build/install/spola/bin/spola
 
 # API server + Web Dashboard at http://localhost:8082/web/
-./golem-cli/build/install/golem-cli/bin/golem-cli --api --api-key my-key
+./spola-backend-cli/build/install/spola/bin/spola --api --api-key my-key
 ```
 
 ## Documentation
@@ -39,5 +39,5 @@ export OPENAI_API_KEY="sk-..."
 ## Test Suite
 
 ```bash
-./gradlew :golem-core:test
+./gradlew :spola-backend-core:test
 ```

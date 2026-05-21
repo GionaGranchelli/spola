@@ -8,7 +8,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  ~/.golem/workflows/*.yaml                          │
+│  ~/.spola/workflows/*.yaml                          │
 │  ┌───────────────────────────────────────────┐      │
 │  │ name: code-review                          │      │
 │  │ version: 1                                 │      │
@@ -30,7 +30,7 @@
 │  │  - Resolves {{params}}               │            │
 │  │  - Converts steps → DAG              │            │
 │  │  - Attaches done-condition gates     │            │
-│  │  - Produces Workflow<GolemState>     │            │
+│  │  - Produces Workflow<SpolaState>     │            │
 │  └──────────┬───────────────────────────┘            │
 │             │                                       │
 │             ▼                                        │
@@ -55,7 +55,7 @@
 ### Top-Level Structure
 
 ```yaml
-# ~/.golem/workflows/code-review.yaml
+# ~/.spola/workflows/code-review.yaml
 name: code-review                    # Required: workflow name (lowercase, hyphens)
 version: "1"                         # Optional: version string (default: "1")
 description: "Multi-reviewer code review with security, style, and test analysis"
@@ -75,7 +75,7 @@ steps:                               # Required: at least one step
     agents: "{{params.reviewers}}"
     goal: "Review code in {{params.files}} for the project: {{state.goal}}"
     persona: "You are a thorough code reviewer."
-    invoke: golem                     # Which engine to use
+    invoke: spola                     # Which engine to use
     done:                            # Definition of Done for this step
       - condition: "all_agents_completed"
       - condition: "output_has_content"
@@ -155,8 +155,8 @@ Resolution uses `kotlin.text.replace()` with simple regex — no Mustache librar
 |------|--------|--------|
 | `WorkflowTemplateRegistry.kt` | Register YAML workflows alongside built-ins | ✅ Complete |
 | `WorkflowExecutionService.kt` | Pass parameters through to template build | ✅ Complete |
-| `GolemConfig.kt` | `workflowsDir` config property | ✅ Complete |
-| `WorkflowCommands.kt` | `golem workflow export` command | ✅ Complete |
+| `SpolaConfig.kt` | `workflowsDir` config property | ✅ Complete |
+| `WorkflowCommands.kt` | `spola workflow export` command | ✅ Complete |
 | `WorkflowTemplateRegistry.kt` | Auto-discover YAML files on startup | ✅ Complete |
 
 ### Execution Infrastructure (beyond YAML)
@@ -180,9 +180,9 @@ The MVC is implemented and functional:
 
 1. ✅ `WorkflowDefinition.kt` — schema data classes
 2. ✅ `YamlWorkflowParser.kt` — parse YAML via Jackson YAML mapper
-3. ✅ `YamlWorkflowCompiler.kt` — convert to `Workflow<GolemState, String>` using TeamWorkflowSteps
+3. ✅ `YamlWorkflowCompiler.kt` — convert to `Workflow<SpolaState, String>` using TeamWorkflowSteps
 4. ✅ `WorkflowParameterResolver.kt` — `{{var}}` -> value substitution
-5. ✅ `WorkflowTemplateRegistry.kt` — scan `~/.golem/workflows/` and register
+5. ✅ `WorkflowTemplateRegistry.kt` — scan `~/.spola/workflows/` and register
 6. ✅ `WorkflowExecutionService.kt` — pass parameters to template build
 
 ## Concrete Step: YAML → DAG Compilation
@@ -192,7 +192,7 @@ The MVC is implemented and functional:
 The parser reads YAML into `WorkflowDefinition` data classes. The compiler then calls the *same* Kotlin DSL functions that the hardcoded templates use — it just generates them programmatically.
 
 ```kotlin
-fun compile(def: WorkflowDefinition, params: Map<String, Any?>): Workflow<GolemState, String> {
+fun compile(def: WorkflowDefinition, params: Map<String, Any?>): Workflow<SpolaState, String> {
     val resolved = WorkflowParameterResolver.resolve(def, params)
     return WorkflowFactory.createWorkflow(
         name = resolved.name,
@@ -202,7 +202,7 @@ fun compile(def: WorkflowDefinition, params: Map<String, Any?>): Workflow<GolemS
             for (step in resolved.steps) {
                 stepIds.add(step.id)
                 when (step.type) {
-                    "ai" -> golemAgentStep(
+                    "ai" -> spolaAgentStep(
                         name = step.id,
                         persona = { step.persona ?: "You are a helpful assistant." },
                         goal = { step.goal },
@@ -249,7 +249,7 @@ done:
 
 The evaluator:
 1. Reads the condition name
-2. Applies the check against current `GolemState` (result, intermediateResults)
+2. Applies the check against current `SpolaState` (result, intermediateResults)
 3. Returns `true`/`false`
 
 If a step's done conditions fail, the gate blocks progression and the workflow fails.
@@ -295,8 +295,8 @@ fun exportTemplate(registry: WorkflowTemplateRegistry, name: String): String? {
 
 This lets users do:
 ```bash
-golem workflow export jvm-debug > ~/.golem/workflows/jvm-debug.yaml
-golem workflow edit jvm-debug  # opens YAML in $EDITOR
+spola workflow export jvm-debug > ~/.spola/workflows/jvm-debug.yaml
+spola workflow edit jvm-debug  # opens YAML in $EDITOR
 ```
 
 ## Skill Integration (Proposed)
@@ -304,11 +304,11 @@ golem workflow edit jvm-debug  # opens YAML in $EDITOR
 **Future feature — not yet implemented.** A skill definition (SKILL.md) could optionally include a `workflow` field that references a YAML workflow file:
 
 ```yaml
-# ~/.golem/skills/devops/deploy/SKILL.md
+# ~/.spola/skills/devops/deploy/SKILL.md
 ---
 name: deploy
 description: Deploy to production
-workflow: ~/.golem/workflows/deploy.yaml
+workflow: ~/.spola/workflows/deploy.yaml
 ---
 The deploy workflow uses 3 stages: build, test, deploy.
 ```

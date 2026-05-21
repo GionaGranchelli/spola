@@ -1,26 +1,31 @@
-# Large files
-*.hprof
+# Editor / OS junk
+**/.idea/
+**/.vscode/
+**/.DS_Store
+*.iml
+*.sublime-project
+*.sublime-workspace
 
-# Planning / task docs (keep on disk, not in repo)
-NAMESPACE_REFACTOR_PLAN.md
-.hermes/plans/
-spola-backend/.hermes/plans/
-spola-backend/PERSONA.md
-spola-backend/SPEC_CONFIG_FILE.md
-spola-backend/docs/board/
-spola-backend/docs/plans/
-spola-backend/docs/tasks/
-spola-backend/docs/ux-ui-improvement-plan.md
-spola-backend/docs/research/
-spola-frontend/NEXT.md
-spola-frontend/GAPS.md
-spola-frontend/TASK-FRONT-001.md
-spola-frontend/tasks.md
-spola-frontend/tasks-*.md
-spola-frontend/roadmap.md
-spola-frontend/improvement_proposal.md
-spola-frontend/technical-debt.md
-spola-frontend/file_upload.md
+# Local config / secrets
+.env
+*.env
+*.local
+**/local.properties
+.codex
+.copilot/
 
-# Codex CLI temp directory
-spola-frontend/$TMP
+# Logs / temp / caches
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.cache
+
+# Generated outputs
+build/
+dist/
+coverage/
+node_modules/
+.gradle/
+.kotlin/

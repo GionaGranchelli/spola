@@ -1,8 +1,8 @@
-# Design del Sistema Workflow Production-Ready per Golem
+# Design del Sistema Workflow Production-Ready per Spola
 
 ## Obiettivi
 
-Questo documento propone l'evoluzione del sistema workflow di Golem da:
+Questo documento propone l'evoluzione del sistema workflow di Spola da:
 
 - catalogo CRUD in-memory non collegato al runtime;
 - esecuzione TramAI richiamata in modo ad-hoc da CLI e API;
@@ -65,7 +65,7 @@ flowchart LR
     WES --> EXESTORE[WorkflowExecutionStore SQLite]
     WES --> REG[WorkflowTemplateRegistry]
     WES --> RUNNER[WorkflowFactory.runWorkflow]
-    RUNNER --> OBS[GolemWorkflowObserver]
+    RUNNER --> OBS[SpolaWorkflowObserver]
     OBS --> SSE[SSE Event Bus]
     OBS --> EXESTORE
     RUNNER --> CKPT[Checkpoint Store]
@@ -135,7 +135,7 @@ La costruzione del workflow reale avviene a runtime tramite registry:
 interface WorkflowTemplate {
     val name: String
     val version: String
-    fun build(definition: WorkflowDefinitionRecord): Workflow<GolemState, WorkflowExecutionResult>
+    fun build(definition: WorkflowDefinitionRecord): Workflow<SpolaState, WorkflowExecutionResult>
 }
 ```
 
@@ -166,7 +166,7 @@ I template built-in iniziali:
 
 ### Strategia di registrazione
 
-All'avvio di Golem:
+All'avvio di Spola:
 
 1. `WorkflowTemplateRegistry` registra template built-in.
 2. `WorkflowDefinitionBootstrapper` esegue seed idempotente solo se il record non esiste.
@@ -190,7 +190,7 @@ Ogni template espone:
 - decoder del JSON;
 - validazione semantica;
 - defaulting;
-- eventuale mappatura in `GolemState`.
+- eventuale mappatura in `SpolaState`.
 
 ### Backward compatibility CRUD
 
@@ -397,7 +397,7 @@ Scenario: utente scrive "run code review on the auth module".
 
 Approccio consigliato:
 
-1. il `GolemAgent` riceve tra i tool anche `workflow_run`;
+1. il `SpolaAgent` riceve tra i tool anche `workflow_run`;
 2. il modello decide di invocarlo;
 3. il tool crea un'esecuzione workflow con `triggerSource = CHAT`;
 4. il workflow usa:
@@ -406,12 +406,12 @@ Approccio consigliato:
    - goal esplicito dell'utente;
 5. la chat riceve streaming intermedio e risultato finale.
 
-### Estensione di `GolemState`
+### Estensione di `SpolaState`
 
 ```kotlin
-data class GolemState(
+data class SpolaState(
     val goal: String,
-    val config: GolemConfig = GolemConfig(),
+    val config: SpolaConfig = SpolaConfig(),
     val agentDef: AgentDefinition? = null,
     val conversation: List<ChatMessage> = emptyList(),
     val turnCount: Int = 0,
@@ -442,7 +442,7 @@ Per OpenClaw la seconda opzione e` migliore. Per CLI si puo` usare modalita` blo
 
 ### Eventi SSE intermedi
 
-Riutilizzare `GolemWorkflowObserver`, ma standardizzando payload tipizzati:
+Riutilizzare `SpolaWorkflowObserver`, ma standardizzando payload tipizzati:
 
 ```kotlin
 @Serializable
@@ -498,7 +498,7 @@ sequenceDiagram
     participant User
     participant ChatUI as OpenClaw Chat
     participant SSE as Session SSE
-    participant Agent as GolemAgent
+    participant Agent as SpolaAgent
     participant Tool as workflow_run tool
     participant WES as WorkflowExecutionService
 
@@ -519,7 +519,7 @@ sequenceDiagram
 
 ### Isolamento per utente
 
-Anche se oggi Golem e` spesso single-user, il modello dati deve supportare isolamento nativo.
+Anche se oggi Spola e` spesso single-user, il modello dati deve supportare isolamento nativo.
 
 Campi richiesti su esecuzione:
 
@@ -601,7 +601,7 @@ Meccanica:
 4. observer emette `workflow_cancelled`
 5. store finale salva `CANCELLED`
 
-Per step cooperativi, `GolemState.cancellationRequested` puo` essere letto nei merge o gate.
+Per step cooperativi, `SpolaState.cancellationRequested` puo` essere letto nei merge o gate.
 
 ---
 
@@ -669,10 +669,10 @@ Questo evita di salvare solo l'ultimo stato.
 
 ### Observer -> SSE -> persistence
 
-`GolemWorkflowObserver` oggi manda stringhe a `AgentRunObserver`. Va esteso con sink multipli:
+`SpolaWorkflowObserver` oggi manda stringhe a `AgentRunObserver`. Va esteso con sink multipli:
 
 ```kotlin
-class GolemWorkflowObserver(
+class SpolaWorkflowObserver(
     private val eventPublisher: WorkflowEventPublisher? = null,
     private val executionStore: WorkflowExecutionStore? = null,
     private val agentObserver: AgentRunObserver? = null,
@@ -920,7 +920,7 @@ Deliverable:
 - refactor CLI e API per usare solo `WorkflowExecutionService`;
 - `POST /api/workflows/run` mantenuto come adapter legacy;
 - `WorkflowFactory.runWorkflow()` usato in tutti i path;
-- `GolemWorkflowObserver` aggiornato per persistence + SSE event model;
+- `SpolaWorkflowObserver` aggiornato per persistence + SSE event model;
 - test su create/list/run/cancel base.
 
 Impatto:
@@ -980,8 +980,8 @@ Deliverable:
 
 ### Adeguamenti tecnici consigliati
 
-1. Sostituire `GolemWorkflowStateCodec` basato su Jackson con `kotlinx.serialization` per allinearsi ai vincoli dichiarati del progetto.
-2. Far diventare `GolemState.conversation` parte reale del contratto workflow.
+1. Sostituire `SpolaWorkflowStateCodec` basato su Jackson con `kotlinx.serialization` per allinearsi ai vincoli dichiarati del progetto.
+2. Far diventare `SpolaState.conversation` parte reale del contratto workflow.
 3. Separare chiaramente:
    - definition metadata;
    - execution record;
@@ -993,7 +993,7 @@ Deliverable:
 ## Struttura package suggerita
 
 ```text
-golem-core/src/main/kotlin/dev/golem/workflow/
+spola-backend-core/src/main/kotlin/dev/spola/workflow/
   WorkflowDefinitionStore.kt
   WorkflowExecutionStore.kt
   WorkflowExecutionService.kt
@@ -1008,7 +1008,7 @@ golem-core/src/main/kotlin/dev/golem/workflow/
 Per API:
 
 ```text
-golem-core/src/main/kotlin/dev/golem/api/routes/
+spola-backend-core/src/main/kotlin/dev/spola/api/routes/
   WorkflowRoutes.kt
   WorkflowExecutionRoutes.kt
 ```
@@ -1023,4 +1023,4 @@ golem-core/src/main/kotlin/dev/golem/api/routes/
 4. Trattare SSE ed execution history come requisiti core, non come accessori UI.
 5. Tenere il Process Engine separato concettualmente, ma riusarne pattern di gate, resume, plugin step e osservabilita`.
 
-Questo porta Golem da un "workflow catalog + TramAI wrapper" a un sottosistema workflow coerente, persistente e operabile in produzione.
+Questo porta Spola da un "workflow catalog + TramAI wrapper" a un sottosistema workflow coerente, persistente e operabile in produzione.

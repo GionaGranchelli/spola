@@ -1,39 +1,39 @@
-# Golem CLI Reference
+# Spola CLI Reference
 
-**Version:** 0.1.0 | **Binary:** `golem-cli` (in `build/install/golem-cli/bin/golem-cli`)
+**Version:** 0.1.0 | **Binary:** `spola` (in `spola-backend-cli/build/install/spola/bin/spola`)
 
 Run via Gradle during development:
 
 ```bash
-./gradlew :golem-cli:run --args="<flags-and-args>"
+./gradlew :spola-backend-cli:run --args="<flags-and-args>"
 ```
 
 Or build a distribution and use the binary directly:
 
 ```bash
-./gradlew :golem-cli:installDist
-./build/install/golem-cli/bin/golem-cli <flags-and-args>
+./gradlew :spola-backend-cli:installDist
+./spola-backend-cli/build/install/spola/bin/spola <flags-and-args>
 ```
 
 ---
 
 ## Global Flags
 
-These flags are available on the root `golem` command and affect all modes.
+These flags are available on the root `spola` command and affect all modes.
 
 ```
 --model <name>           LLM model (default: gpt-4o)
 --provider <name>        Provider: openai, anthropic, openai-compat, ollama, google (default: openai)
---config <path>          Path to YAML config file (default: ~/.golem/config.yaml)
+--config <path>          Path to YAML config file (default: ~/.spola/config.yaml)
 --dir, --workdir <path>  Working directory (default: current)
 --persona <path>         Path to AGENTS.md / CLAUDE.md persona file
---persona-name <name>    Name of active persona from ~/.golem/people/
---memory-db <path>       SQLite memory database path (default: ./.golem/memory.db)
---scheduler-db <path>    SQLite scheduler database path (default: ./.golem/scheduler.db)
---kanban-db <path>       SQLite kanban database path (default: ./.golem/kanban.db)
---jvm-index-db <path>    SQLite JVM project index path (default: ./.golem/jvm-index.db)
+--persona-name <name>    Name of active persona from ~/.spola/people/
+--memory-db <path>       SQLite memory database path (default: ./.spola/memory.db)
+--scheduler-db <path>    SQLite scheduler database path (default: ./.spola/scheduler.db)
+--kanban-db <path>       SQLite kanban database path (default: ./.spola/kanban.db)
+--jvm-index-db <path>    SQLite JVM project index path (default: ./.spola/jvm-index.db)
 --max-turns <int>        Maximum agent turns (default: 25)
---api-key <key>          API key for REST API and MCP SSE auth (env: GOLEM_API_KEY)
+--api-key <key>          API key for REST API and MCP SSE auth (env: SPOLA_API_KEY)
 --resume, --session-id   Resume a previous agent run by session ID
 --insecure               Allow binding to 0.0.0.0 without API key
 --unsafe                 Disable path restrictions (agent can read/write any file)
@@ -52,11 +52,11 @@ These flags are available on the root `golem` command and affect all modes.
 
 ### Environment Variables
 
-- `GOLEM_API_KEY` — API key for the LLM provider (used as fallback if `--api-key` not set)
+- `SPOLA_API_KEY` — API key for the LLM provider (used as fallback if `--api-key` not set)
 
 ### Config Precedence
 
-CLI flags > config file (`~/.golem/config.yaml`) > defaults. Env var `GOLEM_API_KEY` is checked if neither `--api-key` nor config provides one.
+CLI flags > config file (`~/.spola/config.yaml`) > defaults. Env var `SPOLA_API_KEY` is checked if neither `--api-key` nor config provides one.
 
 ---
 
@@ -67,25 +67,25 @@ CLI flags > config file (`~/.golem/config.yaml`) > defaults. Env var `GOLEM_API_
 Pass a goal string as the argument. The agent processes it and exits.
 
 ```bash
-./gradlew :golem-cli:run --args="'explain what this project does'"
+./gradlew :spola-backend-cli:run --args="'explain what this project does'"
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli 'list all Kotlin files in src/'
+./spola-backend-cli/build/install/spola/bin/spola 'list all Kotlin files in src/'
 ```
 
 With flags:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --model claude-sonnet-4 --provider anthropic 'refactor this to use sealed classes'
+./spola-backend-cli/build/install/spola/bin/spola --model claude-sonnet-4 --provider anthropic 'refactor this to use sealed classes'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --workdir /path/to/project --unsafe 'find all TODO comments'
+./spola-backend-cli/build/install/spola/bin/spola --workdir /path/to/project --unsafe 'find all TODO comments'
 ```
 
 ```bash
-GOLEM_API_KEY=sk-... ./gradlew :golem-cli:run --args="--provider openai-compat 'write a README'"
+SPOLA_API_KEY=sk-... ./gradlew :spola-backend-cli:run --args="--provider openai-compat 'write a README'"
 ```
 
 ### REPL Mode
@@ -93,11 +93,11 @@ GOLEM_API_KEY=sk-... ./gradlew :golem-cli:run --args="--provider openai-compat '
 Omit the goal argument to enter interactive mode.
 
 ```bash
-./build/install/golem-cli/bin/golem-cli
+./spola-backend-cli/build/install/spola/bin/spola
 ```
 
 ```
-Golem v0.1.0 — JVM Autonomous Coding Agent
+Spola v0.1.0 — JVM Autonomous Coding Agent
 Type your goal, or /help for commands.
 
 > write a fibonacci function in Kotlin
@@ -119,7 +119,7 @@ REPL commands (type at the `>` prompt):
 Open a persona from a file:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --persona ./AGENTS.md
+./spola-backend-cli/build/install/spola/bin/spola --persona ./AGENTS.md
 ```
 
 ### API Server Mode
@@ -127,26 +127,26 @@ Open a persona from a file:
 Start a REST API server:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --api --api-key my-secret
+./spola-backend-cli/build/install/spola/bin/spola --api --api-key my-secret
 ```
 
 On a custom port:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --api --api-key my-secret --api-port 9000
+./spola-backend-cli/build/install/spola/bin/spola --api --api-key my-secret --api-port 9000
 ```
 
 With TLS:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --api --api-key my-secret \
+./spola-backend-cli/build/install/spola/bin/spola --api --api-key my-secret \
   --tls-cert /etc/ssl/certs/server.pem --tls-key /etc/ssl/private/server-key.pem
 ```
 
 Allow unauthenticated access (not recommended for production):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --api --insecure
+./spola-backend-cli/build/install/spola/bin/spola --api --insecure
 ```
 
 ### Daemon Mode
@@ -154,90 +154,90 @@ Allow unauthenticated access (not recommended for production):
 Run the scheduler daemon (polls SQLite for due jobs):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --daemon
+./spola-backend-cli/build/install/spola/bin/spola --daemon
 ```
 
 ### MCP Server Mode
 
-Expose Golem tools via the Model Context Protocol.
+Expose Spola tools via the Model Context Protocol.
 
 Stdio transport (for Claude Desktop, Cursor, etc.):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --mcp
+./spola-backend-cli/build/install/spola/bin/spola --mcp
 ```
 
 SSE transport (for remote MCP clients):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --mcp --mcp-transport sse --mcp-port 9090 --api-key my-key
+./spola-backend-cli/build/install/spola/bin/spola --mcp --mcp-transport sse --mcp-port 9090 --api-key my-key
 ```
 
 Bind to a specific host:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --mcp --mcp-transport sse --mcp-host 0.0.0.0
+./spola-backend-cli/build/install/spola/bin/spola --mcp --mcp-transport sse --mcp-host 0.0.0.0
 ```
 
 ---
 
 ## Subcommands
 
-### `golem config` — Manage Configuration
+### `spola config` — Manage Configuration
 
 **Subcommands:** `show`, `path`, `init`
 
-**`golem config show`** — Print the current effective configuration (merged from file + CLI flags):
+**`spola config show`** — Print the current effective configuration (merged from file + CLI flags):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli config show
+./spola-backend-cli/build/install/spola/bin/spola config show
 ```
 
 ```
 model: gpt-4o
 provider: openai
 workdir: /home/user/project
-memory-db: ./.golem/memory.db
-scheduler-db: ./.golem/scheduler.db
+memory-db: ./.spola/memory.db
+scheduler-db: ./.spola/scheduler.db
 max-turns: 25
 temperature: null
 ...
 ```
 
-**`golem config path`** — Print the config file path being used:
+**`spola config path`** — Print the config file path being used:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli config path
+./spola-backend-cli/build/install/spola/bin/spola config path
 ```
 
 ```
-/home/user/.golem/config.yaml
+/home/user/.spola/config.yaml
 ```
 
-**`golem config init`** — Create a default `~/.golem/config.yaml`:
+**`spola config init`** — Create a default `~/.spola/config.yaml`:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli config init
+./spola-backend-cli/build/install/spola/bin/spola config init
 ```
 
 ```
-Created /home/user/.golem/config.yaml
+Created /home/user/.spola/config.yaml
 ```
 
 If the file already exists, it prints an error and exits with code 1.
 
 ---
 
-### `golem agent` — Manage Custom Agent Definitions
+### `spola agent` — Manage Custom Agent Definitions
 
 **Subcommands:** `list`, `show`, `create`, `update`, `delete`, `run`
 
-Custom agents are stored in an SQLite database and optionally as YAML files in `.golem/agents/`. Each agent has a system prompt, preferred model/provider, and scoped permissions.
+Custom agents are stored in an SQLite database and optionally as YAML files in `.spola/agents/`. Each agent has a system prompt, preferred model/provider, and scoped permissions.
 
-**`golem agent list`** — List all custom agents:
+**`spola agent list`** — List all custom agents:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent list
+./spola-backend-cli/build/install/spola/bin/spola agent list
 ```
 
 ```
@@ -253,10 +253,10 @@ Custom Agents:
 2 agent(s)
 ```
 
-**`golem agent show <id>`** — Show full agent definition:
+**`spola agent show <id>`** — Show full agent definition:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent show my-coder
+./spola-backend-cli/build/install/spola/bin/spola agent show my-coder
 ```
 
 ```
@@ -275,10 +275,10 @@ Shell: true
 You are an expert Kotlin developer...
 ```
 
-**`golem agent create`** — Create a new agent:
+**`spola agent create`** — Create a new agent:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent create \
+./spola-backend-cli/build/install/spola/bin/spola agent create \
   --id my-coder \
   --name "Kotlin Expert" \
   --desc "Expert Kotlin developer" \
@@ -288,7 +288,7 @@ You are an expert Kotlin developer...
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent create \
+./spola-backend-cli/build/install/spola/bin/spola agent create \
   --id read-only-reviewer \
   --name "Code Reviewer" \
   --model gpt-4o \
@@ -315,68 +315,68 @@ All flags:
 - `--memory` — Memory scope: `global`, `agent`, `none` (default: `global`)
 - `--tags` — Comma-separated tags
 
-**`golem agent update <id>`** — Update an existing agent:
+**`spola agent update <id>`** — Update an existing agent:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent update my-coder --name "Kotlin Pro" --model gpt-4o
+./spola-backend-cli/build/install/spola/bin/spola agent update my-coder --name "Kotlin Pro" --model gpt-4o
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent update reviewer --enable false
+./spola-backend-cli/build/install/spola/bin/spola agent update reviewer --enable false
 ```
 
-**`golem agent delete <id>`** — Delete an agent:
+**`spola agent delete <id>`** — Delete an agent:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent delete my-coder
-```
-
-```bash
-./build/install/golem-cli/bin/golem-cli agent delete old-agent --rm
-```
-
-**`golem agent run <id> <goal>`** — Run a custom agent with a goal:
-
-```bash
-./build/install/golem-cli/bin/golem-cli agent run my-coder 'review the build.gradle.kts files'
+./spola-backend-cli/build/install/spola/bin/spola agent delete my-coder
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli agent run reviewer 'check for security issues in src/'
+./spola-backend-cli/build/install/spola/bin/spola agent delete old-agent --rm
+```
+
+**`spola agent run <id> <goal>`** — Run a custom agent with a goal:
+
+```bash
+./spola-backend-cli/build/install/spola/bin/spola agent run my-coder 'review the build.gradle.kts files'
+```
+
+```bash
+./spola-backend-cli/build/install/spola/bin/spola agent run reviewer 'check for security issues in src/'
 ```
 
 ---
 
-### `golem process` — Deterministic Process Workflows
+### `spola process` — Deterministic Process Workflows
 
 **Subcommands:** `list`, `run`, `status`, `cancel`, `approve`, `reject`
 
 Processes are deterministic DAGs (e.g., compile → test → git_commit → human_approval) where AI fills variables within typed steps.
 
-**`golem process list`** — List available process templates:
+**`spola process list`** — List available process templates:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process list
+./spola-backend-cli/build/install/spola/bin/spola process list
 ```
 
 ```
 Available process templates: code-review, deploy, refactor
 ```
 
-**`golem process run <template> <goal>`** — Run a process template:
+**`spola process run <template> <goal>`** — Run a process template:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process run code-review 'review the auth module'
+./spola-backend-cli/build/install/spola/bin/spola process run code-review 'review the auth module'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process run deploy --project :golem-cli 'build and deploy'
+./spola-backend-cli/build/install/spola/bin/spola process run deploy --project :spola-backend-cli 'build and deploy'
 ```
 
-**`golem process status <run-id>`** — Check process status:
+**`spola process status <run-id>`** — Check process status:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process status proc_abc123
+./spola-backend-cli/build/install/spola/bin/spola process status proc_abc123
 ```
 
 ```
@@ -386,152 +386,152 @@ Run: proc_abc123
   step: compile_project
 ```
 
-**`golem process cancel <run-id>`** — Cancel a running process:
+**`spola process cancel <run-id>`** — Cancel a running process:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process cancel proc_abc123
+./spola-backend-cli/build/install/spola/bin/spola process cancel proc_abc123
 ```
 
 ```
 Cancelled run proc_abc123
 ```
 
-**`golem process approve <run-id>`** — Approve a gate decision:
+**`spola process approve <run-id>`** — Approve a gate decision:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process approve proc_abc123 --notes "Looks good, proceed"
+./spola-backend-cli/build/install/spola/bin/spola process approve proc_abc123 --notes "Looks good, proceed"
 ```
 
-**`golem process reject <run-id>`** — Reject a gate decision:
+**`spola process reject <run-id>`** — Reject a gate decision:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli process reject proc_abc123 --notes "Needs more tests"
+./spola-backend-cli/build/install/spola/bin/spola process reject proc_abc123 --notes "Needs more tests"
 ```
 
 ---
 
-### `golem project` — JVM Project Intelligence
+### `spola project` — JVM Project Intelligence
 
 **Subcommands:** `scan`, `overview`, `symbol`
 
-**`golem project scan`** — Force a full JVM project reindex:
+**`spola project scan`** — Force a full JVM project reindex:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli project scan
+./spola-backend-cli/build/install/spola/bin/spola project scan
 ```
 
 ```
 Indexed 3 module(s) in /home/user/project
-:golem-core | sources=2 tests=1 deps=12
-:golem-cli | sources=1 tests=1 deps=8
-:golem-api | sources=1 tests=1 deps=5
+:spola-backend-core | sources=2 tests=1 deps=12
+:spola-backend-cli | sources=1 tests=1 deps=8
+:spola-backend-api | sources=1 tests=1 deps=5
 ```
 
 Scan a specific directory:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --workdir /path/to/other-project project scan
+./spola-backend-cli/build/install/spola/bin/spola --workdir /path/to/other-project project scan
 ```
 
-**`golem project overview`** — Print the JVM module tree:
+**`spola project overview`** — Print the JVM module tree:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli project overview
+./spola-backend-cli/build/install/spola/bin/spola project overview
 ```
 
 ```
 Project: /home/user/project
 Modules (3):
-- :golem-core (root)
+- :spola-backend-core (root)
   path: .
   sources: src/main/kotlin
   tests: src/test/kotlin
-- :golem-cli
-  path: golem-cli
+- :spola-backend-cli
+  path: spola-backend-cli
   sources: src/main/kotlin
-- :golem-api
-  path: golem-api
+- :spola-backend-api
+  path: spola-backend-api
 ```
 
-**`golem project symbol <name>`** — Lookup a JVM symbol:
+**`spola project symbol <name>`** — Lookup a JVM symbol:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli project symbol GolemAgent
+./spola-backend-cli/build/install/spola/bin/spola project symbol SpolaAgent
 ```
 
 ```
-:golem-core CLASS GolemAgent GolemAgent.kt:25:1
-:golem-core FUNCTION GolemAgent.run GolemAgent.kt:42:1
+:spola-backend-core CLASS SpolaAgent SpolaAgent.kt:25:1
+:spola-backend-core FUNCTION SpolaAgent.run SpolaAgent.kt:42:1
 ```
 
 Filter by module:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli project symbol ToolRegistry --module :golem-core
+./spola-backend-cli/build/install/spola/bin/spola project symbol ToolRegistry --module :spola-backend-core
 ```
 
 Filter by kind:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli project symbol run --kind function
+./spola-backend-cli/build/install/spola/bin/spola project symbol run --kind function
 ```
 
 ---
 
-### `golem workflow` — Multi-Step Workflows
+### `spola workflow` — Multi-Step Workflows
 
 **Subcommands:** `run`
 
-**`golem workflow run <name> <goal>`** — Run a predefined workflow:
+**`spola workflow run <name> <goal>`** — Run a predefined workflow:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli workflow run code-review 'review the new API endpoint'
+./spola-backend-cli/build/install/spola/bin/spola workflow run code-review 'review the new API endpoint'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli workflow run jvm-debug 'investigate the NullPointerException in UserService'
+./spola-backend-cli/build/install/spola/bin/spola workflow run jvm-debug 'investigate the NullPointerException in UserService'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli workflow run jvm-refactor 'extract the authentication logic into a separate module'
+./spola-backend-cli/build/install/spola/bin/spola workflow run jvm-refactor 'extract the authentication logic into a separate module'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli workflow run jvm-migration 'migrate from RxJava to coroutines'
+./spola-backend-cli/build/install/spola/bin/spola workflow run jvm-migration 'migrate from RxJava to coroutines'
 ```
 
 Built-in workflows: `code-review`, `jvm-debug`, `jvm-refactor`, `jvm-migration`
 
 ---
 
-### `golem team` — Parallel Agent Teams
+### `spola team` — Parallel Agent Teams
 
 **Subcommands:** `run`
 
-**`golem team run`** — Run a team of agents in parallel:
+**`spola team run`** — Run a team of agents in parallel:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli team run \
+./spola-backend-cli/build/install/spola/bin/spola team run \
   --agents my-coder,reviewer \
   --goal 'implement a new REST endpoint for user profiles'
 ```
 
 ---
 
-### `golem skill` — Reusable Agent Skills
+### `spola skill` — Reusable Agent Skills
 
 **Subcommands:** `list`, `run`, `install`
 
-Skills are YAML files defining a reusable agent persona + behavior. Stored in `~/.golem/skills/`.
+Skills are YAML files defining a reusable agent persona + behavior. Stored in `~/.spola/skills/`.
 
-**`golem skill list`** — List all installed skills:
+**`spola skill list`** — List all installed skills:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli skill list
+./spola-backend-cli/build/install/spola/bin/spola skill list
 ```
 
 ```
-Installed Skills (/home/user/.golem/skills):
+Installed Skills (/home/user/.spola/skills):
 ────────────────────────────────────────────────────────────
 • analyze-dependency — Analyze Maven/Gradle dependency trees [jvm]
 • generate-test — Generate unit tests for a Kotlin class [testing]
@@ -539,38 +539,38 @@ Installed Skills (/home/user/.golem/skills):
 2 skill(s)
 ```
 
-**`golem skill run <name> <goal>`** — Run a skill:
+**`spola skill run <name> <goal>`** — Run a skill:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli skill run generate-test 'create tests for UserService.kt'
+./spola-backend-cli/build/install/spola/bin/spola skill run generate-test 'create tests for UserService.kt'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli skill run analyze-dependency 'check for conflicts in the build graph'
+./spola-backend-cli/build/install/spola/bin/spola skill run analyze-dependency 'check for conflicts in the build graph'
 ```
 
-**`golem skill install <path>`** — Install a skill YAML file:
+**`spola skill install <path>`** — Install a skill YAML file:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli skill install ~/Downloads/my-skill.yaml
+./spola-backend-cli/build/install/spola/bin/spola skill install ~/Downloads/my-skill.yaml
 ```
 
 ```
-✅ Installed skill 'my-skill' to /home/user/.golem/skills/my-skill.yaml
+✅ Installed skill 'my-skill' to /home/user/.spola/skills/my-skill.yaml
 ```
 
 ---
 
-### `golem persona` — Persona Pocket
+### `spola persona` — Persona Pocket
 
 **Subcommands:** `list`, `show`, `sync`
 
-Personas are Markdown files with YAML frontmatter in `~/.golem/people/`.
+Personas are Markdown files with YAML frontmatter in `~/.spola/people/`.
 
-**`golem persona list`** — List all stored personas:
+**`spola persona list`** — List all stored personas:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli persona list
+./spola-backend-cli/build/install/spola/bin/spola persona list
 ```
 
 ```
@@ -586,10 +586,10 @@ Personas:
 2 persona(s)
 ```
 
-**`golem persona show <name>`** — Show full persona details:
+**`spola persona show <name>`** — Show full persona details:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli persona show senior-dev
+./spola-backend-cli/build/install/spola/bin/spola persona show senior-dev
 ```
 
 ```
@@ -601,59 +601,59 @@ Summary: 15 years JVM experience
 You are a senior Kotlin developer...
 ```
 
-**`golem persona sync`** — Sync personas from `~/.golem/people/` to the SQLite store:
+**`spola persona sync`** — Sync personas from `~/.spola/people/` to the SQLite store:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli persona sync
+./spola-backend-cli/build/install/spola/bin/spola persona sync
 ```
 
 ```
-Syncing from: /home/user/.golem/people
+Syncing from: /home/user/.spola/people
 Sync complete.
 Total personas: 3
 ```
 
-Activate a persona by name when starting Golem:
+Activate a persona by name when starting Spola:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli --persona-name senior-dev 'review this code'
+./spola-backend-cli/build/install/spola/bin/spola --persona-name senior-dev 'review this code'
 ```
 
 ---
 
-### `golem mcp` — Manage MCP Client Connections
+### `spola mcp` — Manage MCP Client Connections
 
 **Subcommands:** `add`, `list`, `remove`, `reconnect`
 
-MCP client connections allow Golem to consume tools from external MCP servers (e.g., a local Playwright server, a database MCP server).
+MCP client connections allow Spola to consume tools from external MCP servers (e.g., a local Playwright server, a database MCP server).
 
-**`golem mcp add <name>`** — Add an MCP server connection:
+**`spola mcp add <name>`** — Add an MCP server connection:
 
 Stdio transport:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp add my-playwright \
+./spola-backend-cli/build/install/spola/bin/spola mcp add my-playwright \
   --cmd "npx" --args @playwright/mcp
 ```
 
 SSE transport:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp add remote-server \
+./spola-backend-cli/build/install/spola/bin/spola mcp add remote-server \
   --url "http://localhost:8091/mcp"
 ```
 
 Add disabled (connect later):
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp add db-server \
+./spola-backend-cli/build/install/spola/bin/spola mcp add db-server \
   --cmd "node" --args /path/to/server.js --disabled
 ```
 
-**`golem mcp list`** — List all configured MCP servers:
+**`spola mcp list`** — List all configured MCP servers:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp list
+./spola-backend-cli/build/install/spola/bin/spola mcp list
 ```
 
 ```
@@ -670,20 +670,20 @@ Configured MCP Servers:
 2 server(s)
 ```
 
-**`golem mcp remove <name>`** — Remove an MCP server:
+**`spola mcp remove <name>`** — Remove an MCP server:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp remove my-playwright
+./spola-backend-cli/build/install/spola/bin/spola mcp remove my-playwright
 ```
 
 ```
 ✅ Removed MCP server 'my-playwright'
 ```
 
-**`golem mcp reconnect <name>`** — Reconnect to a disconnected server:
+**`spola mcp reconnect <name>`** — Reconnect to a disconnected server:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli mcp reconnect db-server
+./spola-backend-cli/build/install/spola/bin/spola mcp reconnect db-server
 ```
 
 ```
@@ -692,33 +692,33 @@ Configured MCP Servers:
 
 ---
 
-### `golem scheduler` — Scheduled Jobs
+### `spola scheduler` — Scheduled Jobs
 
 **Subcommands:** `add`, `list`, `remove`
 
 Requires the daemon (`--daemon`) to be running to execute scheduled jobs.
 
-**`golem scheduler add`** — Add a scheduled job:
+**`spola scheduler add`** — Add a scheduled job:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli scheduler add \
+./spola-backend-cli/build/install/spola/bin/spola scheduler add \
   --name "daily-health-check" \
   --cron "0 8 * * *" \
   'check all services are running and report'
 ```
 
 ```bash
-./build/install/golem-cli/bin/golem-cli scheduler add \
+./spola-backend-cli/build/install/spola/bin/spola scheduler add \
   --name "weekly-report" \
   --cron "0 9 * * 1" \
   --disabled \
   'generate the weekly status report'
 ```
 
-**`golem scheduler list`** — List scheduled jobs:
+**`spola scheduler list`** — List scheduled jobs:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli scheduler list
+./spola-backend-cli/build/install/spola/bin/spola scheduler list
 ```
 
 ```
@@ -726,10 +726,10 @@ job_abc | daily-health-check | enabled=true | next=2026-05-15T08:00:00 | cron=0 
 job_def | weekly-report | enabled=false | next=2026-05-18T09:00:00 | cron=0 9 * * 1
 ```
 
-**`golem scheduler remove <id>`** — Remove a scheduled job:
+**`spola scheduler remove <id>`** — Remove a scheduled job:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli scheduler remove job_def
+./spola-backend-cli/build/install/spola/bin/spola scheduler remove job_def
 ```
 
 ```
@@ -738,30 +738,30 @@ Removed job job_def
 
 ---
 
-### `golem pairing` — Pairing Info
+### `spola pairing` — Pairing Info
 
 **Subcommands:** `info`, `qrcode`
 
-Used to pair Golem with the OpenClaw mobile app.
+Used to pair Spola with the OpenClaw mobile app.
 
-**`golem pairing info`** — Print connection details for pairing:
+**`spola pairing info`** — Print connection details for pairing:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli pairing info
+./spola-backend-cli/build/install/spola/bin/spola pairing info
 ```
 
 ```
-=== Golem Connection Info ===
+=== Spola Connection Info ===
 Host: 192.168.1.42
 Port: 8082
 Token: a1b2c3d4-e5f6-...
 ...
 ```
 
-**`golem pairing qrcode`** — Generate a QR code PNG for pairing:
+**`spola pairing qrcode`** — Generate a QR code PNG for pairing:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli pairing qrcode
+./spola-backend-cli/build/install/spola/bin/spola pairing qrcode
 ```
 
 ```
@@ -771,23 +771,23 @@ QR code saved to /home/user/qrcode.png
 Save to a custom path:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli pairing qrcode --output ~/Desktop/pair.png
+./spola-backend-cli/build/install/spola/bin/spola pairing qrcode --output ~/Desktop/pair.png
 ```
 
 ---
 
-### `golem remote` — Connect to Remote Server
+### `spola remote` — Connect to Remote Server
 
-Connect to a remote Golem API server and interact via an interactive session.
+Connect to a remote Spola API server and interact via an interactive session.
 
 ```bash
-./build/install/golem-cli/bin/golem-cli remote 192.168.1.42:8082 --api-key my-key
+./spola-backend-cli/build/install/spola/bin/spola remote 192.168.1.42:8082 --api-key my-key
 ```
 
 With TLS:
 
 ```bash
-./build/install/golem-cli/bin/golem-cli remote golem.example.com:443 --api-key my-key --tls
+./spola-backend-cli/build/install/spola/bin/spola remote spola.example.com:443 --api-key my-key --tls
 ```
 
 Once connected:
@@ -816,35 +816,35 @@ The `main()` function in `Main.kt` explicitly calls `exitProcess(exitCode)` — 
 
 ```bash
 # One-shot
-./gradlew :golem-cli:run --args="'my goal'"
+./gradlew :spola-backend-cli:run --args="'my goal'"
 
 # REPL
-./build/install/golem-cli/bin/golem-cli
+./spola-backend-cli/build/install/spola/bin/spola
 
 # API server
-./build/install/golem-cli/bin/golem-cli --api --api-key secret
+./spola-backend-cli/build/install/spola/bin/spola --api --api-key secret
 
 # MCP server
-./build/install/golem-cli/bin/golem-cli --mcp
+./spola-backend-cli/build/install/spola/bin/spola --mcp
 
 # Daemon (scheduler)
-./build/install/golem-cli/bin/golem-cli --daemon
+./spola-backend-cli/build/install/spola/bin/spola --daemon
 
 # Custom persona
-./build/install/golem-cli/bin/golem-cli --persona ./AGENTS.md
+./spola-backend-cli/build/install/spola/bin/spola --persona ./AGENTS.md
 
 # Run a custom agent
-./build/install/golem-cli/bin/golem-cli agent run my-coder 'some goal'
+./spola-backend-cli/build/install/spola/bin/spola agent run my-coder 'some goal'
 
 # Check config
-./build/install/golem-cli/bin/golem-cli config show
+./spola-backend-cli/build/install/spola/bin/spola config show
 
 # Project intelligence
-./build/install/golem-cli/bin/golem-cli project scan
+./spola-backend-cli/build/install/spola/bin/spola project scan
 
 # Workflow
-./build/install/golem-cli/bin/golem-cli workflow run code-review 'review this PR'
+./spola-backend-cli/build/install/spola/bin/spola workflow run code-review 'review this PR'
 
 # Skill
-./build/install/golem-cli/bin/golem-cli skill run generate-test 'test UserService'
+./spola-backend-cli/build/install/spola/bin/spola skill run generate-test 'test UserService'
 ```

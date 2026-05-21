@@ -1,13 +1,13 @@
-# Golem — JVM Autonomous Coding Agent
+# Spola — JVM Autonomous Coding Agent
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/nousresearch/golem)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/nousresearch/golem)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/nousresearch/spola)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/nousresearch/spola)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-21%2B-orange.svg)](https://adoptium.net)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.3-purple.svg)](https://kotlinlang.org)
 [![Tests](https://img.shields.io/badge/build-passing-brightgreen.svg)](TESTING.md)
 
-**Golem is a JVM autonomous coding agent powered by TramAI.** One agent loop, four interfaces — CLI, REST API, Web Dashboard, and MCP — all built on a modular Kotlin core with SQLite persistence, a rich plugin tool system, and first-class support for custom agent definitions and multi-agent orchestration.
+**Spola is a JVM autonomous coding agent powered by TramAI.** One agent loop, four interfaces — CLI, REST API, Web Dashboard, and MCP — all built on a modular Kotlin core with SQLite persistence, a rich plugin tool system, and first-class support for custom agent definitions and multi-agent orchestration.
 
 ---
 
@@ -19,17 +19,17 @@
 ├────────────────────────┬─────────────────────────┬──────────────────────┤
 │    CLI + REPL          │    Web Dashboard         │    REST API          │
 │                        │                         │                      │
-│  Golem v0.1.0          │  ┌──────────────────┐    │  curl localhost:8082 │
+│  Spola v0.1.0          │  ┌──────────────────┐    │  curl localhost:8082 │
 │  Type a goal...        │  │  💬 Chat  🧰 Tools│    │  POST /api/agent/run│
 │                        │  │  🧠 Memory ⏰ Jobs │    │  SSE streaming     │
 │  > review this PR      │  │  📊 Metrics       │    │  40+ endpoints     │
 │                        │  │                   │    │                     │
-│  🔧 read_file ✓        │  │  [Dark/Light 🌙] │    │  golem --api        │
+│  🔧 read_file ✓        │  │  [Dark/Light 🌙] │    │  spola --api        │
 │  🔧 shell ✓            │  │  Ctrl+K Palette   │    │  :8082              │
 │  🔧 git_commit ✓       │  └──────────────────┘    │                     │
 │                        │                         │                      │
-│  $ golem "write test"  │  $ golem --api          │                     │
-│  $ golem               │  → :8082/web/           │                     │
+│  $ spola "write test"  │  $ spola --api          │                     │
+│  $ spola               │  → :8082/web/           │                     │
 └────────────────────────┴─────────────────────────┴──────────────────────┘
 ```
 
@@ -75,13 +75,13 @@
 - **Parallel Agents** — Run N agents concurrently on the same goal, merge results
 - **Branching** — Conditional step execution based on tool call patterns
 - **Gates** — Human-in-the-loop approval checkpoints
-- **Plugin Steps** — Custom step executors via `GolemPlugin` interface
+- **Plugin Steps** — Custom step executors via `SpolaPlugin` interface
 - **Durable Execution** — `WorkflowPersistence` with file-based checkpointing, lease management, and delay-wakeup scheduling
 
 ### MCP (Model Context Protocol)
 
-- **MCP Server** — Expose all Golem tools as MCP tools via stdio (`:8091`) or SSE (`--mcp-port 8091 --mcp-transport sse`); tools-only mode requires no LLM API key
-- **MCP Client** — Consume external MCP servers: connects via stdio, auto-discovers tools, registers them in the agent's tool registry with `mcp_{server}_{tool}` namespace; config persisted at `~/.golem/mcp-servers.json`
+- **MCP Server** — Expose all Spola tools as MCP tools via stdio (`:8091`) or SSE (`--mcp-port 8091 --mcp-transport sse`); tools-only mode requires no LLM API key
+- **MCP Client** — Consume external MCP servers: connects via stdio, auto-discovers tools, registers them in the agent's tool registry with `mcp_{server}_{tool}` namespace; config persisted at `~/.spola/mcp-servers.json`
 
 ### Deployment
 
@@ -102,9 +102,9 @@
 │  └────┬────┘  └──────┬───────┘  └────┬─────┘  └──────┬──────┘    │
 │       │              │               │               │           │
 ├───────┴──────────────┴───────────────┴───────────────┴───────────┤
-│                        GOLEM CORE                                │
+│                    SPOLA BACKEND CORE                            │
 │  ┌──────────────────────────────────────────────────────────┐    │
-│  │              GolemAgent (ReAct Loop)                      │    │
+│  │              SpolaAgent (ReAct Loop)                      │    │
 │  │  ┌──────────┐  ┌──────────┐  ┌───────────┐              │    │
 │  │  │ TramAI   │  │ Tool     │  │ Observer  │              │    │
 │  │  │ Provider │  │ Registry │  │ Chain     │              │    │
@@ -139,7 +139,7 @@
 | Resource | Description |
 |----------|-------------|
 | [QUICKSTART.md](QUICKSTART.md) | Get up and running in 5 minutes |
-| [AGENTS.md](../../AGENTS.md) | The Golem persona / system prompt |
+| [AGENTS.md](../../AGENTS.md) | The Spola persona / system prompt |
 | [TESTING.md](../../TESTING.md) | Test suite overview |
 | [ROADMAP.md](../../ROADMAP.md) | Development roadmap |
 | [docs/specs/](../../docs/specs/) | Technical specifications |

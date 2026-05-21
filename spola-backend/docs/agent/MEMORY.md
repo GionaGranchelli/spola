@@ -1,12 +1,12 @@
 # Memory System
 
-Golem's memory system gives agents **explicit, persistent recall** across sessions. Memory is surfaced as tools the agent can call — not hidden state or vector embeddings. The agent decides what to remember and when to look it up.
+Spola's memory system gives agents **explicit, persistent recall** across sessions. Memory is surfaced as tools the agent can call — not hidden state or vector embeddings. The agent decides what to remember and when to look it up.
 
 ---
 
 ## 1. Why Memory as Tools
 
-Most agent frameworks hide memory in the system prompt or inject it silently. Golem takes a different approach:
+Most agent frameworks hide memory in the system prompt or inject it silently. Spola takes a different approach:
 
 - **Explicit tools** — `memory_save` and `memory_search` are tools the agent chooses to call
 - **No hidden state** — everything stored is visible, queryable, and deletable
@@ -75,7 +75,7 @@ Table: memory_entries
 ### Basic Usage
 
 ```kotlin
-val store = SqliteMemoryStore("./.golem/memory.db")
+val store = SqliteMemoryStore("./.spola/memory.db")
 
 // Save a fact (upserts by key)
 store.save("user_prefers_tabs", "User prefers tabs over spaces, indent size 2")
@@ -175,7 +175,7 @@ Agent: → memory_search(query="preferences")
   (created: 2026-05-14T08:30:00)
   ---
   [user_project]
-  Currently working on Golem's memory system
+  Currently working on Spola's memory system
   (created: 2026-05-13T10:00:00)
 ```
 
@@ -245,7 +245,7 @@ When `memoryScope = "agent"` is set in an `AgentDefinition`, the memory is names
 
 ## 6. NoopMemoryStore — Disabled Memory
 
-When `memoryScope = "none"` is set, `GolemFactory` swaps in a `NoopMemoryStore`:
+When `memoryScope = "none"` is set, `SpolaFactory` swaps in a `NoopMemoryStore`:
 
 ```kotlin
 class NoopMemoryStore : MemoryStore {
@@ -313,16 +313,16 @@ The rendered pages use a GitHub-dark-inspired theme (dark background `#0d1117`, 
 
 ### Database Path
 
-Configured in `GolemConfig`:
+Configured in `SpolaConfig`:
 
 ```kotlin
-val memoryDbPath: String = "./.golem/memory.db"   // default (relative to workdir)
+val memoryDbPath: String = "./.spola/memory.db"   // default (relative to workdir)
 ```
 
 ### In config.yaml
 
 ```yaml
-memory-db: ~/.golem/data/memory.db   # override default
+memory-db: ~/.spola/data/memory.db   # override default
 ```
 
 The directory is auto-created on first `SqliteMemoryStore` initialization.
@@ -331,7 +331,7 @@ The directory is auto-created on first `SqliteMemoryStore` initialization.
 
 1. **CLI flag** (if any) — `--memory-db` 
 2. **Config file** — `memory-db` in `config.yaml`
-3. **Default** — `./.golem/memory.db` relative to working directory
+3. **Default** — `./.spola/memory.db` relative to working directory
 4. **Programmatic** — pass `dbPath` directly to `SqliteMemoryStore(dbPath)` constructor
 
 ---
@@ -393,7 +393,7 @@ Key: env_tools
 Value: Node.js 20, npm 10, Docker 24. MySQL on localhost:3306 with user 'dev'.
 
 Key: project_architecture
-Value: Monorepo with 3 modules: golem-core, golem-cli, golem-api.
+Value: Monorepo with 3 modules: spola-backend-core, spola-backend-cli, spola-backend-api.
        Communication via internal event bus.
 ```
 

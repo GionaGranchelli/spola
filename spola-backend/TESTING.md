@@ -1,13 +1,13 @@
-# Golem — Guida al Test Manuale
+# Spola — Guida al Test Manuale
 
-Tutto parte da `./gradlew build` per compilare, poi usi `./gradlew :golem-cli:run --args="..."` per eseguire.
+Tutto parte da `./gradlew build` per compilare, poi usi `./gradlew :spola-backend-cli:run --args="..."` per eseguire.
 
 ---
 
 ## 1. Test unitari (sempre il primo passo)
 
 ```bash
-cd ~/Development/golem && ./gradlew :golem-core:test
+cd ~/Development/spola && ./gradlew :spola-backend-core:test
 ```
 
 Esce: **207 test, 0 failures** — se fallisce, qualcosa è rotto.
@@ -18,7 +18,7 @@ Esce: **207 test, 0 failures** — se fallisce, qualcosa è rotto.
 
 ```zsh
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="'scrivi un file README.md in /tmp che spiega Golem'"
+./gradlew :spola-backend-cli:run --args="'scrivi un file README.md in /tmp che spiega Spola'"
 ```
 
 L'agent:
@@ -37,11 +37,11 @@ Gradle non supporta REPL interattivo. Devi prima buildare la distribuzione:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:installDist
-./golem-cli/build/install/golem-cli/bin/golem-cli
+./gradlew :spola-backend-cli:installDist
+./spola-backend-cli/build/install/spola/bin/spola
 ```
 
-Vedrai il prompt `golem> `. Comandi:
+Vedrai il prompt `spola> `. Comandi:
 
 | Comando | Cosa fa |
 |---------|---------|
@@ -61,7 +61,7 @@ Vedrai il prompt `golem> `. Comandi:
 ```bash
 # Terminal 1: avvia MCP in modalità SSE
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--mcp --mcp-transport sse --mcp-port 8091"
+./gradlew :spola-backend-cli:run --args="--mcp --mcp-transport sse --mcp-port 8091"
 ```
 
 Poi da un altro terminal:
@@ -79,7 +79,7 @@ curl -X POST http://localhost:8091/sse \
 **Modalità stdio** (per Claude Code):
 ```bash
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--mcp --mcp-transport stdio"
+./gradlew :spola-backend-cli:run --args="--mcp --mcp-transport stdio"
 ```
 
 **Cosa testa:** MCP server, JSON-RPC, tool → schema mapping, stdio/SSE transport, auth (se `--api-key` è impostato)
@@ -91,7 +91,7 @@ export OPENAI_API_KEY="sk-..."
 ```bash
 # Terminal 1: avvia API server
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--api --api-port 8082"
+./gradlew :spola-backend-cli:run --args="--api --api-port 8082"
 ```
 
 Da un altro terminal:
@@ -147,20 +147,20 @@ curl -X POST http://localhost:8082/api/jobs \
 ```bash
 # Terminal 1: avvia scheduler daemon
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--daemon --scheduler-db ./.golem/scheduler.db"
+./gradlew :spola-backend-cli:run --args="--daemon --scheduler-db ./.spola/scheduler.db"
 ```
 
 Da un altro terminal:
 
 ```bash
-# Aggiungi job via CLI (golemmo scheduler add)
-./gradlew :golem-cli:run --args="scheduler add --name test --cron '* * * * *' 'echo ciao'"
+# Aggiungi job via CLI (spolamo scheduler add)
+./gradlew :spola-backend-cli:run --args="scheduler add --name test --cron '* * * * *' 'echo ciao'"
 
 # Lista job
-./gradlew :golem-cli:run --args="scheduler list"
+./gradlew :spola-backend-cli:run --args="scheduler list"
 
 # Rimuovi job
-./gradlew :golem-cli:run --args="scheduler remove <job-id>"
+./gradlew :spola-backend-cli:run --args="scheduler remove <job-id>"
 ```
 
 **Cosa testa:** cron parsing, job store SQLite, polling loop, esecuzione job
@@ -172,7 +172,7 @@ Da un altro terminal:
 ```bash
 # Avvia con api-key
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--api --api-port 8082 --api-key secret123"
+./gradlew :spola-backend-cli:run --args="--api --api-port 8082 --api-key secret123"
 
 # Senza chiave → 401
 curl http://localhost:8082/api/agent/status
@@ -201,12 +201,12 @@ curl http://localhost:8082/api/metrics
 
 Output:
 ```
-# HELP golem_agent_runs_total Total number of agent runs.
-# TYPE golem_agent_runs_total counter
-golem_agent_runs_total{status="success"} 1
-golem_agent_runs_total{status="fail"} 0
-golem_agent_turns_total 3.0
-golem_tool_calls_total{tool="shell",status="success"} 2.0
+# HELP spola_agent_runs_total Total number of agent runs.
+# TYPE spola_agent_runs_total counter
+spola_agent_runs_total{status="success"} 1
+spola_agent_runs_total{status="fail"} 0
+spola_agent_turns_total 3.0
+spola_tool_calls_total{tool="shell",status="success"} 2.0
 ...
 ```
 
@@ -217,7 +217,7 @@ golem_tool_calls_total{tool="shell",status="success"} 2.0
 ## 9. Docker
 
 ```bash
-cd ~/Development/golem
+cd ~/Development/spola
 
 # Build immagine
 docker compose build
@@ -230,8 +230,8 @@ curl http://127.0.0.1:8082/api/health
 ```
 
 Il docker-compose avvia due servizi:
-- `golem-api` su `127.0.0.1:8082`
-- `golem-mcp` su `127.0.0.1:8091`
+- `spola-backend-api` su `127.0.0.1:8082`
+- `spola-backend-mcp` su `127.0.0.1:8091`
 
 **Cosa testa:** containerizzazione, non-root user, env var per API key, healthcheck, port binding sicuro
 
@@ -244,13 +244,13 @@ Dentro la REPL o one-shot:
 ```bash
 # Con ElevenLabs (richiede ELEVENLABS_API_KEY)
 export ELEVENLABS_API_KEY="..."
-./gradlew :golem-cli:run --args="'usa tts_say per dire Ciao mondo'"
+./gradlew :spola-backend-cli:run --args="'usa tts_say per dire Ciao mondo'"
 
 # Con Edge TTS (gratis, edge-tts in PATH)
-./gradlew :golem-cli:run --args="'usa tts_say per dire Ciao mondo'"
+./gradlew :spola-backend-cli:run --args="'usa tts_say per dire Ciao mondo'"
 ```
 
-Il tool produce file audio in `~/.golem/audio/`.
+Il tool produce file audio in `~/.spola/audio/`.
 
 **Cosa testa:** TTS provider selection, ElevenLabs API, Edge CLI fallback, file caching
 
@@ -261,7 +261,7 @@ Il tool produce file audio in `~/.golem/audio/`.
 ```bash
 # Avvia API server
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="--api --api-port 8082"
+./gradlew :spola-backend-cli:run --args="--api --api-port 8082"
 
 # Fai una run
 curl -X POST http://localhost:8082/api/agent/run \
@@ -297,7 +297,7 @@ L'app mostra:
 - **Dashboard** — Tool Browser, Memory Search, Scheduler List
 - **Chat pane** — invia goal, vede streaming response
 
-Prima di avviare l'app, assicurati che Golem API server sia in esecuzione (`--api --api-port 8082`).
+Prima di avviare l'app, assicurati che Spola API server sia in esecuzione (`--api --api-port 8082`).
 
 ---
 
@@ -305,16 +305,16 @@ Prima di avviare l'app, assicurati che Golem API server sia in esecuzione (`--ap
 
 ```bash
 # Crea un JAR plugin (esempio)
-# Metti il JAR in ~/.golem/plugins/
-mkdir -p ~/.golem/plugins
+# Metti il JAR in ~/.spola/plugins/
+mkdir -p ~/.spola/plugins
 # (metti il tuo plugin.jar qui)
 
-# Avvia Golem — carica automaticamente tutti i plugin
+# Avvia Spola — carica automaticamente tutti i plugin
 export OPENAI_API_KEY="sk-..."
-./gradlew :golem-cli:run --args="'listami i tool disponibili'"
+./gradlew :spola-backend-cli:run --args="'listami i tool disponibili'"
 ```
 
-I plugin devono implementare `GolemPlugin` e avere `META-INF/services/dev.spola.plugin.GolemPlugin`.
+I plugin devono implementare `SpolaPlugin` e avere `META-INF/services/dev.spola.plugin.SpolaPlugin`.
 
 **Cosa testa:** PluginLoader, ServiceLoader, tool conflict detection, shutdown lifecycle
 
@@ -327,30 +327,30 @@ I plugin devono implementare `GolemPlugin` e avere `META-INF/services/dev.spola.
 ./gradlew build
 
 # Test
-./gradlew :golem-core:test
+./gradlew :spola-backend-core:test
 
 # One-shot
-./gradlew :golem-cli:run --args="'tuo goal qui'"
+./gradlew :spola-backend-cli:run --args="'tuo goal qui'"
 
 # REPL
-./gradlew :golem-cli:run
+./gradlew :spola-backend-cli:run
 
 # API server
-./gradlew :golem-cli:run --args="--api --api-port 8082 --api-key secret"
+./gradlew :spola-backend-cli:run --args="--api --api-port 8082 --api-key secret"
 
 # MCP SSE
-./gradlew :golem-cli:run --args="--mcp --mcp-transport sse --mcp-port 8091"
+./gradlew :spola-backend-cli:run --args="--mcp --mcp-transport sse --mcp-port 8091"
 
 # MCP stdio
-./gradlew :golem-cli:run --args="--mcp --mcp-transport stdio"
+./gradlew :spola-backend-cli:run --args="--mcp --mcp-transport stdio"
 
 # Scheduler daemon
-./gradlew :golem-cli:run --args="--daemon --scheduler-db ./.golem/scheduler.db"
+./gradlew :spola-backend-cli:run --args="--daemon --scheduler-db ./.spola/scheduler.db"
 
 # Scheduler admin
-./gradlew :golem-cli:run --args="scheduler add --name test --cron '0 */2 * * *' 'fai qualcosa'"
-./gradlew :golem-cli:run --args="scheduler list"
-./gradlew :golem-cli:run --args="scheduler remove <id>"
+./gradlew :spola-backend-cli:run --args="scheduler add --name test --cron '0 */2 * * *' 'fai qualcosa'"
+./gradlew :spola-backend-cli:run --args="scheduler list"
+./gradlew :spola-backend-cli:run --args="scheduler remove <id>"
 
 # Docker
 docker compose up --build

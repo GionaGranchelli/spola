@@ -1,4 +1,4 @@
-.golem/
+.spola/
 build/
 .gradle/
 *.class

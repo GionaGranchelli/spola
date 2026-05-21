@@ -1,22 +1,22 @@
-# TramAI Multimodal Support — Requirements from Golem
+# TramAI Multimodal Support — Requirements from Spola
 
-**Purpose:** Golem needs TramAI to support image/multimodal content in LLM messages. This document specifies exactly what Golem needs, not how TramAI should implement it.
+**Purpose:** Spola needs TramAI to support image/multimodal content in LLM messages. This document specifies exactly what Spola needs, not how TramAI should implement it.
 
 **Date:** 2026-05-14
-**Author:** Golem Agent Framework
+**Author:** Spola Agent Framework
 
 ---
 
-## 1. Why Golem Needs This
+## 1. Why Spola Needs This
 
-Golem is an autonomous agent framework. Agents operate in an environment where they encounter:
+Spola is an autonomous agent framework. Agents operate in an environment where they encounter:
 - **Screenshots** — browser automation captures page screenshots for the LLM to analyze
 - **Diagrams/architectures** — users share system diagrams, the agent needs to read them
 - **Error screens** — debug workflow captures error screenshots
 - **Scanned documents** — invoices, contracts, forms in image/PDF format
 - **Generated images** — the agent creates images and needs to review them
 
-Currently Golem's tools extract text from images via OCR (Tess4J), but this loses visual context — layout, colors, icons, charts, handwriting. For a general-purpose agent, LLM-native vision is essential.
+Currently Spola's tools extract text from images via OCR (Tess4J), but this loses visual context — layout, colors, icons, charts, handwriting. For a general-purpose agent, LLM-native vision is essential.
 
 ---
 
@@ -52,7 +52,7 @@ data class ModelRequest(
 
 ### 3.1 Content Model — `MessageContent` sealed hierarchy
 
-Golem needs a `Message` whose `content` can hold multiple **content blocks** (text, image, tool_result, etc.), matching how the major providers actually work under the hood.
+Spola needs a `Message` whose `content` can hold multiple **content blocks** (text, image, tool_result, etc.), matching how the major providers actually work under the hood.
 
 #### Required content types
 
@@ -103,7 +103,7 @@ data class Message(
 }
 ```
 
-**Backward compatibility:** `Message.text(role, "hello")` creates `Message(role, listOf(TextContent("hello")))`. All existing Golem code that constructs `Message(role, "hello", ...)` needs a compatibility bridge or migration.
+**Backward compatibility:** `Message.text(role, "hello")` creates `Message(role, listOf(TextContent("hello")))`. All existing Spola code that constructs `Message(role, "hello", ...)` needs a compatibility bridge or migration.
 
 ### 3.2 Provider Interface Changes
 
@@ -162,7 +162,7 @@ When a tool call produces an image (e.g., `image_generate`), the tool result sho
 // tool returns:
 ToolResult.Success(content = listOf(
     TextContent("Generated image of a sunset"),
-    ImageContent(ImageData.Url("file:///tmp/golem/images/sunset.png")),
+    ImageContent(ImageData.Url("file:///tmp/spola-backend/images/sunset.png")),
 ))
 ```
 
@@ -170,7 +170,7 @@ ToolResult.Success(content = listOf(
 
 The `analyze_image` tool reads a file and creates a `MessageContent` with the image. This image must be included in **subsequent** LLM requests in the ReAct loop.
 
-This means the ReAct loop (in Golem, `GolemAgent.kt`) needs to support `MessageContent` — it currently assembles `List<Message>` where each message has `content: String`. Requires changes both in TramAI (to support the new Message model) and in Golem (to construct the new Message model).
+This means the ReAct loop (in Spola, `SpolaAgent.kt`) needs to support `MessageContent` — it currently assembles `List<Message>` where each message has `content: String`. Requires changes both in TramAI (to support the new Message model) and in Spola (to construct the new Message model).
 
 ### 3.5 Token Counting
 
@@ -187,7 +187,7 @@ data class UsageMetrics(
 )
 ```
 
-Golem uses `TokenJuice` for context compression. Image content blocks should be excluded from compression (or compressed differently — e.g., replace with OCR text).
+Spola uses `TokenJuice` for context compression. Image content blocks should be excluded from compression (or compressed differently — e.g., replace with OCR text).
 
 ### 3.6 Error Handling
 
@@ -218,10 +218,10 @@ enum class ProviderCapability {
 
 ### 3.7 Configuration
 
-Golem needs to configure image handling per provider:
+Spola needs to configure image handling per provider:
 
 ```yaml
-# In Golem's ~/.golem/config.yaml (or TramAI's provider config)
+# In Spola's ~/.spola/config.yaml (or TramAI's provider config)
 model: gpt-4o
 provider: openai
 image:
@@ -232,7 +232,7 @@ image:
 
 ### 3.8 Backward Compatibility
 
-**Critical requirement:** TramAI's current users (including Golem) construct messages as `Message(role, "text content", toolCallId, toolCalls)`. The new model must not break this pattern.
+**Critical requirement:** TramAI's current users (including Spola) construct messages as `Message(role, "text content", toolCallId, toolCalls)`. The new model must not break this pattern.
 
 Option: Keep the old `content: String` as a convenience that auto-wraps in `TextContent`:
 
@@ -253,14 +253,14 @@ This way all existing `Message(role, "text", ...)` calls compile unchanged.
 
 ---
 
-## 4. Golem Integration Points
+## 4. Spola Integration Points
 
-Once TramAI supports multimodal, Golem needs to:
+Once TramAI supports multimodal, Spola needs to:
 
 | Component | Change Required | Complexity |
 |-----------|----------------|-----------|
 | **ChatMessage.kt** | Replace `content: String` with `content: List<MessageContent>` | Medium |
-| **GolemAgent.kt** | Update `callLlm()` to construct new Message model | Low |
+| **SpolaAgent.kt** | Update `callLlm()` to construct new Message model | Low |
 | **Image Analysis Tool** | Read file → create ImageContent → inject into conversation | Low |
 | **Browser Screenshot** | Capture screenshot → create ImageContent → inject | Medium |
 | **Image Generation Tool** | Return generated image as ImageContent in tool result | Low |
@@ -289,9 +289,9 @@ Once TramAI supports multimodal, Golem needs to:
 
 ---
 
-## 6. What Golem Does While TramAI Implements Multimodal
+## 6. What Spola Does While TramAI Implements Multimodal
 
-In parallel, Golem will:
+In parallel, Spola will:
 - Add **OCR-based image analysis** (Tess4J from ainvoice) as a fallback — works with any TramAI provider today
 - Build all other tools (browser, code exec, image gen, clarify) — none depend on TramAI changes
 - When TramAI multimodal lands, replace OCR fallback with native vision support

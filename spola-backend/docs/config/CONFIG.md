@@ -1,13 +1,13 @@
 # Configuration Reference
 
-Golem is configured through a YAML file at `~/.golem/config.yaml` combined with CLI flags. The system uses a **three-layer merge** where CLI flags always win.
+Spola is configured through a YAML file at `~/.spola/config.yaml` combined with CLI flags. The system uses a **three-layer merge** where CLI flags always win.
 
 ## Three-Layer Merge
 
 Configuration is resolved in this priority order (later overrides earlier):
 
-1. **Code defaults** — Hardcoded in `GolemConfig` data class
-2. **Config file** — `~/.golem/config.yaml` (or `--config <path>`)
+1. **Code defaults** — Hardcoded in `SpolaConfig` data class
+2. **Config file** — `~/.spola/config.yaml` (or `--config <path>`)
 3. **CLI flags** — Explicitly-provided flags override everything
 
 Merge logic: if a CLI flag was **not explicitly provided**, the config file value (or default) is used. This means `--model gpt-5` overrides config, but omitting `--model` uses whatever the config file says.
@@ -24,27 +24,27 @@ Merge logic: if a CLI flag was **not explicitly provided**, the config file valu
 | `maxTurns` | `max-turns` | `25` | Maximum ReAct loop turns before forced stop |
 | `temperature` | `temperature` | `null` | LLM temperature override (null = provider default) |
 | `maxTokens` | `max-tokens` | `null` | Max output tokens (null = provider default) |
-| `apiKey` | `api-key` | `null` | API key; falls back to `GOLEM_API_KEY` env var |
+| `apiKey` | `api-key` | `null` | API key; falls back to `SPOLA_API_KEY` env var |
 
 ### Persona
 
 | Key | Config File Key | Default | Description |
 |-----|----------------|---------|-------------|
 | `personaPath` | `persona` | `null` | Path to AGENTS.md / CLAUDE.md persona file |
-| `activePersonaName` | `persona-name` | `null` | Name of active persona from `~/.golem/people/` |
+| `activePersonaName` | `persona-name` | `null` | Name of active persona from `~/.spola/people/` |
 
 ### Database Paths
 
 | Key | Config File Key | Default | Description |
 |-----|----------------|---------|-------------|
-| `memoryDbPath` | `memory-db` | `"./.golem/memory.db"` | SQLite memory store |
-| `schedulerDbPath` | `scheduler-db` | `"./.golem/scheduler.db"` | Scheduler job store |
-| `kanbanDbPath` | `kanban-db` | `"./.golem/kanban.db"` | Kanban board store |
-| `checkpointDbPath` | `checkpoint-db` | `"./.golem/checkpoint.db"` | Checkpoint snapshots |
-| `jvmIndexDbPath` | `jvm-index-db` | `"./.golem/jvm-index.db"` | JVM project index |
-| `sessionsDbPath` | `sessions-db` | `"./.golem/sessions.db"` | Session persistence |
-| `agentsDbPath` | `agents-db` | `"./.golem/agents.db"` | Custom agent definitions |
-| `personaDbPath` | *(not in YAML)* | `"~/.golem/persona.db"` | Persona Pocket SQLite store |
+| `memoryDbPath` | `memory-db` | `"./.spola/memory.db"` | SQLite memory store |
+| `schedulerDbPath` | `scheduler-db` | `"./.spola/scheduler.db"` | Scheduler job store |
+| `kanbanDbPath` | `kanban-db` | `"./.spola/kanban.db"` | Kanban board store |
+| `checkpointDbPath` | `checkpoint-db` | `"./.spola/checkpoint.db"` | Checkpoint snapshots |
+| `jvmIndexDbPath` | `jvm-index-db` | `"./.spola/jvm-index.db"` | JVM project index |
+| `sessionsDbPath` | `sessions-db` | `"./.spola/sessions.db"` | Session persistence |
+| `agentsDbPath` | `agents-db` | `"./.spola/agents.db"` | Custom agent definitions |
+| `personaDbPath` | *(not in YAML)* | `"~/.spola/persona.db"` | Persona Pocket SQLite store |
 
 ### Delivery
 
@@ -71,7 +71,7 @@ Merge logic: if a CLI flag was **not explicitly provided**, the config file valu
 |-----|----------------|---------|-------------|
 | `otelEnabled` | `otel-enabled` | `false` | Enable OpenTelemetry tracing |
 | `otelEndpoint` | `otel-endpoint` | `null` | OTLP gRPC endpoint (e.g., `http://localhost:4317`) |
-| `otelServiceName` | `otel-service-name` | `"golem"` | Service name for traces |
+| `otelServiceName` | `otel-service-name` | `"spola"` | Service name for traces |
 | `metricsEnabled` | `metrics-enabled` | `true` | Enable Prometheus metrics |
 
 ### Compression
@@ -91,13 +91,13 @@ Merge logic: if a CLI flag was **not explicitly provided**, the config file valu
 | Key | Config File Key | Default | Description |
 |-----|----------------|---------|-------------|
 | `pluginsEnabled` | `plugins-enabled` | `true` | Enable plugin loading |
-| `pluginsDir` | `plugins-dir` | `"~/.golem/plugins"` | Directory for plugin JARs |
+| `pluginsDir` | `plugins-dir` | `"~/.spola/plugins"` | Directory for plugin JARs |
 
 ### Agents
 
 | Key | Config File Key | Default | Description |
 |-----|----------------|---------|-------------|
-| `agentsDir` | `agents-dir` | `"~/.golem/agents"` | Custom agent definitions |
+| `agentsDir` | `agents-dir` | `"~/.spola/agents"` | Custom agent definitions |
 | `defaultAgentId` | `default-agent-id` | `null` | Default agent for new sessions |
 
 ### JVM Index
@@ -159,7 +159,7 @@ Use `--provider my-ollama --model llama3.2` to select a custom provider.
 Config values support `${VAR}` syntax — the placeholder is replaced with the value of the environment variable at load time. If the variable is unset, it resolves to empty string.
 
 ```yaml
-api-key: ${GOLEM_API_KEY}
+api-key: ${SPOLA_API_KEY}
 telegram-bot-token: ${TELEGRAM_BOT_TOKEN}
 ```
 
@@ -168,12 +168,12 @@ This is the recommended way to handle secrets — never hardcode API keys in `co
 ## CLI Commands
 
 ```
-golem config show   — Print the current effective configuration (merged)
-golem config path   — Print the config file path
-golem config init   — Create a default ~/.golem/config.yaml
+spola config show   — Print the current effective configuration (merged)
+spola config path   — Print the config file path
+spola config init   — Create a default ~/.spola/config.yaml
 ```
 
-`golem config init` will refuse to overwrite an existing config file.
+`spola config init` will refuse to overwrite an existing config file.
 
 ## CLI Flags
 
@@ -181,15 +181,15 @@ golem config init   — Create a default ~/.golem/config.yaml
 |------|---------|---------|
 | `--model` | `model` | `gpt-4o` |
 | `--provider` | `provider` | `openai` |
-| `--config` | Config path | `~/.golem/config.yaml` |
+| `--config` | Config path | `~/.spola/config.yaml` |
 | `--dir` / `--workdir` | `workingDirectory` | `.` |
 | `--persona` | `personaPath` | `null` |
 | `--persona-name` | `activePersonaName` | `null` |
 | `--max-turns` | `maxTurns` | `25` |
-| `--memory-db` | `memoryDbPath` | `./.golem/memory.db` |
-| `--scheduler-db` | `schedulerDbPath` | `./.golem/scheduler.db` |
-| `--kanban-db` | `kanbanDbPath` | `./.golem/kanban.db` |
-| `--jvm-index-db` | `jvmIndexDbPath` | `./.golem/jvm-index.db` |
+| `--memory-db` | `memoryDbPath` | `./.spola/memory.db` |
+| `--scheduler-db` | `schedulerDbPath` | `./.spola/scheduler.db` |
+| `--kanban-db` | `kanbanDbPath` | `./.spola/kanban.db` |
+| `--jvm-index-db` | `jvmIndexDbPath` | `./.spola/jvm-index.db` |
 | `--api-key` | `apiKey` | `null` |
 | `--api-port` | (API server) | `8082` |
 | `--mcp-port` | (MCP server) | `8091` |
@@ -202,7 +202,7 @@ golem config init   — Create a default ~/.golem/config.yaml
 ## Security
 
 - The config file can contain API keys and tokens. It should be readable only by the owning user.
-- Golem checks file permissions at startup. If the file is world-readable, it prints a warning and suggests `chmod 600`.
+- Spola checks file permissions at startup. If the file is world-readable, it prints a warning and suggests `chmod 600`.
 - Prefer environment variables (`${VAR}`) for secrets over hardcoded values.
 - The `insecure` flag disables API key enforcement (use with caution).
 - The `unsafe` flag removes all filesystem path restrictions from the agent.
@@ -210,7 +210,7 @@ golem config init   — Create a default ~/.golem/config.yaml
 ## Complete Example Config
 
 ```yaml
-# ~/.golem/config.yaml
+# ~/.spola/config.yaml
 # Use ${VAR} syntax for secrets — they resolve from environment variables.
 
 # --- Core Agent ---
@@ -221,15 +221,15 @@ max-turns: 50
 temperature: 0.3
 max-tokens: 4096
 persona: ./AGENTS.md
-api-key: ${GOLEM_API_KEY}
+api-key: ${SPOLA_API_KEY}
 
 # --- Database Paths ---
-memory-db: ./.golem/memory.db
-scheduler-db: ./.golem/scheduler.db
-kanban-db: ./.golem/kanban.db
-checkpoint-db: ./.golem/checkpoint.db
-jvm-index-db: ./.golem/jvm-index.db
-sessions-db: ./.golem/sessions.db
+memory-db: ./.spola/memory.db
+scheduler-db: ./.spola/scheduler.db
+kanban-db: ./.spola/kanban.db
+checkpoint-db: ./.spola/checkpoint.db
+jvm-index-db: ./.spola/jvm-index.db
+sessions-db: ./.spola/sessions.db
 
 # --- Delivery (Telegram) ---
 telegram-bot-token: ${TELEGRAM_BOT_TOKEN}
@@ -240,7 +240,7 @@ email:
   smtp-port: 587
   username: ${EMAIL_USERNAME}
   password: ${EMAIL_PASSWORD}
-  from: golem-agent@example.com
+  from: spola-agent@example.com
 
 # --- TTS ---
 tts:
@@ -251,7 +251,7 @@ tts:
 # --- Observability ---
 otel-enabled: true
 otel-endpoint: http://localhost:4317
-otel-service-name: golem-prod
+otel-service-name: spola-prod
 metrics-enabled: true
 
 # --- Features ---

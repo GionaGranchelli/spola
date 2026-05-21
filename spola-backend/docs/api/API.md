@@ -1,4 +1,4 @@
-# Golem REST API Reference
+# Spola REST API Reference
 
 Base URL: `http://{host}:{port}/api`
 
@@ -11,34 +11,34 @@ Start the API server with any of these methods:
 
 ```bash
 # CLI flag
-golem --api
+spola --api
 
 # Dedicated serve command
-golem serve
+spola serve
 
 # With custom port and host
-golem --api --port 9090 --host 0.0.0.0
+spola --api --port 9090 --host 0.0.0.0
 
 # With API key (required for remote access)
-golem --api --api-key my-secret-key
+spola --api --api-key my-secret-key
 
 # With TLS (PEM certificate + key)
-golem --api --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+spola --api --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
 
 # Insecure mode (no auth required on any host)
-golem --api --insecure
+spola --api --insecure
 ```
 
 ### Configuration
 
 | Setting | Env / CLI | Default |
 |---------|-----------|---------|
-| Host | `--host` / `GOLEM_HOST` | `127.0.0.1` |
-| Port | `--port` / `GOLEM_PORT` | `8082` |
-| API Key | `--api-key` / `GOLEM_API_KEY` | (none — localhost only) |
-| TLS Cert | `--tls-cert` / `GOLEM_TLS_CERT` | (none — plain HTTP) |
-| TLS Key | `--tls-key` / `GOLEM_TLS_KEY` | (none — plain HTTP) |
-| Insecure | `--insecure` / `GOLEM_INSECURE` | `false` |
+| Host | `--host` / `SPOLA_HOST` | `127.0.0.1` |
+| Port | `--port` / `SPOLA_PORT` | `8082` |
+| API Key | `--api-key` / `SPOLA_API_KEY` | (none — localhost only) |
+| TLS Cert | `--tls-cert` / `SPOLA_TLS_CERT` | (none — plain HTTP) |
+| TLS Key | `--tls-key` / `SPOLA_TLS_KEY` | (none — plain HTTP) |
+| Insecure | `--insecure` / `SPOLA_INSECURE` | `false` |
 
 When TLS is configured, the server listens on **two ports**: one for plain HTTP (redirect/API) and one for HTTPS via the sslConnector.
 
@@ -46,7 +46,7 @@ When TLS is configured, the server listens on **two ports**: one for plain HTTP 
 
 ## Authentication
 
-Golem uses **Bearer token** authentication via the `Authorization` header.
+Spola uses **Bearer token** authentication via the `Authorization` header.
 
 ```bash
 Authorization: Bearer <your-api-key>
@@ -79,13 +79,13 @@ Authorization: Bearer <your-api-key>
 |----------|-----------|
 | `401 Unauthorized` | Missing API key — body: `{"error": "missing api key"}` |
 | `403 Forbidden` | Invalid API key — body: `{"error": "invalid api key"}` |
-| `403 Forbidden` | Remote access without configured key — body includes hint to set `GOLEM_API_KEY` |
+| `403 Forbidden` | Remote access without configured key — body includes hint to set `SPOLA_API_KEY` |
 
 ---
 
 ## CORS
 
-CORS is **not explicitly configured** in the Ktor server. By default, CORS follows the browser's same-origin policy. If you need cross-origin requests from a web frontend, configure a reverse proxy (nginx, Caddy) or add the CORS plugin to `GolemApiServer.kt`.
+CORS is **not explicitly configured** in the Ktor server. By default, CORS follows the browser's same-origin policy. If you need cross-origin requests from a web frontend, configure a reverse proxy (nginx, Caddy) or add the CORS plugin to `SpolaApiServer.kt`.
 
 ---
 
@@ -381,7 +381,7 @@ Response:
     "id": "gpt-4o",
     "name": "gpt-4o",
     "provider": "openai",
-    "description": "openai model configured in Golem"
+    "description": "openai model configured in Spola"
   }
 ]
 ```
@@ -685,12 +685,12 @@ Response:
   "entries": [
     {
       "key": "project-context",
-      "value": "Golem is a Kotlin agent framework...",
+      "value": "Spola is a Kotlin agent framework...",
       "createdAt": "2025-04-13T10:00:00Z",
       "updatedAt": "2025-04-13T10:00:00Z"
     }
   ],
-  "query": "golem architecture"
+  "query": "spola architecture"
 }
 ```
 
@@ -700,7 +700,7 @@ curl:
 curl -H "Authorization: Bearer my-api-key" http://127.0.0.1:8082/api/memory
 
 # Search
-curl -H "Authorization: Bearer my-api-key" http://127.0.0.1:8082/api/memory?q=golem+architecture
+curl -H "Authorization: Bearer my-api-key" http://127.0.0.1:8082/api/memory?q=spola+architecture
 ```
 
 ---
@@ -792,7 +792,7 @@ curl -H "Authorization: Bearer my-api-key" \
 
 Auth: Bearer token
 
-Get the current Golem configuration. Sensitive values (apiKey, telegramBotToken,
+Get the current Spola configuration. Sensitive values (apiKey, telegramBotToken,
 email password, elevenlabsApiKey, pairingToken) are redacted as `"***"`.
 
 Response:
@@ -801,16 +801,16 @@ Response:
   "model": "gpt-4o",
   "provider": "openai",
   "workdir": "/home/user/project",
-  "memoryDb": "/home/user/.golem/memory.db",
-  "schedulerDb": "/home/user/.golem/scheduler.db",
-  "kanbanDb": "/home/user/.golem/kanban.db",
-  "checkpointDb": "/home/user/.golem/checkpoint.db",
-  "jvmIndexDb": "/home/user/.golem/jvm-index.db",
-  "sessionsDb": "/home/user/.golem/sessions.db",
+  "memoryDb": "/home/user/.spola/memory.db",
+  "schedulerDb": "/home/user/.spola/scheduler.db",
+  "kanbanDb": "/home/user/.spola/kanban.db",
+  "checkpointDb": "/home/user/.spola/checkpoint.db",
+  "jvmIndexDb": "/home/user/.spola/jvm-index.db",
+  "sessionsDb": "/home/user/.spola/sessions.db",
   "maxTurns": 25,
   "temperature": 0.7,
   "maxTokens": 8192,
-  "persona": "/home/user/.golem/persona.md",
+  "persona": "/home/user/.spola/persona.md",
   "apiKey": "***",
   "insecure": false,
   "unsafe": false,
@@ -833,12 +833,12 @@ Response:
   "pairingToken": "***",
   "otelEnabled": false,
   "otelEndpoint": null,
-  "otelServiceName": "golem",
+  "otelServiceName": "spola",
   "metricsEnabled": true,
   "pluginsEnabled": true,
-  "pluginsDir": "/home/user/.golem/plugins",
-  "agentsDir": "/home/user/.golem/agents",
-  "agentsDb": "/home/user/.golem/agents.db",
+  "pluginsDir": "/home/user/.spola/plugins",
+  "agentsDir": "/home/user/.spola/agents",
+  "agentsDb": "/home/user/.spola/agents.db",
   "defaultAgentId": null,
   "architectMode": {
     "enabled": false,
@@ -847,7 +847,7 @@ Response:
     "editorModel": null,
     "editorProvider": null
   },
-  "effectiveConfigPath": "/home/user/.golem/config.yaml"
+  "effectiveConfigPath": "/home/user/.spola/config.yaml"
 }
 ```
 
@@ -1421,7 +1421,7 @@ Request body:
 ```json
 {
   "chatId": "-1001234567890",
-  "text": "Hello from Golem!"
+  "text": "Hello from Spola!"
 }
 ```
 
@@ -1449,7 +1449,7 @@ curl:
 curl -X POST http://127.0.0.1:8082/api/deliver/telegram \
   -H "Authorization: Bearer my-api-key" \
   -H "Content-Type: application/json" \
-  -d '{"chatId":"-1001234567890","text":"Hello from Golem!"}'
+  -d '{"chatId":"-1001234567890","text":"Hello from Spola!"}'
 ```
 
 ---
@@ -1464,7 +1464,7 @@ Request body:
 ```json
 {
   "to": "user@example.com",
-  "subject": "Golem Report",
+  "subject": "Spola Report",
   "body": "Here is your daily report..."
 }
 ```
@@ -1480,7 +1480,7 @@ curl:
 curl -X POST http://127.0.0.1:8082/api/deliver/email \
   -H "Authorization: Bearer my-api-key" \
   -H "Content-Type: application/json" \
-  -d '{"to":"user@example.com","subject":"Report","body":"Hello from Golem!"}'
+  -d '{"to":"user@example.com","subject":"Report","body":"Hello from Spola!"}'
 ```
 
 ---
@@ -1495,9 +1495,9 @@ Prometheus-formatted metrics text.
 
 Response: `Content-Type: text/plain`
 ```
-# HELP golem_agent_runs_total Total agent runs
-# TYPE golem_agent_runs_total counter
-golem_agent_runs_total 42.0
+# HELP spola_agent_runs_total Total agent runs
+# TYPE spola_agent_runs_total counter
+spola_agent_runs_total 42.0
 ...
 ```
 
@@ -1605,7 +1605,7 @@ curl -X POST http://127.0.0.1:8082/api/workflows/run \
 
 Auth: **X-Pairing-Token** header (instead of Bearer)
 
-Get pairing information for connecting to this Golem instance from another device.
+Get pairing information for connecting to this Spola instance from another device.
 The response includes the detected LAN IP, port, pairing token, and trust ID.
 
 Headers:

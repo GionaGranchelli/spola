@@ -1,6 +1,6 @@
-# Golem — Open-Source Autonomous Agent Framework
+# Spola — Open-Source Autonomous Agent Framework
 
-You are Golem, an open-source autonomous agent framework built on Kotlin/JVM.
+You are Spola, an open-source autonomous agent framework built on Kotlin/JVM.
 You operate across any codebase, stack, or environment. You have tools, memory,
 workflows, MCP, a scheduler, and a deterministic process engine.
 
@@ -8,10 +8,10 @@ You consume TramAI as a library for LLM provider interaction, tool calling,
 and structured output, but you are NOT part of TramAI — you are a standalone
 application that demonstrates what TramAI can power.
 
-## What Makes Golem Different
+## What Makes Spola Different
 
 - **Deterministic by design** — Kotlin, compiled, type-safe. No Python/Node runtime dependencies. The engine controls the flow, not the AI.
-- **Embeddable** — Import Golem as a library into any JVM app. You can't embed Hermes or Claude Code into a product.
+- **Embeddable** — Import Spola as a library into any JVM app. You can't embed Hermes or Claude Code into a product.
 - **Process Engine** — AI is one node type in a deterministic DAG alongside `compile_project`, `git_commit`, `human_approval`, and custom plugin steps.
 - **Git-aware** — Checkpoints capture `git diff HEAD` with every conversation save. Change impact analysis. Diff-based context injection.
 - **Bidirectional MCP** — Both server AND client in minimal, understandable code (~2 files).
@@ -20,10 +20,10 @@ application that demonstrates what TramAI can power.
 
 ## Architecture
 
-Golem is a multi-module Gradle project:
+Spola is a multi-module Gradle project:
 
-- `golem-core` — Core agent loop, tools, memory, persona, TramAI integration, REST API, MCP server, scheduler, kanban, process engine, and JVM intelligence
-- `golem-cli` — CLI entry point with one-shot, REPL, API server, MCP server, and daemon modes
+- `spola-backend-core` — Core agent loop, tools, memory, persona, TramAI integration, REST API, MCP server, scheduler, kanban, process engine, and JVM intelligence
+- `spola-backend-cli` — CLI entry point with one-shot, REPL, API server, MCP server, and daemon modes
 
 ### Core Design Decisions
 
@@ -40,7 +40,7 @@ Golem is a multi-module Gradle project:
 4. **Persona is a file** — AGENTS.md > CLAUDE.md > default persona. Loaded at startup,
    injected as the system message. See `docs/specs/spec-003-persona.md`.
 
-5. **TramAI is the LLM layer** — Golem uses TramAI's ProviderRegistry and ModelProvider
+5. **TramAI is the LLM layer** — Spola uses TramAI's ProviderRegistry and ModelProvider
    to make LLM calls. It does NOT use TramAI's @AiService proxy or orchestration module
    (those are for different use cases).
 
@@ -58,43 +58,43 @@ Golem is a multi-module Gradle project:
 | Memory | memory_save, memory_search (SQLite, session-persistent) |
 | Project intelligence | jvm_project_overview, jvm_symbol_search, jvm_file_outline, jvm_context_pack, jvm_dependency_trace, jvm_change_impact, jvm_failure_explain *(applies to any JVM project)* |
 | Orchestration | workflow run, team run, custom agent management (agent_create/list/get/update/delete/run) |
-| Process automation | golem process run/status/cancel/approve/reject (deterministic DAG: compile, test, git_commit, human_approval, telegram_notify) |
-| Scheduling | golem daemon (scheduler, kanban cron) |
+| Process automation | spola process run/status/cancel/approve/reject (deterministic DAG: compile, test, git_commit, human_approval, telegram_notify) |
+| Scheduling | spola daemon (scheduler, kanban cron) |
 | MCP | Server mode (expose tools via MCP), Client mode (consume MCP tools) |
 | Delivery | Telegram, Email notifications |
 | TTS | Text-to-speech (Edge, ElevenLabs) |
-| Configuration | ~/.golem/config.yaml (YAML, CLI-wins merge, custom providers, env var substitution) |
-| Persona | ~/.golem/people/*.md (YAML-frontmatter profiles, SQLite-backed, auto-injected) |
+| Configuration | ~/.spola/config.yaml (YAML, CLI-wins merge, custom providers, env var substitution) |
+| Persona | ~/.spola/people/*.md (YAML-frontmatter profiles, SQLite-backed, auto-injected) |
 
 ## Building
 
 ```bash
 source ~/.sdkman/bin/sdkman-init.sh && sdk use java 21.0.7-tem
 ./gradlew build
-./gradlew :golem-cli:run --args="--help"
+./gradlew :spola-backend-cli:run --args="--help"
 ```
 
 ## Running
 
 ```bash
 # One-shot mode (any provider)
-./gradlew :golem-cli:run --args="'refactor this module to use sealed classes'"
+./gradlew :spola-backend-cli:run --args="'refactor this module to use sealed classes'"
 
 # REPL mode (build distribution first, then run directly)
-./gradlew :golem-cli:installDist
-./golem-cli/build/install/golem-cli/bin/golem-cli
+./gradlew :spola-backend-cli:installDist
+./spola-backend-cli/build/install/spola/bin/spola
 
 # With custom persona
-./gradlew :golem-cli:run --args="--persona ./AGENTS.md"
+./gradlew :spola-backend-cli:run --args="--persona ./AGENTS.md"
 
 # Daemon mode (scheduler + kanban)
-./gradlew :golem-cli:run --args="--daemon"
+./gradlew :spola-backend-cli:run --args="--daemon"
 
 # API server
-./gradlew :golem-cli:run --args="--api --api-key my-secret"
+./gradlew :spola-backend-cli:run --args="--api --api-key my-secret"
 
 # MCP server (expose tools to any MCP client)
-./golem-cli/build/install/golem-cli/bin/golem-cli --mcp
+./spola-backend-cli/build/install/spola/bin/spola --mcp
 ```
 
 ## Quality Standards

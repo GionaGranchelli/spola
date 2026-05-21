@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Test Golem MCP server via SSE transport (HTTP-based, easier to test)
+# Test Spola MCP server via SSE transport (HTTP-based, easier to test)
 
-GOLEM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$GOLEM_DIR"
+SPOLA_BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SPOLA_BACKEND_DIR"
 
 # Build classpath
-CP_FILE=$(mktemp /tmp/golem-cp.XXXXXX)
+CP_FILE=$(mktemp /tmp/spola-cp.XXXXXX)
 trap 'rm -f "$CP_FILE"' EXIT
 
 find ~/.gradle/caches/modules-2/files-2.1 -name '*.jar' >> "$CP_FILE"
-find "$GOLEM_DIR" -path '*/build/libs/golem-*.jar' -not -path '*test*' >> "$CP_FILE"
+find "$SPOLA_BACKEND_DIR" -path '*/build/libs/spola-*.jar' -not -path '*test*' >> "$CP_FILE"
 sed -i '/^$/d' "$CP_FILE"
 
 JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/21.0.7-tem}"
@@ -18,8 +18,8 @@ JAVA="$JAVA_HOME/bin/java"
 
 PORT=18091
 
-echo "Starting Golem MCP SSE server on port $PORT..."
-"$JAVA" @"$CP_FILE" dev.golem.cli.MainKt --mcp --mcp-transport sse --mcp-port $PORT &
+echo "Starting Spola MCP SSE server on port $PORT..."
+"$JAVA" @"$CP_FILE" dev.spola.cli.MainKt --mcp --mcp-transport sse --mcp-port $PORT &
 PID=$!
 
 # Wait for server to start

@@ -8,18 +8,18 @@ COPY gradlew gradlew.bat gradle/ gradle/
 # Copy build configuration files only (no source yet)
 COPY build.gradle.kts settings.gradle.kts ./
 COPY gradle/libs.versions.toml gradle/
-COPY golem-core/build.gradle.kts golem-core/
-COPY golem-cli/build.gradle.kts golem-cli/
+COPY spola-backend-core/build.gradle.kts spola-backend-core/
+COPY spola-backend-cli/build.gradle.kts spola-backend-cli/
 
 # Download and cache dependencies (cached layer - only rebuilds when build config changes)
-RUN ./gradlew --no-daemon :golem-cli:dependencies
+RUN ./gradlew --no-daemon :spola-backend-cli:dependencies
 
 # Copy source code
-COPY golem-core/src golem-core/src
-COPY golem-cli/src golem-cli/src
+COPY spola-backend-core/src spola-backend-core/src
+COPY spola-backend-cli/src spola-backend-cli/src
 
 # Build the application
-RUN ./gradlew --no-daemon :golem-cli:installDist
+RUN ./gradlew --no-daemon :spola-backend-cli:installDist
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 
@@ -28,13 +28,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN groupadd --system golem && useradd --system --gid golem golem && mkdir -p /golem/.golem /golem/workspace && chown -R golem:golem /golem
+RUN groupadd --system spola && useradd --system --gid spola spola && mkdir -p /spola-backend/.spola /spola-backend/workspace && chown -R spola:spola /spola-backend
 
-WORKDIR /golem
-COPY --from=build /workspace/golem-cli/build/install /golem/golem-cli/build/install
+WORKDIR /spola-backend
+COPY --from=build /workspace/spola-backend-cli/build/install /spola-backend/spola-backend-cli/build/install
 
 EXPOSE 8082 8091
 
-USER golem
+USER spola
 
-CMD ["./golem-cli/build/install/golem-cli/bin/golem-cli", "--help"]
+CMD ["./spola-backend-cli/build/install/spola/bin/spola", "--help"]

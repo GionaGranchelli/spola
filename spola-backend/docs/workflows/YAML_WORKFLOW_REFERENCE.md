@@ -1,28 +1,28 @@
 # YAML Workflow Reference
 
-> **Status:** ✅ Current — Schema and syntax reference for YAML-defined workflows in Golem.
+> **Status:** ✅ Current — Schema and syntax reference for YAML-defined workflows in Spola.
 > Features are marked as **Implemented** (production-ready), **Passthrough** (parsed but not compiled), or **Deferred** (future).
 
 ## File Location
 
-Workflow YAML files live in `~/.golem/workflows/` and are auto-discovered at startup by `YamlWorkflowLoader`:
+Workflow YAML files live in `~/.spola/workflows/` and are auto-discovered at startup by `YamlWorkflowLoader`:
 
 ```
-~/.golem/workflows/
+~/.spola/workflows/
 ├── code-review.yaml
 ├── jvm-debug.yaml
 ├── jvm-migration.yaml
 └── my-custom-workflow.yaml     # <-- add yours here
 ```
 
-No rebuild needed — add a YAML file and restart Golem.
+No rebuild needed — add a YAML file and restart Spola.
 
 > **Note:** Runtime hot-reload (`POST /api/workflows/yaml`) is deferred.
 
 ## Full Schema
 
 ```yaml
-# ~/.golem/workflows/my-workflow.yaml
+# ~/.spola/workflows/my-workflow.yaml
 # ── Required ──────────────────────────────────────────────
 name: my-workflow                     # lowercase, hyphens. Used as workflow ID.
 version: "1"                          # optional, default "1"
@@ -81,7 +81,7 @@ done:
 
 ### `ai` — AI Agent Step
 
-Runs a GolemAgent with a persona and goal. The agent has access to all configured tools.
+Runs a SpolaAgent with a persona and goal. The agent has access to all configured tools.
 
 ```yaml
 - id: security-scan
@@ -96,7 +96,7 @@ Runs a GolemAgent with a persona and goal. The agent has access to all configure
 ```
 
 **How it works internally:**
-The compiler calls `golemAgentStep(name, persona, goal)` — the same Kotlin DSL function used by built-in templates. The DAG engine receives a step identical to one written in Kotlin.
+The compiler calls `spolaAgentStep(name, persona, goal)` — the same Kotlin DSL function used by built-in templates. The DAG engine receives a step identical to one written in Kotlin.
 
 ### `parallel_agents` — Parallel Agent Execution
 
@@ -123,7 +123,7 @@ Pauses execution at a gate that currently always blocks.
   prompt: "Review the changes above. Approve?"
 ```
 
-**Current behavior:** Returns `GateDecision(allowed = false)` — the workflow transitions to WAITING_APPROVAL. The execution can be resumed via `GET /api/workflows/executions/{id}/approve` or `golem workflow approve <execution-id>`, which checkpoints the pre-gate state, patches it with an approval sentinel, and calls `workflow.resume()`.
+**Current behavior:** Returns `GateDecision(allowed = false)` — the workflow transitions to WAITING_APPROVAL. The execution can be resumed via `GET /api/workflows/executions/{id}/approve` or `spola workflow approve <execution-id>`, which checkpoints the pre-gate state, patches it with an approval sentinel, and calls `workflow.resume()`.
 
 ### `shell` — Shell Command Execution
 
@@ -367,14 +367,14 @@ GET /api/workflows/executions?limit=50
 ### Via CLI
 
 ```bash
-golem workflow run project-health "health check on composeApp" --param target=/home/user/project
+spola workflow run project-health "health check on composeApp" --param target=/home/user/project
 # Parameters are serialized as key=value pairs into parametersJson
 ```
 
 List available workflows:
 
 ```bash
-golem workflow list
+spola workflow list
 ```
 
 ### Via Agent
@@ -412,7 +412,7 @@ Status transitions are enforced by `WorkflowExecutionService`:
 - `CANCEL_REQUESTED` → `CANCELLED`
 - Terminal: `COMPLETED`, `FAILED`, `CANCELLED`
 
-> **Note:** The `WAITING_APPROVAL` → `RUNNING` resume path is wired via checkpoint-based resume. Use `POST /api/workflows/executions/{id}/approve` or `golem workflow approve <execution-id>` to resume.
+> **Note:** The `WAITING_APPROVAL` → `RUNNING` resume path is wired via checkpoint-based resume. Use `POST /api/workflows/executions/{id}/approve` or `spola workflow approve <execution-id>` to resume.
 
 ## Error Handling
 
@@ -436,8 +436,8 @@ Status transitions are enforced by `WorkflowExecutionService`:
 Existing Kotlin templates can be exported:
 
 ```bash
-golem workflow export code-review              # stdout
-golem workflow export jvm-debug -o ~/.golem/workflows/jvm-debug.yaml  # to file
+spola workflow export code-review              # stdout
+spola workflow export jvm-debug -o ~/.spola/workflows/jvm-debug.yaml  # to file
 ```
 
 Result: YAML with correct `{{step.x.output}}` and `{{state.goal}}` syntax — editable, no rebuild needed.
@@ -448,7 +448,7 @@ Export generates best-effort YAML from hardcoded template metadata. It produces 
 
 ## File Inventory (Implementation)
 
-| File (under `golem-core/.../workflow/yaml/`) | Lines | Purpose |
+| File (under `spola-backend-core/.../workflow/yaml/`) | Lines | Purpose |
 |------|-------|---------|
 | `WorkflowDefinition.kt` | 91 | YAML schema data classes |
 | `YamlWorkflowParser.kt` | ~130 | YAML → data classes (Jackson) |
@@ -478,4 +478,4 @@ Also relevant:
 |- Visual editor (React Flow)
 |- Workflow sharing / community registry
 |- Per-step retry with exponential backoff (`retry_count` uses fixed-delay; V2 may add exponential)
-|- `--all` flag on `golem workflow export`
+|- `--all` flag on `spola workflow export`

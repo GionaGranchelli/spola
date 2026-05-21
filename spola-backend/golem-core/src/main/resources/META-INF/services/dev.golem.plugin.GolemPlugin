@@ -1,3 +1,0 @@
-# ServiceLoader contract for Golem plugins.
-# External plugin JARs should include this file listing their
-# dev.golem.plugin.GolemPlugin implementation class names.

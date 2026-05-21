@@ -1,13 +1,13 @@
 # Workflows
 
-Welcome to the Golem workflow system. Pick the document that matches what you need.
+Welcome to the Spola workflow system. Pick the document that matches what you need.
 
 ## Doc Status Overview
 
 | Doc | Status | What it covers |
 |-----|--------|----------------|
 | `YAML_WORKFLOW_REFERENCE.md` | ✅ **Current** — Schema matches code | Complete schema, step types, template variables, done conditions, API, CLI |
-| `WORKFLOWS.md` | ✅ **Current** — Engine docs match code | Existing Kotlin DSL engine: GolemState, observer, codec, step types, templates |
+| `WORKFLOWS.md` | ✅ **Current** — Engine docs match code | Existing Kotlin DSL engine: SpolaState, observer, codec, step types, templates |
 | `WORKFLOW_CONCEPTS.md` | ⚠️ **Vision** — Aspirational sections labeled | What workflows are, how users and agents use them, skill→workflow bridge, DoW/DoD |
 | `YAML_WORKFLOW_SYSTEM.md` | ✅ **Current** — Architecture matches code, all features described are shipped | Architecture overview, compilation pipeline, done mechanism, error handling |
 | `WORKFLOW_SYSTEM_DESIGN_IT.md` | 🔮 **Proposal** — Production-ready design (Italian) | Target architecture, persistence, execution pipeline, migration plan |
@@ -26,7 +26,7 @@ Welcome to the Golem workflow system. Pick the document that matches what you ne
 
 ## If you want the existing Kotlin DSL engine
 
-**[WORKFLOWS.md](./WORKFLOWS.md)** — The current TramAI-based Kotlin DAG engine: step types, GolemState, observer, checkpoint/resume, process engine comparison.
+**[WORKFLOWS.md](./WORKFLOWS.md)** — The current TramAI-based Kotlin DAG engine: step types, SpolaState, observer, checkpoint/resume, process engine comparison.
 
 ## If you want the Italian design document
 
@@ -40,7 +40,7 @@ Welcome to the Golem workflow system. Pick the document that matches what you ne
 │  User "I need a code review for each PR"                     │
 │       │                                                      │
 │       ▼                                                      │
-│  User writes ~/.golem/workflows/code-review.yaml             │
+│  User writes ~/.spola/workflows/code-review.yaml             │
 │       │                                                      │
 │       ▼                                                      │
 │  YamlWorkflowParser → YamlWorkflowCompiler → DAG Engine      │
@@ -56,7 +56,7 @@ Welcome to the Golem workflow system. Pick the document that matches what you ne
 - YAML-based workflow definitions (ai, parallel_agents, human_approval steps)
 - Per-step done conditions (8 condition types)
 - Template variables (`{{params.X}}`, `{{state.goal}}`, `{{step.X.output}}`)
-- Export built-in templates to YAML (`golem workflow export <name>`)
+- Export built-in templates to YAML (`spola workflow export <name>`)
 - SQLite execution persistence with status tracking (QUEUED→RUNNING→COMPLETED/FAILED)
 - Background dispatcher with semaphore concurrency
 - Scheduler and Kanban workflow triggers

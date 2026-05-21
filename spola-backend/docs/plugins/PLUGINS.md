@@ -1,20 +1,20 @@
 # Plugin System
 
-Golem's plugin system lets you extend the agent with custom tools and workflow steps without modifying core code. Plugins are JAR files placed in `~/.golem/plugins/` that implement the `GolemPlugin` interface.
+Spola's plugin system lets you extend the agent with custom tools and workflow steps without modifying core code. Plugins are JAR files placed in `~/.spola/plugins/` that implement the `SpolaPlugin` interface.
 
 ## How It Works
 
-1. **Discovery** — `PluginLoader` scans `~/.golem/plugins/` for `.jar` files
-2. **ServiceLoader** — Each JAR is loaded with its own `URLClassLoader`; implementations of `GolemPlugin` are discovered via `java.util.ServiceLoader`
+1. **Discovery** — `PluginLoader` scans `~/.spola/plugins/` for `.jar` files
+2. **ServiceLoader** — Each JAR is loaded with its own `URLClassLoader`; implementations of `SpolaPlugin` are discovered via `java.util.ServiceLoader`
 3. **Registration** — Each plugin's `register()` method is called with the `ToolRegistry` so it can register its tools
-4. **Workflow steps** — Each loaded plugin is also registered as a `GolemPluginStepExecutorFactory` so TramAI workflows can use it as an external step executor
+4. **Workflow steps** — Each loaded plugin is also registered as a `SpolaPluginStepExecutorFactory` so TramAI workflows can use it as an external step executor
 
 Plugin loading respects the `plugins-enabled` config flag. If `plugins-enabled: false`, no JARs are loaded.
 
-## GolemPlugin Interface
+## SpolaPlugin Interface
 
 ```kotlin
-interface GolemPlugin {
+interface SpolaPlugin {
     val pluginName: String
     val pluginVersion: String
     suspend fun register(registry: ToolRegistry)
@@ -34,7 +34,7 @@ interface GolemPlugin {
 ```kotlin
 PluginLoader.loadPlugins(
     registry = toolRegistry,
-    config = golemConfig,
+    config = spolaConfig,
     stepExecutorRegistry = externalStepExecutorRegistry,  // optional
 )
 ```
@@ -44,14 +44,14 @@ Key behaviors:
 - JARs are loaded in sorted (alphabetical) order
 - Each JAR gets its own `URLClassLoader` to prevent class conflicts
 - If a JAR fails to load, it's skipped with a warning (other JARs still load)
-- If `ServiceLoader` finds multiple `GolemPlugin` implementations in one JAR, all are loaded
+- If `ServiceLoader` finds multiple `SpolaPlugin` implementations in one JAR, all are loaded
 
-## GolemPluginStepExecutor
+## SpolaPluginStepExecutor
 
-Plugins are automatically registered as workflow step executors via `GolemPluginStepExecutorFactory`. This adapts a plugin into TramAI's `ExternalStepExecutor` system, allowing workflows to invoke plugins as DAG steps.
+Plugins are automatically registered as workflow step executors via `SpolaPluginStepExecutorFactory`. This adapts a plugin into TramAI's `ExternalStepExecutor` system, allowing workflows to invoke plugins as DAG steps.
 
 ```kotlin
-class GolemPluginStepExecutor(plugin: GolemPlugin) : ExternalStepExecutor {
+class SpolaPluginStepExecutor(plugin: SpolaPlugin) : ExternalStepExecutor {
     override suspend fun execute(spec: Map<String, Any?>): Map<String, Any?> {
         return mapOf("plugin" to plugin.pluginName, "status" to "executed")
     }
@@ -72,23 +72,23 @@ plugins {
 }
 
 dependencies {
-    implementation("dev.spola:golem-core:0.1.0")
+    implementation("dev.spola:spola-backend-core:0.1.0")
     // Your own dependencies here
 }
 ```
 
-### Step 2: Implement GolemPlugin
+### Step 2: Implement SpolaPlugin
 
 ```kotlin
-package com.example.golemplugin
+package com.example.spolaplugin
 
-import dev.spola.GolemPlugin
+import dev.spola.SpolaPlugin
 import dev.spola.Tool
 import dev.spola.ToolParameter
 import dev.spola.ToolParameterType
 import dev.spola.ToolRegistry
 
-class MyPlugin : GolemPlugin {
+class MyPlugin : SpolaPlugin {
     override val pluginName = "my-plugin"
     override val pluginVersion = "1.0.0"
 
@@ -116,10 +116,10 @@ class MyPlugin : GolemPlugin {
 
 ### Step 3: Create ServiceLoader configuration
 
-Create `META-INF/services/dev.spola.plugin.GolemPlugin` with the fully-qualified class name:
+Create `META-INF/services/dev.spola.plugin.SpolaPlugin` with the fully-qualified class name:
 
 ```
-com.example.golemplugin.MyPlugin
+com.example.spolaplugin.MyPlugin
 ```
 
 ### Step 4: Build the JAR
@@ -131,17 +131,17 @@ com.example.golemplugin.MyPlugin
 ### Step 5: Install the plugin
 
 ```bash
-cp build/libs/my-plugin-1.0.0-all.jar ~/.golem/plugins/
+cp build/libs/my-plugin-1.0.0-all.jar ~/.spola/plugins/
 ```
 
-The plugin is loaded automatically on next Golem start.
+The plugin is loaded automatically on next Spola start.
 
 ## Plugin Capabilities
 
 Plugins can:
 
 - **Register tools** — Any number of tools with any parameters
-- **Provide workflow steps** — Via `GolemPluginStepExecutorFactory`, the plugin's name becomes a step type in process engine workflows
+- **Provide workflow steps** — Via `SpolaPluginStepExecutorFactory`, the plugin's name becomes a step type in process engine workflows
 - **Bundle dependencies** — Use shadow/fat JAR to include any third-party libraries
 - **Access the full ToolRegistry API** — Register, unregister, modify tool definitions
 
@@ -158,7 +158,7 @@ Plugins can:
 // src/main/kotlin/com/example/weather/WeatherPlugin.kt
 package com.example.weather
 
-import dev.spola.GolemPlugin
+import dev.spola.SpolaPlugin
 import dev.spola.Tool
 import dev.spola.ToolParameter
 import dev.spola.ToolParameterType
@@ -170,7 +170,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-class WeatherPlugin : GolemPlugin {
+class WeatherPlugin : SpolaPlugin {
     override val pluginName = "weather"
     override val pluginVersion = "1.0.0"
 
@@ -206,6 +206,6 @@ class WeatherPlugin : GolemPlugin {
 ```
 
 ```
-# META-INF/services/dev.spola.plugin.GolemPlugin
+# META-INF/services/dev.spola.plugin.SpolaPlugin
 com.example.weather.WeatherPlugin
 ```

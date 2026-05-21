@@ -1,6 +1,6 @@
-# Golem Tools Reference
+# Spola Tools Reference
 
-> All 61 tools the Golem agent can call, with exact parameter names, types, descriptions, usage notes, and examples.
+> All 61 tools the Spola agent can call, with exact parameter names, types, descriptions, usage notes, and examples.
 
 ---
 
@@ -32,7 +32,7 @@ All tools are registered via `ToolRegistryFactory`, which builds four registry v
 
 ### How the ReAct Loop Dispatches Tools
 
-In `GolemAgent`:
+In `SpolaAgent`:
 
 1. The agent builds `ToolDefinition` objects from `toolRegistry.schemas()` and sends them with every LLM request.
 2. The LLM responds with `toolCalls` — each has a `name` and `argumentsJson`.
@@ -42,7 +42,7 @@ In `GolemAgent`:
 
 ### Security Architecture
 
-- **Filesystem**: `GOLEM_ALLOWED_DIRS` env var restricts read/write/search to specific directories. `unsafeMode` (from `config.unsafe`) bypasses all checks.
+- **Filesystem**: `SPOLA_ALLOWED_DIRS` env var restricts read/write/search to specific directories. `unsafeMode` (from `config.unsafe`) bypasses all checks.
 - **Shell**: Blocked commands (`sudo`, `su`, `chown`, `dd`, `reboot`, etc.) and blocked interpreters (`bash`, `sh`, `python`, `node`, etc.) are enforced server-side.
 - **Agent permissions**: Per-agent `filesystemAccess`, `shellAccess`, `networkAccess`, and `toolPolicy` control tool visibility.
 
@@ -63,7 +63,7 @@ Reads file content with line numbers, offset, and pagination. Primary tool for e
 **Behavior**
 
 - Resolves relative paths against the working directory (`config.workingDirectory` or `user.dir`)
-- Rejects paths outside `GOLEM_ALLOWED_DIRS` unless `unsafeMode` is true
+- Rejects paths outside `SPOLA_ALLOWED_DIRS` unless `unsafeMode` is true
 - Returns `"File not found"` if path doesn't exist, `"Not a regular file"` for directories
 - Output format: `LINE_NUM|content` per line with a summary header `(N of M lines)`
 
@@ -103,7 +103,7 @@ Creates or overwrites a file with the given content. Parent directories are crea
 
 **Security**
 
-- Subject to `GOLEM_ALLOWED_DIRS` checks
+- Subject to `SPOLA_ALLOWED_DIRS` checks
 - Does NOT check file size limits — be mindful of what you write
 
 **Example**
@@ -215,7 +215,7 @@ The following interpreters are **always blocked** (use direct commands instead):
 
 **RTK (Rust Token Killer) Support**
 
-If `rtk` binary is available on the PATH and the command matches the supported list, Golem transparently prefixes `rtk` to compress output and save tokens. Supported: `git`, `cargo`, `npm`, `npx`, `yarn`, `pnpm`, `ls`, `cat`, `grep`, `rg`, `find`, `diff`, `gh`, `jest`, `vitest`, `pytest`, `go`, `ruff`, `docker`, `tsc`, `eslint`, `prettier`.
+If `rtk` binary is available on the PATH and the command matches the supported list, Spola transparently prefixes `rtk` to compress output and save tokens. Supported: `git`, `cargo`, `npm`, `npx`, `yarn`, `pnpm`, `ls`, `cat`, `grep`, `rg`, `find`, `diff`, `gh`, `jest`, `vitest`, `pytest`, `go`, `ruff`, `docker`, `tsc`, `eslint`, `prettier`.
 
 The `rtk` command itself is blocked from direct invocation to prevent blocklist bypass.
 
@@ -671,13 +671,13 @@ Run a custom agent by ID with a specific goal.
 - `agent_id` (String, required) — Agent ID to run
 - `goal` (String, required) — The goal or instruction
 
-> **Note**: This tool requires the Golem API server running with `--api --api-key`. Use the `POST /api/agents/run` endpoint instead.
+> **Note**: This tool requires the Spola API server running with `--api --api-key`. Use the `POST /api/agents/run` endpoint instead.
 
 ---
 
 ## 10. Skill Tools
 
-Skills are reusable agent capabilities defined in YAML files in `~/.golem/skills/`.
+Skills are reusable agent capabilities defined in YAML files in `~/.spola/skills/`.
 
 ### `skill_list`
 
@@ -840,7 +840,7 @@ Search Kotlin and Java symbols by name, optionally filtered by kind and module.
 
 - `name` (String, required) — Symbol name or substring
 - `kind` (String, optional) — One of: `CLASS`, `INTERFACE`, `OBJECT`, `FUN`, `VAL`, `VAR`, `ENUM`, `ANNOTATION`
-- `module` (String, optional) — Gradle module name (e.g., `:golem-core`)
+- `module` (String, optional) — Gradle module name (e.g., `:spola-backend-core`)
 
 **Output format**
 
@@ -1077,7 +1077,7 @@ timestamps=12
 
 ## 16. Delivery Tools
 
-Send notifications via Telegram and Email. Require configuration via `GolemConfig` or environment variables.
+Send notifications via Telegram and Email. Require configuration via `SpolaConfig` or environment variables.
 
 ### `telegram_send`
 
@@ -1090,7 +1090,7 @@ Send a message via Telegram Bot API.
 
 **Configuration**
 
-- `TELEGRAM_BOT_TOKEN` env var or `GolemConfig.telegramBotToken`
+- `TELEGRAM_BOT_TOKEN` env var or `SpolaConfig.telegramBotToken`
 - Messages sent with `parse_mode=Markdown`
 
 **Error modes**
@@ -1306,7 +1306,7 @@ Generate an image from a prompt and save it to disk.
 - `imageGenApiKey` — Required for OpenAI provider
 - `imageGenDefaultProvider` — Provider: `"openai"` (default)
 - `imageGenDefaultSize` — Default size (default: `"1024x1024"`)
-- `imageGenOutputDir` — Output directory (default: `~/.golem/images/`)
+- `imageGenOutputDir` — Output directory (default: `~/.spola/images/`)
 
 **Behavior**
 
@@ -1326,7 +1326,7 @@ Generate an image from a prompt and save it to disk.
 
 ```
 Input: generate_image(prompt="A serene mountain landscape at sunset")
-Output: /home/user/.golem/images/image_20260514_123000_openai.png
+Output: /home/user/.spola/images/image_20260514_123000_openai.png
 ```
 
 ---
@@ -1374,7 +1374,7 @@ Execute code in a temp directory with timeout and memory limits.
 
 ```
 Exit code: 0
-Work dir: /tmp/golem-codeexec-xxx
+Work dir: /tmp/spola-codeexec-xxx
 Stdout:
 Hello, world!
 Stderr:
@@ -1393,7 +1393,7 @@ Stderr:
 Input: run_code(language="python3", code="print('Hello, world!')")
 Output:
 Exit code: 0
-Work dir: /tmp/golem-codeexec-abc123
+Work dir: /tmp/spola-codeexec-abc123
 Stdout:
 Hello, world!
 Stderr:
@@ -1497,7 +1497,7 @@ Convert text to speech and save as an audio file.
 - `text` (String, required) — Text to synthesize
 - `voice` (String, optional) — Voice identifier (provider-specific)
 - `provider` (String, optional) — Override: `elevenlabs` or `edge`
-- `output_path` (String, optional) — Custom output path (default: `~/.golem/audio/tts_<timestamp>_<provider>.mp3` or `.wav`)
+- `output_path` (String, optional) — Custom output path (default: `~/.spola/audio/tts_<timestamp>_<provider>.mp3` or `.wav`)
 
 **Behavior**
 

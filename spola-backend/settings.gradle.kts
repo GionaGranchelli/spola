@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "golem"
-include("golem-core")
-include("golem-cli")
+rootProject.name = "spola-backend"
+include("spola-backend-core")
+include("spola-backend-cli")

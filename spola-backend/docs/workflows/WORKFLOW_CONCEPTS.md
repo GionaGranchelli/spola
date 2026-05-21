@@ -23,7 +23,7 @@ A **workflow** is a definition of work + definition of done that turns a repetit
 │     I'll create a workflow definition...             │
 │     ...and run it on the target project."            │
 │                                                      │
-│  Result: ~/.golem/workflows/security-scan.yaml       │
+│  Result: ~/.spola/workflows/security-scan.yaml       │
 │  Execution: POST /api/workflows/run                 │
 └─────────────────────────────────────────────────────┘
 ```
@@ -39,16 +39,16 @@ The user **describes what they want** in natural language:
 The user does NOT need to:
 - Know what a DAG is
 - Write Kotlin code
-- Rebuild Golem
+- Rebuild Spola
 - Understand checkpoint/resume mechanics
 
 ### 2. The Agent
 
 The agent **runs workflow definitions, created in one of two ways**:
 
-**Option A — Write YAML manually** and place it in `~/.golem/workflows/`:
+**Option A — Write YAML manually** and place it in `~/.spola/workflows/`:
 ```yaml
-# ~/.golem/workflows/my-review.yaml
+# ~/.spola/workflows/my-review.yaml
 name: my-review
 steps:
   - id: security-scan
@@ -58,7 +58,7 @@ steps:
 
 **Option B — Export a built-in template** and customize it:
 ```bash
-golem workflow export code-review -o ~/.golem/workflows/my-review.yaml
+spola workflow export code-review -o ~/.spola/workflows/my-review.yaml
 ```
 
 Once registered, the agent runs the workflow:
@@ -82,9 +82,9 @@ The engine **executes the YAML deterministically**:
 my-review.yaml
     │
     ▼
-YamlWorkflowParser → YamlWorkflowCompiler → Workflow<GolemState>
+YamlWorkflowParser → YamlWorkflowCompiler → Workflow<SpolaState>
     │                      │                        │
-    parse           resolve {{param}}         call golemAgentStep()
+    parse           resolve {{param}}         call spolaAgentStep()
     validate        build DAG                 call gateStep()
     schema check    attach done conditions    same engine as Kotlin
 ```
@@ -121,7 +121,7 @@ A skill can **reference** a workflow (`workflow: code-review`), and a workflow c
 ```
 CREATE ──────────────────────────────────────────────────────
 │ User: "I need a code-review workflow for my team"
-│ Agent: Generates ~/.golem/workflows/code-review.yaml
+│ Agent: Generates ~/.spola/workflows/code-review.yaml
 │        Registers it in the WorkflowTemplateRegistry
 │        Becomes available via GET /api/workflows
 │
@@ -137,13 +137,13 @@ USE ─────────────────────────�
 │
 ITERATE ─────────────────────────────────────────────────────
 │ User: "Add a dependency check step"
-│ Agent: Reads ~/.golem/workflows/code-review.yaml
+│ Agent: Reads ~/.spola/workflows/code-review.yaml
 │        Adds new step
 │        Workflow updated — no rebuild needed
 │
 SHARE ───────────────────────────────────────────────────────
-│ User shares ~/.golem/workflows/code-review.yaml
-│ Another Golem instance copies it → it just works
+│ User shares ~/.spola/workflows/code-review.yaml
+│ Another Spola instance copies it → it just works
 │ Same workflow, different projects
 ```
 

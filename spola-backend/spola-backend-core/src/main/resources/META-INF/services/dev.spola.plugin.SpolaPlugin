@@ -1,0 +1,3 @@
+# ServiceLoader contract for Spola plugins.
+# External plugin JARs should include this file listing their
+# dev.spola.plugin.SpolaPlugin implementation class names.

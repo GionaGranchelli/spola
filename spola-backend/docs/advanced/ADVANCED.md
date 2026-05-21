@@ -23,7 +23,7 @@ When `auto-checkpoint: true` (default), the agent saves a checkpoint after every
 Resume a session from CLI:
 
 ```bash
-golem --resume <session-id>
+spola --resume <session-id>
 ```
 
 This loads the most recent checkpoint's conversation and replays it into the agent context. The agent continues where it left off.
@@ -75,21 +75,21 @@ manager.deleteForSession(sessionId)
 
 ## 2. Metrics
 
-Golem exposes Prometheus-compatible metrics via the `simpleclient` library. Metrics are enabled by default (`metrics-enabled: true`).
+Spola exposes Prometheus-compatible metrics via the `simpleclient` library. Metrics are enabled by default (`metrics-enabled: true`).
 
 ### What's Measured
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
-| `golem_agent_runs_total` | Counter | `status` | Total agent runs (success/fail) |
-| `golem_agent_turns_total` | Counter | — | Total ReAct loop turns |
-| `golem_tool_calls_total` | Counter | `tool`, `status` | Total tool calls |
-| `golem_llm_calls_total` | Counter | `provider`, `model` | Total LLM calls |
-| `golem_llm_tokens_total` | Counter | `type` (input/output) | Total tokens processed |
-| `golem_scheduler_jobs_executed_total` | Counter | — | Scheduler job executions |
-| `golem_agent_run_duration_seconds` | Histogram | — | Run duration buckets: 0.1, 1, 5, 15, 60 sec |
-| `golem_tool_call_duration_seconds` | Histogram | `tool` | Tool execution duration |
-| `golem_active_sessions` | Gauge | — | Concurrent active sessions |
+| `spola_agent_runs_total` | Counter | `status` | Total agent runs (success/fail) |
+| `spola_agent_turns_total` | Counter | — | Total ReAct loop turns |
+| `spola_tool_calls_total` | Counter | `tool`, `status` | Total tool calls |
+| `spola_llm_calls_total` | Counter | `provider`, `model` | Total LLM calls |
+| `spola_llm_tokens_total` | Counter | `type` (input/output) | Total tokens processed |
+| `spola_scheduler_jobs_executed_total` | Counter | — | Scheduler job executions |
+| `spola_agent_run_duration_seconds` | Histogram | — | Run duration buckets: 0.1, 1, 5, 15, 60 sec |
+| `spola_tool_call_duration_seconds` | Histogram | `tool` | Tool execution duration |
+| `spola_active_sessions` | Gauge | — | Concurrent active sessions |
 
 ### Metrics Endpoint
 
@@ -100,13 +100,13 @@ GET /api/metrics
 Returns Prometheus text format (`text/plain; version=0.0.4`):
 
 ```
-# HELP golem_agent_runs_total Total number of agent runs.
-# TYPE golem_agent_runs_total counter
-golem_agent_runs_total{status="success"} 42
-golem_agent_runs_total{status="fail"} 3
-# HELP golem_active_sessions Currently active agent sessions.
-# TYPE golem_active_sessions gauge
-golem_active_sessions 2
+# HELP spola_agent_runs_total Total number of agent runs.
+# TYPE spola_agent_runs_total counter
+spola_agent_runs_total{status="success"} 42
+spola_agent_runs_total{status="fail"} 3
+# HELP spola_active_sessions Currently active agent sessions.
+# TYPE spola_active_sessions gauge
+spola_active_sessions 2
 ```
 
 ### History Endpoint
@@ -140,42 +140,42 @@ When disabled, all recording methods are no-ops and no metrics are registered wi
 
 ## 3. Tracing
 
-Golem supports distributed tracing via OpenTelemetry (OTLP/gRPC). When enabled, spans are created for agent runs, turns, LLM calls, and tool executions.
+Spola supports distributed tracing via OpenTelemetry (OTLP/gRPC). When enabled, spans are created for agent runs, turns, LLM calls, and tool executions.
 
 ### Architecture
 
-- **`GolemTracer`** — Creates and manages OpenTelemetry span lifecycle. When `otelEnabled` is true and `otelEndpoint` is set, it creates an OTLP gRPC exporter with a `BatchSpanProcessor`. Otherwise uses `OpenTelemetry.noop()` — zero overhead.
-- **`GolemTracerObserver`** — An `AgentRunObserver` decorator that bridges agent events to the tracer's span API.
+- **`SpolaTracer`** — Creates and manages OpenTelemetry span lifecycle. When `otelEnabled` is true and `otelEndpoint` is set, it creates an OTLP gRPC exporter with a `BatchSpanProcessor`. Otherwise uses `OpenTelemetry.noop()` — zero overhead.
+- **`SpolaTracerObserver`** — An `AgentRunObserver` decorator that bridges agent events to the tracer's span API.
 
 ### Span Hierarchy
 
 ```
-golem.run (root span)
-  ├── golem.turn (child of root, attribute: golem.turn.number)
-  │   ├── golem.llm.call (child of turn, attributes: gen_ai.system, gen_ai.request.model)
-  │   └── golem.tool.execution (child of turn, attributes: golem.tool.name, golem.tool.call_id)
+spola.run (root span)
+  ├── spola.turn (child of root, attribute: spola.turn.number)
+  │   ├── spola.llm.call (child of turn, attributes: gen_ai.system, gen_ai.request.model)
+  │   └── spola.tool.execution (child of turn, attributes: spola.tool.name, spola.tool.call_id)
 ```
 
 ### Span Attributes
 
 | Span | Attributes |
 |------|------------|
-| `golem.run` | `golem.service.name` |
-| `golem.turn` | `golem.turn.number` |
-| `golem.llm.call` | `gen_ai.system`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` |
-| `golem.tool.execution` | `golem.tool.name`, `golem.tool.call_id`, `golem.tool.success`, `golem.tool.duration_ms` |
+| `spola.run` | `spola.service.name` |
+| `spola.turn` | `spola.turn.number` |
+| `spola.llm.call` | `gen_ai.system`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` |
+| `spola.tool.execution` | `spola.tool.name`, `spola.tool.call_id`, `spola.tool.success`, `spola.tool.duration_ms` |
 
 ### Config
 
 ```yaml
 otel-enabled: true
 otel-endpoint: http://localhost:4317
-otel-service-name: golem-prod
+otel-service-name: spola-prod
 ```
 
 - **`otel-enabled`** — Enable/disable tracing (default: `false`)
 - **`otel-endpoint`** — OTLP gRPC endpoint (required when enabled)
-- **`otel-service-name`** — Service name for trace identification (default: `"golem"`)
+- **`otel-service-name`** — Service name for trace identification (default: `"spola"`)
 
 ### Exporter Configuration
 
@@ -196,7 +196,7 @@ The OTLP exporter uses:
 
 ## 4. TTS (Text-to-Speech)
 
-Golem can synthesize speech from text using either Edge TTS (free, local) or ElevenLabs (cloud, high quality).
+Spola can synthesize speech from text using either Edge TTS (free, local) or ElevenLabs (cloud, high quality).
 
 ### TtsProvider Interface
 
@@ -236,7 +236,7 @@ tts_say(
 )
 ```
 
-- Audio files are saved to `~/.golem/audio/tts_{timestamp}_{provider}.{ext}`
+- Audio files are saved to `~/.spola/audio/tts_{timestamp}_{provider}.{ext}`
 - ElevenLabs produces `.mp3`, Edge produces `.wav`
 - The provider is auto-selected: ElevenLabs if `elevenlabsApiKey` is configured, otherwise Edge
 
@@ -353,7 +353,7 @@ Disable at runtime with `--no-compression` (CLI flag, when added).
 
 ## 6. Delivery (Telegram & Email)
 
-Golem can send messages via Telegram Bot API and SMTP email. These are available as agent tools and as process engine step types.
+Spola can send messages via Telegram Bot API and SMTP email. These are available as agent tools and as process engine step types.
 
 ### Telegram
 
@@ -389,7 +389,7 @@ email:
   smtp-port: 587
   username: ${EMAIL_USERNAME}
   password: ${EMAIL_PASSWORD}
-  from: golem@example.com
+  from: spola@example.com
 ```
 
 Each field also falls back to an environment variable: `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`, `EMAIL_FROM`.
@@ -424,7 +424,7 @@ The `telegram_notify` executor is a built-in process engine step type that uses 
 
 ## 7. Skills
 
-Skills are reusable agent capabilities defined as YAML files in `~/.golem/skills/`. A skill defines a focused agent persona, a set of allowed tools, and filesystem restrictions — enabling purpose-built agents for common tasks.
+Skills are reusable agent capabilities defined as YAML files in `~/.spola/skills/`. A skill defines a focused agent persona, a set of allowed tools, and filesystem restrictions — enabling purpose-built agents for common tasks.
 
 ### SkillDefinition
 
@@ -443,7 +443,7 @@ data class SkillDefinition(
 ### Skill YAML Format
 
 ```yaml
-# ~/.golem/skills/code-review.yaml
+# ~/.spola/skills/code-review.yaml
 name: code-review
 description: Review code changes for bugs, style issues, and security concerns
 version: 1
@@ -465,7 +465,7 @@ tags:
 
 ### SkillLoader
 
-- Scans `~/.golem/skills/` for `.yaml` and `.yml` files
+- Scans `~/.spola/skills/` for `.yaml` and `.yml` files
 - Filename stem (without extension) becomes the skill name if `name` is blank
 - Invalid YAML files are skipped with a warning
 - Also supports `writeToFile()` and `deleteFile()` for programmatic management
@@ -479,7 +479,7 @@ Two tools available to the agent:
 
 When `skill_run` executes, it:
 1. Loads the skill definition from YAML
-2. Creates a new `GolemInstance` via `GolemFactory`
+2. Creates a new `SpolaInstance` via `SpolaFactory`
 3. Overrides the agent persona with the skill's prompt
 4. Runs the goal as a one-shot agent request
 5. Returns the result
@@ -487,9 +487,9 @@ When `skill_run` executes, it:
 ### CLI Commands
 
 ```bash
-golem skill list                    # List all installed skills
-golem skill run <name> "<goal>"     # Run a skill with a goal
-golem skill install <path>          # Install a skill YAML file
+spola skill list                    # List all installed skills
+spola skill run <name> "<goal>"     # Run a skill with a goal
+spola skill install <path>          # Install a skill YAML file
 ```
 
 ### Skill Properties

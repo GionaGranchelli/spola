@@ -1,39 +1,52 @@
 package dev.spola.app.network
 
+import dev.spola.app.models.ChatSession
+import dev.spola.app.models.Message
+import dev.spola.app.models.ModelInfo
+import dev.spola.app.models.PairingInfoResponse
+import dev.spola.app.models.StreamEvent
+import dev.spola.app.models.StreamEventType
+import dev.spola.app.models.SystemEvent
 import dev.spola.models.AgentRunRequest
 import dev.spola.models.AgentRunResponse
 import dev.spola.models.ScheduledJobResponse
 import dev.spola.models.ToolInfo
-import dev.spola.app.models.*
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.plugins.sse.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.sse.SSE
+import io.ktor.client.plugins.sse.sse
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.request.url
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
+import io.ktor.client.plugins.timeout
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
 
 class SpolaClient(
     private val httpClient: HttpClient,
     private val baseUrl: String = "http://localhost:8082",
-    private val authToken: String? = null
+    private val authToken: String? = null,
 ) {
-    // Normalize: strip trailing slash so all paths can use leading-slash consistently
     private val normalizedBaseUrl = baseUrl.trimEnd('/')
     private val json = Json {
         prettyPrint = true
@@ -45,9 +58,9 @@ class SpolaClient(
         expectSuccess = true
         install(SSE)
         install(HttpTimeout) {
-            requestTimeoutMillis = 600000 // 10 minutes
-            connectTimeoutMillis = 20000  // 20 seconds
-            socketTimeoutMillis = 600000  // 10 minutes
+            requestTimeoutMillis = 600000
+            connectTimeoutMillis = 20000
+            socketTimeoutMillis = 600000
         }
         install(ContentNegotiation) {
             json(json)
@@ -65,7 +78,7 @@ class SpolaClient(
                         val detail = responseText.takeIf { it.isNotBlank() } ?: response.status.description
                         throw IllegalStateException(
                             "HTTP ${response.status.value} at ${request.url.encodedPath}: $detail",
-                            cause
+                            cause,
                         )
                     }
                 }
@@ -74,17 +87,20 @@ class SpolaClient(
         defaultRequest {
             url(normalizedBaseUrl)
             contentType(ContentType.Application.Json)
-            authToken?.let {
-                header(HttpHeaders.Authorization, "Bearer $it")
-            }
+            authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
         }
     }
 
-    fun streamEvents(sessionId: String): Flow<StreamEvent> =
-        streamWithRetry("api/session/$sessionId/stream") { _, data -> json.decodeFromString<StreamEvent>(data) }
+    val sessionClient = SessionClient(client, json)
+    val kanbanClient = KanbanClient(client)
+    val workflowClient = WorkflowClient(client, json)
+    val memoryClient = MemoryClient(client)
+    val schedulerClient = SchedulerClient(client, json, ::runAgent)
+
+    fun streamEvents(sessionId: String): Flow<StreamEvent> = sessionClient.streamEvents(sessionId)
 
     fun streamSystemEvents(): Flow<SystemEvent> =
-        streamWithRetry("api/system/stream") { _, data -> json.decodeFromString<SystemEvent>(data) }
+        sessionClient.streamWithRetry("api/system/stream") { _, data -> json.decodeFromString<SystemEvent>(data) }
 
     fun streamAgentRun(goal: String, persona: String? = null): Flow<StreamEvent> = flow {
         client.sse(
@@ -97,7 +113,7 @@ class SpolaClient(
                     requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
                     socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
                 }
-            }
+            },
         ) {
             incoming.collect { event ->
                 val data = event.data ?: return@collect
@@ -107,105 +123,19 @@ class SpolaClient(
         }
     }
 
-    private fun <T> streamWithRetry(
-        urlString: String,
-        mapper: (String?, String) -> T
-    ): Flow<T> = flow {
-        var shouldRetry = true
-        while (shouldRetry) {
-            try {
-                client.sse(
-                    urlString = urlString,
-                    request = {
-                        timeout {
-                            requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                            socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                        }
-                    }
-                ) {
-                    incoming.collect { event ->
-                        val data = event.data
-                        if (data != null) {
-                            emit(mapper(event.event, data))
-                        }
-                    }
-                }
-                shouldRetry = false
-            } catch (e: Throwable) {
-                if (isRecoverableSseDisconnect(e)) {
-                    kotlinx.coroutines.delay(1000)
-                } else {
-                    throw e
-                }
-            }
-        }
-    }
-
-    suspend fun getSessions(): List<ChatSession> = client.get("api/sessions").body()
-
-    suspend fun getSession(sessionId: String): ChatSession = client.get("api/session/$sessionId").body()
-
-    suspend fun getMessages(sessionId: String): List<Message> = client.get("api/session/$sessionId/messages").body()
-
-    suspend fun createSession(session: ChatSession): ChatSession =
-        client.post("api/session") {
-            contentType(ContentType.Application.Json)
-            setBody(session)
-        }.body()
-
-    suspend fun deleteSession(id: String) {
-        client.delete("api/session/$id")
-    }
-
-    suspend fun sendMessage(sessionId: String, content: String): Message =
-        client.post("api/session/$sessionId/message") {
-            contentType(ContentType.Text.Plain)
-            setBody(content)
-        }.body()
-
+    suspend fun getSessions(): List<ChatSession> = sessionClient.getSessions()
+    suspend fun getSession(sessionId: String): ChatSession = sessionClient.getSession(sessionId)
+    suspend fun getMessages(sessionId: String): List<Message> = sessionClient.getMessages(sessionId)
+    suspend fun createSession(session: ChatSession): ChatSession = sessionClient.createSession(session)
+    suspend fun deleteSession(id: String) = sessionClient.deleteSession(id)
+    suspend fun sendMessage(sessionId: String, content: String): Message = sessionClient.sendMessage(sessionId, content)
     suspend fun uploadSessionFile(sessionId: String, fileName: String, fileBytes: ByteArray): String =
-        client.submitFormWithBinaryData(
-            url = "api/session/$sessionId/upload",
-            formData = formData {
-                append(
-                    key = "file",
-                    value = fileBytes,
-                    headers = Headers.build {
-                        append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                        append(HttpHeaders.ContentType, ContentType.Application.OctetStream.toString())
-                    },
-                )
-            },
-        ).body<FileMetadata>().id
-
-    suspend fun sendSessionMessage(sessionId: String, text: String, fileRef: String? = null) {
-        val payload = if (fileRef.isNullOrBlank()) {
-            text
-        } else {
-            buildString {
-                append(text)
-                if (text.isNotBlank()) {
-                    append('\n')
-                }
-                append("[file:")
-                append(fileRef)
-                append(']')
-            }
-        }
-        client.post("api/session/$sessionId/message") {
-            contentType(ContentType.Text.Plain)
-            setBody(payload)
-        }
-    }
-
-    suspend fun getModels(): List<ModelInfo> =
-        client.get("api/models").body()
-
+        sessionClient.uploadSessionFile(sessionId, fileName, fileBytes)
+    suspend fun sendSessionMessage(sessionId: String, text: String, fileRef: String? = null) =
+        sessionClient.sendSessionMessage(sessionId, text, fileRef)
+    suspend fun getModels(): List<ModelInfo> = sessionClient.getModels()
     suspend fun updateSessionModel(sessionId: String, modelId: String): ChatSession =
-        client.post("api/session/$sessionId/model") {
-            contentType(ContentType.Application.Json)
-            setBody(SessionModelUpdateRequest(modelId))
-        }.body()
+        sessionClient.updateSessionModel(sessionId, modelId)
 
     suspend fun getAgentStatus(): Map<String, String> {
         val response = client.get("api/agent/status").bodyAsText()
@@ -228,150 +158,40 @@ class SpolaClient(
             )
         }
 
-    suspend fun searchMemory(query: String): List<Pair<String, String>> =
-        client.get("api/memory") {
-            parameter("q", query)
-        }.body<MemoryEntriesResponse>().entries.map { it.key to it.value }
+    suspend fun searchMemory(query: String): List<Pair<String, String>> = memoryClient.searchMemory(query)
+    suspend fun deleteMemory(key: String) = memoryClient.deleteMemory(key)
 
-    suspend fun deleteMemory(key: String) {
-        client.delete("api/memory/$key")
-    }
-
-    /**
-     * Fetches pairing info from a Spola server at the given URL (no auth required).
-     */
     suspend fun fetchPairingInfo(serverUrl: String): PairingInfoResponse {
         val url = serverUrl.trimEnd('/') + "/api/pairing/info"
         return client.get(url).body()
     }
 
-    suspend fun getScheduledJobs(): List<ScheduledJobResponse> {
-        val endpointCandidates = listOf(
-            "api/scheduler",
-            "api/scheduler/jobs",
-            "api/schedules",
-        )
-
-        endpointCandidates.forEach { path ->
-            val jobs = runCatching {
-                val payload = client.get(path).bodyAsText()
-                parseScheduledJobs(payload)
-            }.getOrNull()
-
-            if (jobs != null) {
-                return jobs
-            }
-        }
-
-        val fallback = runAgent(
-            goal = """
-                Use the scheduler_list tool and return only JSON in the form
-                {"jobs":[{"id":"","name":"","goal":"","cronExpression":"","enabled":true,"createdAt":0,"nextRunAt":0}]}
-            """.trimIndent(),
-            model = null,
-        )
-        return parseScheduledJobs(fallback.result)
-    }
-
-    suspend fun getKanbanCards(): List<KanbanCard> =
-        client.get("api/kanban").body()
-
-    suspend fun createKanbanCard(text: String): KanbanCard =
-        client.post("api/kanban") {
-            contentType(ContentType.Application.Json)
-            setBody(KanbanCardCreateRequest(text))
-        }.body()
-
-    suspend fun updateKanbanCard(id: String, text: String, status: String): KanbanCard =
-        client.put("api/kanban/$id") {
-            contentType(ContentType.Application.Json)
-            setBody(KanbanCardUpdateRequest(text = text, status = status))
-        }.body()
-
-    suspend fun deleteKanbanCard(id: String) {
-        client.delete("api/kanban/$id")
-    }
-
-    suspend fun getWorkflowDefinitions(): List<WorkflowDefinition> {
-        val response = client.get("api/workflows").bodyAsText()
-        val obj = json.parseToJsonElement(response).jsonObject
-        val workflows = obj["workflows"] ?: return emptyList()
-        return json.decodeFromJsonElement(
-            kotlinx.serialization.builtins.ListSerializer(WorkflowDefinition.serializer()),
-            workflows,
-        )
-    }
-
-    suspend fun createWorkflowDefinition(name: String, description: String): WorkflowDefinition =
-        client.post("api/workflows") {
-            contentType(ContentType.Application.Json)
-            setBody(WorkflowCreateRequest(name, description))
-        }.body()
-
-    suspend fun updateWorkflowDefinition(id: String, name: String? = null, description: String? = null): WorkflowDefinition =
-        client.put("api/workflows/$id") {
-            contentType(ContentType.Application.Json)
-            setBody(WorkflowUpdateRequest(name, description))
-        }.body()
-
-    suspend fun deleteWorkflowDefinition(id: String) {
-        client.delete("api/workflows/$id")
-    }
-
-    suspend fun toggleWorkflowDefinition(id: String, enabled: Boolean) {
-        client.post("api/workflows/$id/toggle") {
-            contentType(ContentType.Application.Json)
-            setBody(WorkflowToggleRequest(enabled))
-        }
-    }
-
+    suspend fun getScheduledJobs(): List<ScheduledJobResponse> = schedulerClient.getScheduledJobs()
+    suspend fun getKanbanCards() = kanbanClient.getKanbanCards()
+    suspend fun createKanbanCard(text: String) = kanbanClient.createKanbanCard(text)
+    suspend fun updateKanbanCard(id: String, text: String, status: String) =
+        kanbanClient.updateKanbanCard(id, text, status)
+    suspend fun deleteKanbanCard(id: String) = kanbanClient.deleteKanbanCard(id)
+    suspend fun getWorkflowDefinitions() = workflowClient.getWorkflowDefinitions()
+    suspend fun createWorkflowDefinition(name: String, description: String) =
+        workflowClient.createWorkflowDefinition(name, description)
+    suspend fun updateWorkflowDefinition(id: String, name: String? = null, description: String? = null) =
+        workflowClient.updateWorkflowDefinition(id, name, description)
+    suspend fun deleteWorkflowDefinition(id: String) = workflowClient.deleteWorkflowDefinition(id)
+    suspend fun toggleWorkflowDefinition(id: String, enabled: Boolean) =
+        workflowClient.toggleWorkflowDefinition(id, enabled)
     suspend fun runWorkflow(
         workflowName: String,
         goal: String,
         definitionId: String? = null,
         sessionId: String? = null,
         inputJson: String = "{}",
-    ): WorkflowRunResponse =
-        client.post("api/workflows/run") {
-            contentType(ContentType.Application.Json)
-            setBody(WorkflowRunRequest(workflowName, goal, definitionId, sessionId, inputJson))
-        }.body()
-
-    suspend fun getWorkflowExecutions(limit: Int = 50): List<WorkflowExecutionRecord> {
-        val response = client.get("api/workflows/executions?limit=$limit").bodyAsText()
-        val obj = json.parseToJsonElement(response).jsonObject
-        val executions = obj["executions"] ?: return emptyList()
-        return json.decodeFromJsonElement(
-            kotlinx.serialization.builtins.ListSerializer(WorkflowExecutionRecord.serializer()),
-            executions,
-        )
-    }
-
-    suspend fun getWorkflowExecution(id: String): WorkflowExecutionRecord =
-        client.get("api/workflows/executions/$id").body()
+    ) = workflowClient.runWorkflow(workflowName, goal, definitionId, sessionId, inputJson)
+    suspend fun getWorkflowExecutions(limit: Int = 50) = workflowClient.getWorkflowExecutions(limit)
+    suspend fun getWorkflowExecution(id: String) = workflowClient.getWorkflowExecution(id)
 
     fun close() {
         client.close()
-    }
-
-    private fun isRecoverableSseDisconnect(error: Throwable): Boolean {
-        var cause: Throwable? = error
-        while (cause != null) {
-            val message = cause.message?.lowercase().orEmpty()
-            if (
-                "unexpected end of stream" in message ||
-                "end of stream" in message ||
-                "stream was reset" in message ||
-                "canceled" in message ||
-                "cancelled" in message ||
-                "socket closed" in message ||
-                "connection reset" in message
-            ) {
-                return true
-            }
-            cause = cause.cause
-        }
-        return false
     }
 
     private fun parseAgentRunEvent(type: String, data: String): StreamEvent {
@@ -421,58 +241,26 @@ class SpolaClient(
             )
         }
     }
+}
 
-    private fun parseScheduledJobs(rawPayload: String): List<ScheduledJobResponse> {
-        val jsonText = extractJsonBlock(rawPayload)
-        val payload = json.parseToJsonElement(jsonText)
-        val jobs = when (payload) {
-            is JsonArray -> payload
-            is JsonObject -> payload["jobs"] as? JsonArray
-                ?: payload["schedules"] as? JsonArray
-                ?: payload["entries"] as? JsonArray
-                ?: error("No scheduler jobs array found in response")
-            else -> error("Unsupported scheduler response")
+internal fun isRecoverableSseDisconnect(error: Throwable): Boolean {
+    var cause: Throwable? = error
+    while (cause != null) {
+        val message = cause.message?.lowercase().orEmpty()
+        if (
+            "unexpected end of stream" in message ||
+            "end of stream" in message ||
+            "stream was reset" in message ||
+            "canceled" in message ||
+            "cancelled" in message ||
+            "socket closed" in message ||
+            "connection reset" in message
+        ) {
+            return true
         }
-
-        return jobs.map { jobElement ->
-            val job = jobElement.jsonObject
-            ScheduledJobResponse(
-                id = job.stringValue("id"),
-                name = job.stringValue("name"),
-                goal = job.stringValue("goal"),
-                cronExpression = job.stringValue("cronExpression", "schedule", "cron"),
-                enabled = job.booleanValue("enabled"),
-                createdAt = job.longValue("createdAt"),
-                nextRunAt = job.longValue("nextRunAt"),
-            )
-        }
+        cause = cause.cause
     }
-
-    private fun extractJsonBlock(input: String): String {
-        val trimmed = input.trim()
-        val withoutFence = trimmed
-            .removePrefix("```json")
-            .removePrefix("```")
-            .removeSuffix("```")
-            .trim()
-
-        val objectStart = withoutFence.indexOf('{')
-        val arrayStart = withoutFence.indexOf('[')
-        val start = listOf(objectStart, arrayStart).filter { it >= 0 }.minOrNull()
-            ?: error("No JSON payload found")
-        val end = maxOf(withoutFence.lastIndexOf('}'), withoutFence.lastIndexOf(']'))
-        if (end <= start) error("No complete JSON payload found")
-        return withoutFence.substring(start, end + 1)
-    }
-
-    private fun JsonObject.stringValue(vararg keys: String): String =
-        keys.firstNotNullOfOrNull { key -> this[key]?.jsonPrimitive?.contentOrNull }.orEmpty()
-
-    private fun JsonObject.booleanValue(key: String): Boolean =
-        this[key]?.jsonPrimitive?.booleanOrNull ?: false
-
-    private fun JsonObject.longValue(key: String): Long =
-        this[key]?.jsonPrimitive?.longOrNull ?: 0L
+    return false
 }
 
 @Serializable
@@ -495,15 +283,4 @@ private data class ToolParametersSchemaResponse(
 @Serializable
 private data class ToolParameterSchemaResponse(
     val description: String,
-)
-
-@Serializable
-private data class MemoryEntriesResponse(
-    val entries: List<MemoryEntryResponse>,
-)
-
-@Serializable
-private data class MemoryEntryResponse(
-    val key: String,
-    val value: String,
 )

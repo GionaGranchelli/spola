@@ -126,6 +126,8 @@ fun Route.sessionRoutes(services: BackendServices) {
             flow.collect { send(data = Json.encodeToString(StreamEvent.serializer(), it)) }
         } catch (e: Exception) {
             // Likely client disconnect
+        } finally {
+            services.flowManager.removeSessionFlow(sessionId)
         }
     }
 

@@ -330,11 +330,13 @@ class McpClientManager(
     }
 
     private fun unregisterServerTools(connection: McpConnection) {
-        for (reg in connection.tools) {
-            toolRegistry.unregister(reg.localName)
-            logger.info("Unregistered MCP tool '{}'", reg.localName)
+        synchronized(connection.tools) {
+            for (reg in connection.tools) {
+                toolRegistry.unregister(reg.localName)
+                logger.info("Unregistered MCP tool '{}'", reg.localName)
+            }
+            connection.tools.clear()
         }
-        connection.tools.clear()
     }
 
     private suspend fun executeMcpTool(
@@ -442,23 +444,5 @@ class McpClientManager(
     private fun extractEnumValues(schema: JsonElement): List<String> {
         val values = (schema as? JsonObject)?.get("enum") as? JsonArray ?: return emptyList()
         return values.mapNotNull { element -> (element as? JsonPrimitive)?.content }
-    }
-
-    private fun jsonElementToUntypedValue(element: JsonElement): Any? = when (element) {
-        is JsonPrimitive -> when {
-            element.isString -> element.content
-            element.long != null -> {
-                val l = element.long
-                if (l in Int.MIN_VALUE..Int.MAX_VALUE) l.toInt() else l
-            }
-            element.content.toDoubleOrNull() != null -> element.content.toDouble()
-            element.content == "true" -> true
-            element.content == "false" -> false
-            else -> element.content
-        }
-        is JsonNull -> null
-        is JsonArray -> element.map { jsonElementToUntypedValue(it) }
-        is JsonObject -> element.mapValues { (_, value) -> jsonElementToUntypedValue(value) }
-        else -> element.toString()
     }
 }

@@ -8,6 +8,8 @@ You consume TramAI as a library for LLM provider interaction, tool calling,
 and structured output, but you are NOT part of TramAI — you are a standalone
 application that demonstrates what TramAI can power.
 
+**License:** Apache 2.0 — see [LICENSE](../LICENSE) in repo root.
+
 ## What Makes Spola Different
 
 - **Deterministic by design** — Kotlin, compiled, type-safe. No Python/Node runtime dependencies. The engine controls the flow, not the AI.

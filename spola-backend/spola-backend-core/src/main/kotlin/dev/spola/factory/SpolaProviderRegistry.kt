@@ -8,6 +8,9 @@ import dev.tramai.core.provider.ModelProvider
 import dev.tramai.core.provider.ProviderRegistry
 import dev.tramai.openai.OpenAiProvider
 
+private const val OPENAI_COMPAT = "openai-compat"
+private val OPENAI_COMPAT_TYPES = setOf("openai", OPENAI_COMPAT, "ollama", "google", "deepseek")
+
 /**
  * Wraps TramAI's [ProviderRegistry] to build it from [SpolaConfig], with
  * fallback-chain support, model routing, and support for all current Spola
@@ -106,12 +109,10 @@ object SpolaProviderRegistry {
             builder.defaultProvider(defaultProviderName)
         }
 
-        if (!anyProviderRegistered) {
-            throw IllegalStateException(
-                "No LLM providers could be registered. Ensure at least one provider " +
-                    "(openai, anthropic, ollama, google, deepseek) is configured in the " +
-                    "environment or in config.provider.customProviders.",
-            )
+        check(anyProviderRegistered) {
+            "No LLM providers could be registered. Ensure at least one provider " +
+                "(openai, anthropic, ollama, google, deepseek) is configured in the " +
+                "environment or in config.provider.customProviders."
         }
 
         return builder.build()
@@ -167,10 +168,11 @@ object SpolaProviderRegistry {
         apiKey: String,
         baseUrl: String?,
     ): ModelProvider {
-        return when (type.lowercase()) {
-            "anthropic" -> AnthropicProvider(apiKey = apiKey)
+        val lower = type.lowercase()
+        return when {
+            lower == "anthropic" -> AnthropicProvider(apiKey = apiKey)
 
-            "openai", "openai-compat", "ollama", "google", "deepseek" -> {
+            lower in OPENAI_COMPAT_TYPES -> {
                 val effectiveBaseUrl = baseUrl.takeIf { !it.isNullOrBlank() }
                     ?: defaultBaseUrl(type)
                 OpenAiProvider(apiKey = apiKey.ifBlank { "noop" }, baseUrl = effectiveBaseUrl)
@@ -178,14 +180,14 @@ object SpolaProviderRegistry {
 
             else -> throw IllegalArgumentException(
                 "Unsupported provider type '$type'. " +
-                    "Supported types: openai, anthropic, openai-compat, ollama, google, deepseek",
+                    "Supported types: openai, $OPENAI_COMPAT, ollama, google, deepseek",
             )
         }
     }
 
     private fun defaultBaseUrl(type: String): String = when (type.lowercase()) {
         "openai" -> "https://api.openai.com/v1"
-        "openai-compat" -> "http://localhost:8090/v1"
+        OPENAI_COMPAT -> "http://localhost:8090/v1"
         "ollama" -> "http://localhost:11434/v1"
         "google" -> "https://generativelanguage.googleapis.com/v1beta/openai"
         "deepseek" -> "https://api.deepseek.com/v1"

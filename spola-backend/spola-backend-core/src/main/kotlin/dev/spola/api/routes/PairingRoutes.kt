@@ -30,20 +30,13 @@ fun Route.apiPairingRoutes(
     }
 
     get("/pairing/info") {
-        val providedToken = call.request.headers["X-Pairing-Token"]
-        if (spolaPairingToken.isNotBlank() && providedToken != spolaPairingToken) {
-            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "invalid pairing token"))
-            return@get
-        }
+        // Pairing info is the entry point — no auth required.
+        // The returned pairing token is used by the client for subsequent calls.
         call.respond(buildPairingResponse())
     }
 
     get("/pairing/qrcode") {
-        val providedToken = call.request.headers["X-Pairing-Token"]
-        if (spolaPairingToken.isNotBlank() && providedToken != spolaPairingToken) {
-            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "invalid pairing token"))
-            return@get
-        }
+        // QR code is also open — the client scans it to get the pairing info including token.
         val infoJson = Json.encodeToString(buildPairingResponse())
         val pngBytes = generateQrCode(infoJson)
         call.response.header("Content-Disposition", "inline; filename=\"pairing-qrcode.png\"")

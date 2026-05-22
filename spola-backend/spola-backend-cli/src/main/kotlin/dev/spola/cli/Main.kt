@@ -169,6 +169,13 @@ class SpolaCli : Callable<Int> {
     var apiKey: String? = null
 
     @Option(
+        names = ["--api-host"],
+        description = ["REST API server bind host (default: 127.0.0.1)"],
+        defaultValue = "127.0.0.1",
+    )
+    var apiHost: String = "127.0.0.1"
+
+    @Option(
         names = ["--insecure"],
         description = ["Allow binding to 0.0.0.0 without API key"],
     )
@@ -230,6 +237,7 @@ class SpolaCli : Callable<Int> {
                     SpolaApiServer(
                         config = apiConfig,
                         port = apiPort,
+                        host = apiHost,
                         insecure = insecure,
                     ).start(wait = true)
                 } else if (daemonMode) {

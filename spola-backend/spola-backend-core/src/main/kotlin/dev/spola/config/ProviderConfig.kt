@@ -14,6 +14,6 @@ data class ProviderConfig(
     val apiKey: String = "",
     val defaultProvider: String = "openai",
     val defaultModel: String = "gpt-4o",
-    @get:JsonProperty("custom_providers")
+    @param:JsonProperty("custom_providers")
     val customProviders: List<CustomProviderConfig> = emptyList(),
 )

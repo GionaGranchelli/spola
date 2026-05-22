@@ -167,7 +167,7 @@ fun Application.spolaApiModule(
         route("/api") {
             intercept(ApplicationCallPipeline.Plugins) {
                 val requestPath = context.request.path()
-                if (requestPath == "/api/health" || requestPath.startsWith("/api/metrics")) return@intercept
+                if (requestPath == "/api/health" || requestPath.startsWith("/api/metrics") || requestPath.startsWith("/api/pairing")) return@intercept
                 val provided = context.request.headers["Authorization"]
                     ?.takeIf { it.startsWith("Bearer ") }
                     ?.removePrefix("Bearer ")

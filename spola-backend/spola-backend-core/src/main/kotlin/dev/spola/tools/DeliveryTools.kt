@@ -194,6 +194,8 @@ private fun discordSendTool(config: SpolaConfig): Tool {
         parameters = listOf(
             ToolParameter("channel_id", "Discord channel ID (snowflake)", ToolParameterType.STRING),
             ToolParameter("text", "Message text to send (max 2000 characters)", ToolParameterType.STRING),
+            ToolParameter("embed_title", "Optional title for an embed displayed below the message text", ToolParameterType.STRING, required = false),
+            ToolParameter("embed_color", "Optional embed sidebar color as decimal integer (e.g. 16711680 for red)", ToolParameterType.INTEGER, required = false),
         ),
         execute = { args ->
             try {
@@ -210,15 +212,27 @@ private fun discordSendTool(config: SpolaConfig): Tool {
                     "Discord bot token not configured. Set DISCORD_BOT_TOKEN env var or configure discordToken in DeliveryConfig."
                 )
 
-                val url = "https://discord.com/api/v10/channels/$channelId/messages"
-                val jsonBody = """{"content":"${escapeJson(text)}"}"""
+                val embedTitle = (args["embed_title"] as? String)?.trim()?.takeIf { it.isNotEmpty() }
+                val embedColor = (args["embed_color"] as? Number)?.toInt()
+
+                val jsonBody = buildString {
+                    append("{\"content\":\"${escapeJson(text)}\"")
+                    if (embedTitle != null) {
+                        append(",\"embeds\":[{\"title\":\"${escapeJson(embedTitle)}\"")
+                        if (embedColor != null) {
+                            append(",\"color\":$embedColor")
+                        }
+                        append("}]")
+                    }
+                    append("}")
+                }
 
                 val client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .build()
 
                 val request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
+                    .uri(URI.create("https://discord.com/api/v10/channels/$channelId/messages"))
                     .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bot $token")
@@ -228,7 +242,8 @@ private fun discordSendTool(config: SpolaConfig): Tool {
                 val response = client.send(request, HttpResponse.BodyHandlers.ofString())
                 when {
                     response.statusCode() in 200..299 -> {
-                        ToolResult.ok("Discord message sent successfully (channel_id=$channelId, HTTP ${response.statusCode()})")
+                        val messageId = extractDiscordMessageId(response.body())
+                        ToolResult.ok("Discord message sent successfully (channel_id=$channelId, message_id=$messageId, HTTP ${response.statusCode()})")
                     }
                     response.statusCode() == 429 -> {
                         val remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse("?")
@@ -337,6 +352,19 @@ private fun slackSendTool(config: SpolaConfig): Tool {
             }
         },
     )
+}
+
+/**
+ * Extract the message ID from a Discord API response body.
+ * Looks for the "id" field at the top level of the JSON response.
+ */
+private fun extractDiscordMessageId(responseBody: String): String {
+    val idPrefix = "\"id\":\""
+    val start = responseBody.indexOf(idPrefix)
+    if (start == -1) return "unknown"
+    val valueStart = start + idPrefix.length
+    val end = responseBody.indexOf('"', valueStart)
+    return if (end == -1) "unknown" else responseBody.substring(valueStart, end)
 }
 
 /**

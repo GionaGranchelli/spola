@@ -3,6 +3,7 @@ package dev.spola.factory
 import dev.spola.SpolaConfig
 import dev.spola.agent.ProviderStore
 import dev.tramai.anthropic.AnthropicProvider
+import dev.tramai.core.observation.OperationObserver
 import dev.tramai.core.provider.ModelProvider
 import dev.tramai.core.provider.ProviderRegistry
 import dev.tramai.openai.OpenAiProvider
@@ -25,9 +26,15 @@ object SpolaProviderRegistry {
      * Builds a fully-configured [ProviderRegistry] from [SpolaConfig].
      *
      * @param config      the Spola configuration, must contain [SpolaConfig.provider]
+     * @param providerStore the provider store to read environment-configured providers from
      * @param fallbackChain  optional map of model → fallback-provider-name; for each
      *                       entry, [ProviderRegistry.Builder.fallbackProvider] is called
      *                       so the fallback provider is tried when the primary fails.
+     * @param operationObserver optional TramAI [OperationObserver] to bridge engine-level
+     *                          callbacks into Spola's observability system. Currently
+     *                          accepted for future wiring into [dev.tramai.engine.TramaiEngine]
+     *                          or [dev.tramai.standalone.Tramai.Builder.observer]; the
+     *                          [ProviderRegistry] itself has no observer support.
      * @return a sealed [ProviderRegistry] ready for [ProviderRegistry.resolve].
      * @throws IllegalStateException if no providers could be registered at all.
      */
@@ -35,6 +42,7 @@ object SpolaProviderRegistry {
         config: SpolaConfig,
         providerStore: ProviderStore = ProviderStore.fromEnvironment(),
         fallbackChain: Map<String, String> = emptyMap(),
+        operationObserver: OperationObserver? = null,
     ): ProviderRegistry {
         val builder = ProviderRegistry.builder()
         val defaultProviderName = config.provider.defaultProvider

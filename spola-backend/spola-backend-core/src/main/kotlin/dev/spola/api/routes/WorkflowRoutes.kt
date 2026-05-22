@@ -1,6 +1,7 @@
 package dev.spola.api
 
 import dev.spola.SpolaConfig
+import dev.spola.api.StreamHandler
 import dev.spola.api.WorkflowRunRequest
 import dev.spola.workflow.NewWorkflowExecution
 import dev.spola.workflow.WorkflowExecutionInput
@@ -15,6 +16,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.sse.SSEServerContent
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -23,6 +25,7 @@ fun Route.apiWorkflowRoutes(
     workflowExecutionService: WorkflowExecutionService,
     workflowExecutionStore: WorkflowExecutionStore,
     workflowTemplateRegistry: WorkflowTemplateRegistry,
+    streamHandler: StreamHandler? = null,
 ) {
     val json = Json {
         ignoreUnknownKeys = true
@@ -124,5 +127,19 @@ fun Route.apiWorkflowRoutes(
         val id = call.requirePathParameter("id", "task id")
         val executions = workflowExecutionStore.listByTrigger("kanban", id)
         call.respond(mapOf("executions" to executions))
+    }
+
+    // ── Stream workflow execution events via SSE ───────────────
+    get("/workflows/{id}/stream") {
+        call.enforceBearerAuth(config.security.apiKey)
+        val executionId = call.requirePathParameter("id", "workflow execution id")
+        val handler = streamHandler
+            ?: return@get call.respond(
+                HttpStatusCode.InternalServerError,
+                mapOf("error" to "SSE streaming not available"),
+            )
+        call.respond(SSEServerContent(call) {
+            handler.streamWorkflow(this, executionId, workflowExecutionService)
+        })
     }
 }

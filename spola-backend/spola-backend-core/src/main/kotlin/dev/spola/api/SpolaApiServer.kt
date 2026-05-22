@@ -184,7 +184,7 @@ fun Application.spolaApiModule(
             apiJobRoutes(config, effectiveJobStore)
             apiKanbanRoutes(config, effectiveKanbanStore)
             apiDeliveryRoutes(config, effectiveToolRegistry)
-            apiWorkflowRoutes(config, effectiveWorkflowExecutionService, effectiveWorkflowExecutionStore, effectiveWorkflowTemplateRegistry)
+            apiWorkflowRoutes(config, effectiveWorkflowExecutionService, effectiveWorkflowExecutionStore, effectiveWorkflowTemplateRegistry, effectiveStreamHandler)
             apiWorkflowSessionRoutes(config, effectiveWorkflowExecutionStore)
             apiCheckpointRoutes(config, effectiveCheckpointManager)
             apiToolRoutes(config, effectiveToolRegistry)

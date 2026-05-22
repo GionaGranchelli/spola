@@ -1,12 +1,35 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: spola
+      POSTGRES_USER: spola
+      POSTGRES_PASSWORD: spola
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spola"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   spola-backend-api:
     image: spola-backend:local
     build:
       context: .
       dockerfile: Dockerfile
     working_dir: /spola-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SPOLA_API_KEY: ${SPOLA_API_KEY}
+      SPOLA_DATABASE_POSTGRES_ENABLED: "true"
+      SPOLA_DATABASE_POSTGRES_URL: "jdbc:postgresql://postgres:5432/spola"
+      SPOLA_DATABASE_POSTGRES_USER: "spola"
+      SPOLA_DATABASE_POSTGRES_PASSWORD: "spola"
     command:
       [
         "./spola-backend-cli/build/install/spola/bin/spola",
@@ -36,8 +59,15 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /spola-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       SPOLA_API_KEY: ${SPOLA_API_KEY}
+      SPOLA_DATABASE_POSTGRES_ENABLED: "true"
+      SPOLA_DATABASE_POSTGRES_URL: "jdbc:postgresql://postgres:5432/spola"
+      SPOLA_DATABASE_POSTGRES_USER: "spola"
+      SPOLA_DATABASE_POSTGRES_PASSWORD: "spola"
     command:
       [
         "./spola-backend-cli/build/install/spola/bin/spola",
@@ -64,3 +94,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+volumes:
+  postgres_data:

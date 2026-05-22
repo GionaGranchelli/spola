@@ -8,6 +8,7 @@ import dev.spola.SpolaTracer
 import dev.tramai.orchestration.WorkflowCheckpoint
 import dev.tramai.orchestration.WorkflowContext
 import dev.tramai.orchestration.WorkflowGateRejectedException
+import dev.tramai.orchestration.WorkflowObserver
 import dev.tramai.orchestration.WorkflowPersistence
 import kotlinx.serialization.json.Json
 
@@ -29,7 +30,10 @@ class WorkflowExecutionService(
         return executionStore.create(input)
     }
 
-    suspend fun runExecution(record: WorkflowExecutionRecord): String {
+    suspend fun runExecution(
+        record: WorkflowExecutionRecord,
+        sseObserver: WorkflowObserver? = null,
+    ): String {
         val claimed = when (record.status) {
             WorkflowExecutionStatus.QUEUED -> {
                 executionStore.claimQueued(
@@ -66,13 +70,18 @@ class WorkflowExecutionService(
             otelEndpoint = config.metrics.otelEndpoint,
             otelServiceName = config.otelServiceName,
         )
-        val observer = SpolaWorkflowObserver(
+        val spolaObserver = SpolaWorkflowObserver(
             metrics = metrics,
             tracer = tracer,
             chatService = chatService,
             executionId = claimed.id,
             sessionId = claimed.sessionId,
         )
+        val observer = if (sseObserver != null) {
+            compose(spolaObserver, sseObserver)
+        } else {
+            spolaObserver
+        }
 
         return try {
             val result = workflow.run(
@@ -280,3 +289,95 @@ class WorkflowExecutionService(
     suspend fun listBySessionId(sessionId: String): List<WorkflowExecutionRecord> =
         executionStore.listBySessionId(sessionId)
 }
+
+/**
+ * Compose two [WorkflowObserver] instances into one that delegates to both.
+ */
+private fun compose(first: WorkflowObserver, second: WorkflowObserver): WorkflowObserver =
+    object : WorkflowObserver {
+        override fun onWorkflowStarted(workflowName: String, context: WorkflowContext) {
+            first.onWorkflowStarted(workflowName, context)
+            second.onWorkflowStarted(workflowName, context)
+        }
+
+        override fun onWorkflowEvent(
+            workflowName: String,
+            name: String,
+            attributes: Map<String, Any?>,
+            context: WorkflowContext,
+        ) {
+            first.onWorkflowEvent(workflowName, name, attributes, context)
+            second.onWorkflowEvent(workflowName, name, attributes, context)
+        }
+
+        override fun onStepStarted(
+            workflowName: String,
+            stepName: String,
+            context: WorkflowContext,
+        ) {
+            first.onStepStarted(workflowName, stepName, context)
+            second.onStepStarted(workflowName, stepName, context)
+        }
+
+        override fun onStepCompleted(
+            workflowName: String,
+            stepName: String,
+            context: WorkflowContext,
+        ) {
+            first.onStepCompleted(workflowName, stepName, context)
+            second.onStepCompleted(workflowName, stepName, context)
+        }
+
+        override fun onStepFailed(
+            workflowName: String,
+            stepName: String,
+            error: Throwable,
+            context: WorkflowContext,
+        ) {
+            first.onStepFailed(workflowName, stepName, error, context)
+            second.onStepFailed(workflowName, stepName, error, context)
+        }
+
+        override fun onWorkflowCompleted(workflowName: String, context: WorkflowContext) {
+            first.onWorkflowCompleted(workflowName, context)
+            second.onWorkflowCompleted(workflowName, context)
+        }
+
+        override fun onWorkflowFailed(
+            workflowName: String,
+            error: Throwable,
+            context: WorkflowContext,
+        ) {
+            first.onWorkflowFailed(workflowName, error, context)
+            second.onWorkflowFailed(workflowName, error, context)
+        }
+
+        override fun onScheduledTick(
+            workflowName: String,
+            scheduledFireAt: java.time.Instant,
+            context: WorkflowContext,
+        ) {
+            first.onScheduledTick(workflowName, scheduledFireAt, context)
+            second.onScheduledTick(workflowName, scheduledFireAt, context)
+        }
+
+        override fun onSkippedTick(
+            workflowName: String,
+            scheduledFireAt: java.time.Instant,
+            reason: String,
+            context: WorkflowContext,
+        ) {
+            first.onSkippedTick(workflowName, scheduledFireAt, reason, context)
+            second.onSkippedTick(workflowName, scheduledFireAt, reason, context)
+        }
+
+        override fun onMissedTick(
+            workflowName: String,
+            scheduledFireAt: java.time.Instant,
+            reason: String,
+            context: WorkflowContext,
+        ) {
+            first.onMissedTick(workflowName, scheduledFireAt, reason, context)
+            second.onMissedTick(workflowName, scheduledFireAt, reason, context)
+        }
+    }

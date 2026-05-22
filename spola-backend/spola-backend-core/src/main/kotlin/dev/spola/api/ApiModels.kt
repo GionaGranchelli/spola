@@ -527,6 +527,15 @@ data class WorkflowRunRequest(
     val workingDirectory: String? = null,
 )
 
+// ── Workflow SSE event payload ────────────────────────────
+
+@Serializable
+data class WorkflowStreamEvent(
+    val type: String,
+    val data: Map<String, String> = emptyMap(),
+    val timestamp: Long = System.currentTimeMillis(),
+)
+
 // ── Conversion functions ───────────────────────────────
 
 internal fun AgentDefinition.toResponse(): AgentDefinitionResponse = AgentDefinitionResponse(

@@ -132,6 +132,7 @@ object SpolaFactory {
         leasePolicy: dev.tramai.orchestration.WorkflowLeasePolicy? = null,
         delayWakeupScheduler: dev.tramai.orchestration.WorkflowDelayWakeupScheduler? = null,
         deleteCheckpointOnCompletion: Boolean = true,
+        config: SpolaConfig? = null,
     ): WorkflowPersistence<dev.spola.workflow.SpolaState> {
         return WorkflowFactory.configurePersistence(
             checkpointDir = checkpointDir,
@@ -140,6 +141,7 @@ object SpolaFactory {
             leasePolicy = leasePolicy,
             delayWakeupScheduler = delayWakeupScheduler,
             deleteCheckpointOnCompletion = deleteCheckpointOnCompletion,
+            config = config,
         )
     }
 

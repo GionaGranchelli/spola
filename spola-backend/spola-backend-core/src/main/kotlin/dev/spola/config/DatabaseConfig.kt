@@ -1,5 +1,7 @@
 package dev.spola.config
 
+import dev.spola.PostgresConfig
+
 data class DatabaseConfig(
     val dbPath: String = "./.spola/spola.db",
     val memoryDbPath: String = "./.spola/memory.db",
@@ -11,4 +13,5 @@ data class DatabaseConfig(
     val sessionsDbPath: String = "./.spola/sessions.db",
     val agentsDbPath: String = "./.spola/agents.db",
     val skillsDbPath: String = "./.spola/skills.db",
+    val postgres: PostgresConfig = PostgresConfig(),
 )

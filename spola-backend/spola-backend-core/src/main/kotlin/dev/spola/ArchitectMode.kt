@@ -226,6 +226,7 @@ class ArchitectRunner(
      */
     private fun resolveProvider(providerName: String, modelName: String): Pair<ModelProvider, String> {
         val providerConfig = providerStore.get(providerName)
+        @Suppress("DEPRECATION")
         return ProviderResolver.resolveNamed(providerConfig, modelName)
     }
 }

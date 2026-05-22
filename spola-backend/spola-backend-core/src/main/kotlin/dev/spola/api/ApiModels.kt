@@ -524,6 +524,7 @@ data class WorkflowRunRequest(
     val definitionId: String? = null,
     val sessionId: String? = null,
     val inputJson: String = "{}",
+    val workingDirectory: String? = null,
 )
 
 // ── Conversion functions ───────────────────────────────

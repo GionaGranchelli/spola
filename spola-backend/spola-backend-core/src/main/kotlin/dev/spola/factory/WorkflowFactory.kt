@@ -1,6 +1,7 @@
 package dev.spola.factory
 
 import dev.spola.AgentRunObserver
+import dev.spola.PostgresConfig
 import dev.spola.SpolaConfig
 import dev.spola.metrics.SpolaMetrics
 import dev.spola.SpolaTracer
@@ -11,6 +12,8 @@ import dev.spola.workflow.SpolaWorkflowStateCodec
 import dev.spola.workflow.WorkflowTemplate
 import dev.tramai.orchestration.ExternalStepExecutorResolver
 import dev.tramai.orchestration.FileWorkflowCheckpointStore
+import dev.tramai.orchestration.JdbcWorkflowCheckpointStore
+import dev.tramai.orchestration.JdbcWorkflowCheckpointTable
 import dev.tramai.orchestration.NoOpExternalStepExecutorResolver
 import dev.tramai.orchestration.StopPolicy
 import dev.tramai.orchestration.Workflow
@@ -21,6 +24,7 @@ import dev.tramai.orchestration.WorkflowLeasePolicy
 import dev.tramai.orchestration.WorkflowLeaseStore
 import dev.tramai.orchestration.WorkflowPersistence
 import dev.tramai.orchestration.WorkflowStateCodec
+import dev.tramai.orchestration.WorkflowCheckpointStore
 import dev.tramai.orchestration.workflow
 import java.nio.file.Paths
 import java.time.Clock
@@ -32,6 +36,10 @@ object WorkflowFactory {
 
     /**
      * Configure [WorkflowPersistence] for checkpointing workflow execution.
+     *
+     * If [config] is provided and [PostgresConfig.enabled] is true, uses a
+     * [JdbcWorkflowCheckpointStore] backed by the PostgreSQL DataSource.
+     * Otherwise, falls back to the default [FileWorkflowCheckpointStore].
      */
     fun configurePersistence(
         checkpointDir: String = System.getProperty("java.io.tmpdir") + "/spola-workflows",
@@ -40,8 +48,17 @@ object WorkflowFactory {
         leasePolicy: WorkflowLeasePolicy? = null,
         delayWakeupScheduler: WorkflowDelayWakeupScheduler? = null,
         deleteCheckpointOnCompletion: Boolean = true,
+        config: SpolaConfig? = null,
     ): WorkflowPersistence<SpolaState> {
-        val checkpointStore = FileWorkflowCheckpointStore(Paths.get(checkpointDir))
+        val checkpointStore: WorkflowCheckpointStore = if (config != null && config.database.postgres.enabled) {
+            val dataSource = PostgresCheckpointDataSource.create(config.database.postgres)
+            JdbcWorkflowCheckpointStore(
+                dataSource = dataSource,
+                table = JdbcWorkflowCheckpointTable(),
+            )
+        } else {
+            FileWorkflowCheckpointStore(Paths.get(checkpointDir))
+        }
         return WorkflowPersistence(
             checkpointStore = checkpointStore,
             stateCodec = stateCodec,

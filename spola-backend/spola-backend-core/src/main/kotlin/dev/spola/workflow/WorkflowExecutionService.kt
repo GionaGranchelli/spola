@@ -44,8 +44,13 @@ class WorkflowExecutionService(
         }
 
         val executionInput = json.decodeFromString<WorkflowExecutionInput>(claimed.inputJson)
+        val effectiveConfig = if (executionInput.workingDirectory != null) {
+            config.copy(workingDirectory = executionInput.workingDirectory)
+        } else {
+            config
+        }
         val template = workflowRegistry.resolve(claimed.workflowName)
-        val workflow = template.build(config, executionInput.goal, executionInput.parametersJson)
+        val workflow = template.build(effectiveConfig, executionInput.goal, executionInput.parametersJson)
 
         val checkpointDir = System.getProperty("java.io.tmpdir") + "/spola-workflows"
         val persistence: WorkflowPersistence<SpolaState>? =
@@ -73,7 +78,7 @@ class WorkflowExecutionService(
             val result = workflow.run(
                 initialState = SpolaState.initial(
                     goal = executionInput.goal,
-                    config = config,
+                    config = effectiveConfig,
                     workflowNestingDepth = 1,
                 ),
                 context = workflowContext,
@@ -132,8 +137,13 @@ class WorkflowExecutionService(
         val localJson = json
         return try {
             val executionInput = localJson.decodeFromString<WorkflowExecutionInput>(updated.inputJson)
+            val effectiveConfig = if (executionInput.workingDirectory != null) {
+                config.copy(workingDirectory = executionInput.workingDirectory)
+            } else {
+                config
+            }
             val template = workflowRegistry.resolve(updated.workflowName)
-            val workflow = template.build(config, executionInput.goal, executionInput.parametersJson)
+            val workflow = template.build(effectiveConfig, executionInput.goal, executionInput.parametersJson)
 
             val checkpointDir = System.getProperty("java.io.tmpdir") + "/spola-workflows"
             val persistence = SpolaFactory.configurePersistence(

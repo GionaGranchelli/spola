@@ -180,6 +180,7 @@ object YamlWorkflowCompiler {
 
                 val llmJudgeProvider = if (needsLlmJudge) {
                     try {
+                        @Suppress("DEPRECATION")
                         ProviderResolver.resolveFromConfig(config)
                     } catch (e: Exception) {
                         logger.warn("LLM judge condition found but no provider configured: ${e.message}. llm_judge conditions will pass silently.")

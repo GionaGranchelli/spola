@@ -63,6 +63,7 @@ fun Route.apiWorkflowRoutes(
                     WorkflowExecutionInput(
                         goal = request.goal,
                         parametersJson = request.inputJson,
+                        workingDirectory = request.workingDirectory,
                     ),
                 ),
             ),

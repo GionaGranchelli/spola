@@ -30,6 +30,8 @@ dependencies {
     implementation(libs.sqlite.jdbc)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
+    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("com.zaxxer:HikariCP:5.1.0")
     implementation(libs.logback.classic)
     implementation(libs.mcp.sdk.server)
     implementation(libs.mcp.sdk.client)

@@ -326,3 +326,11 @@ data class SpolaConfig(
     val otelEndpoint: String?
         get() = metrics.otelEndpoint.ifBlank { null }
 }
+
+data class PostgresConfig(
+    val enabled: Boolean = false,
+    val url: String = "jdbc:postgresql://localhost:5432/spola",
+    val user: String = "spola",
+    val password: String = "spola",
+    val poolSize: Int = 10,
+)

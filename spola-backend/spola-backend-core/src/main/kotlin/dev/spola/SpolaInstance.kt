@@ -31,7 +31,9 @@ data class SpolaInstance(
     suspend fun reconfigure(providerName: String, modelName: String) {
         val providerStore = ProviderStore.fromEnvironment()
         val providerConfig = providerStore.get(providerName)
-        val (newProvider, resolvedModel) = ProviderResolver.resolveNamed(providerConfig, modelName)
+        @Suppress("DEPRECATION")
+        val resolved = ProviderResolver.resolveNamed(providerConfig, modelName)
+        val (newProvider, resolvedModel) = resolved
 
         agent.reconfigure(newProvider, ModelName(resolvedModel))
         val existingCm = agent.getCheckpointManager()

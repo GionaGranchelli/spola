@@ -119,7 +119,9 @@ class DoctorCommand : Callable<Int> {
         }
 
         return runCatching {
-            val (provider, model) = ProviderResolver.resolveFromConfig(config, ProviderStore.fromEnvironment())
+            @Suppress("DEPRECATION")
+            val resolvedPair = ProviderResolver.resolveFromConfig(config, ProviderStore.fromEnvironment())
+            val (provider, model) = resolvedPair
             try {
                 val response = provider.complete(
                     ModelRequest(

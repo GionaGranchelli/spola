@@ -280,11 +280,7 @@ class YamlWorkflowSystemTest {
             YamlWorkflowLoader.loadAndRegister(this, config, yamlPath.parent)
         }
 
-        // Built-ins should still be there
-        assertNotNull(registry.resolve("code-review"))
-        assertNotNull(registry.resolve("jvm-debug"))
-
-        // YAML workflow should also be registered
+        // Only YAML workflows are registered (built-in templates removed)
         assertNotNull(registry.resolve("custom-audit"))
     }
 
@@ -595,20 +591,19 @@ class YamlWorkflowSystemTest {
     }
 
     @Test
-    fun `export built-in template produces valid yaml`() {
+    fun `export YAML workflow produces valid YAML`() = withTempYamlWorkflow { yamlPath ->
+        val config = SpolaConfig(metrics = MetricsConfig(metricsEnabled = false))
         val registry = WorkflowTemplateRegistry().apply {
-            registerBuiltInTemplates()
+            YamlWorkflowLoader.loadAndRegister(this, config, yamlPath.parent)
         }
-        val yaml = WorkflowExport.exportTemplate(registry, "jvm-debug")
-        assertNotNull(yaml, "Export should produce YAML for jvm-debug")
-        assertTrue(yaml.contains("name: jvm-debug"), "YAML should contain workflow name")
-        assertTrue(yaml.contains("scan-and-diagnose"), "YAML should contain step IDs")
-        assertTrue(yaml.contains("fix-and-verify"), "YAML should contain step IDs")
+        val yaml = WorkflowExport.exportTemplate(registry, "custom-audit")
+        assertNotNull(yaml, "Export should produce YAML for custom-audit")
+        assertTrue(yaml.contains("name: custom-audit"), "YAML should contain workflow name")
 
         // Verify the exported YAML can be re-parsed
         val parsed = YamlWorkflowParser.parseContent(yaml)
         assertNotNull(parsed, "Exported YAML should be valid")
-        assertEquals("jvm-debug", parsed.name)
+        assertEquals("custom-audit", parsed.name)
     }
 
     @Test

@@ -1,0 +1,7 @@
+{
+  "host": "192.168.1.222",
+  "port": 8082,
+  "token": "my-secret",
+  "trustId": "ef352eb0-91fe-4794-8ffa-d6af1f8f47f9",
+  "version": "0.1.0"
+}

@@ -57,4 +57,5 @@ data class WorkflowBootRecovery(
 data class WorkflowExecutionInput(
     val goal: String,
     val parametersJson: String = "{}",
+    val workingDirectory: String? = null,
 )

@@ -29,7 +29,7 @@ object AgentFactory {
 
     /**
      * Create a [SpolaInstance] from a [SpolaConfig], delegating tool registry
-     * building to [ToolRegistryFactory] and provider resolution to [ProviderResolver].
+     * building to [ToolRegistryFactory] and provider resolution to [SpolaProviderRegistry].
      */
     suspend fun create(
         config: SpolaConfig,
@@ -69,9 +69,13 @@ object AgentFactory {
             combinedObserver = SpolaTracerObserver(tracer = spolaTracer, config = config, next = combinedObserver)
         }
 
-        // Resolve LLM provider
+        // Resolve LLM provider via SpolaProviderRegistry
         val (llmProvider, modelName) = provider?.let { it to (effectiveModel ?: config.provider.defaultModel) }
-            ?: ProviderResolver.resolveFromConfig(config)
+            ?: run {
+                val registry = SpolaProviderRegistry.build(config)
+                SpolaProviderRegistry.resolveDefault(registry, config.provider.defaultModel) to
+                    config.provider.defaultModel
+            }
 
         // Load persona
         var persona = PersonaLoader.load(
@@ -121,7 +125,7 @@ object AgentFactory {
 
     /**
      * Create a [SpolaInstance] from an [AgentDefinition], delegating to
-     * [ToolRegistryFactory] and [ProviderResolver].
+     * [ToolRegistryFactory] and [SpolaProviderRegistry].
      */
     suspend fun createFromAgentDefinition(
         agentDef: AgentDefinition,
@@ -157,19 +161,15 @@ object AgentFactory {
             combinedObserver = SpolaTracerObserver(tracer = spolaTracer, config = config, next = combinedObserver)
         }
 
-        // Resolve LLM provider
-        val providerStore = dev.spola.agent.ProviderStore.fromEnvironment()
+        // Resolve LLM provider via SpolaProviderRegistry
         val (llmProvider, modelName) = try {
-            ProviderResolver.resolveNamed(
-                providerConfig = providerStore.get(effectiveProviderName),
-                modelName = effectiveModel,
-            )
+            val registry = SpolaProviderRegistry.build(config)
+            SpolaProviderRegistry.resolveDefault(registry, effectiveModel) to effectiveModel
         } catch (e: Exception) {
             if (agentDef.fallbackModel != null) {
-                ProviderResolver.resolveNamed(
-                    providerConfig = providerStore.get(agentDef.fallbackProvider ?: effectiveProviderName),
-                    modelName = agentDef.fallbackModel,
-                )
+                val fallbackRegistry = SpolaProviderRegistry.build(config)
+                SpolaProviderRegistry.resolveDefault(fallbackRegistry, agentDef.fallbackModel) to
+                    agentDef.fallbackModel
             } else {
                 throw e
             }

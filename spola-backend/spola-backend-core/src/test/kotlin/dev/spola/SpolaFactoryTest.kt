@@ -36,7 +36,7 @@ class SpolaFactoryTest {
                 id = "custom-agent",
                 name = "Custom Agent",
                 systemPrompt = "You are a test agent.",
-                preferredModel = "gpt-4o-mini",
+                preferredModel = "gpt-4o",
                 preferredProvider = "openai-compat",
             ),
             config = testConfig(tempDir),

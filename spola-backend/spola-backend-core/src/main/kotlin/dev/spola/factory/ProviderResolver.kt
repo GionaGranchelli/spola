@@ -18,6 +18,12 @@ object ProviderResolver {
     /**
      * Resolve a provider from [SpolaConfig] using the configured provider name and model.
      */
+    @Deprecated(
+        "Use SpolaProviderRegistry.build(config) and SpolaProviderRegistry.resolveDefault() instead",
+        ReplaceWith(
+            "SpolaProviderRegistry.build(config).let { SpolaProviderRegistry.resolveDefault(it, config.provider.defaultModel) to config.provider.defaultModel }",
+        ),
+    )
     fun resolveFromConfig(
         config: SpolaConfig,
         providerStore: ProviderStore = ProviderStore.fromEnvironment(),
@@ -34,6 +40,12 @@ object ProviderResolver {
      *
      * Supported providers: openai, anthropic, openai-compat, ollama, google
      */
+    @Deprecated(
+        "Use SpolaProviderRegistry.build(config) and SpolaProviderRegistry.resolveDefault() instead",
+        ReplaceWith(
+            "SpolaProviderRegistry.build(config).let { SpolaProviderRegistry.resolveDefault(it, modelName) to modelName }",
+        ),
+    )
     fun resolveNamed(
         providerConfig: ProviderConfig,
         modelName: String,

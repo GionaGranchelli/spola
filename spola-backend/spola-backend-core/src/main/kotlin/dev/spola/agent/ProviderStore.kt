@@ -61,6 +61,16 @@ class ProviderStore private constructor(
                     baseUrl = env["GOOGLE_BASE_URL"] ?: "https://generativelanguage.googleapis.com/v1beta/openai",
                 )
             }
+            "deepseek" -> {
+                val apiKey = env["DEEPSEEK_API_KEY"]
+                    ?: throw IllegalStateException("DEEPSEEK_API_KEY not set for provider 'deepseek'")
+                ProviderConfig(
+                    provider = "deepseek",
+                    model = "deepseek-chat",
+                    apiKey = apiKey,
+                    baseUrl = env["DEEPSEEK_BASE_URL"] ?: "https://api.deepseek.com/v1",
+                )
+            }
             else -> throw IllegalStateException("Unsupported or unconfigured provider: $providerName")
         }
     }

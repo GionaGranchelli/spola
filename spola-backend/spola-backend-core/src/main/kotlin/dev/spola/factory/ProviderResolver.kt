@@ -63,6 +63,10 @@ object ProviderResolver {
                 val baseUrl = providerConfig.baseUrl ?: "https://generativelanguage.googleapis.com/v1beta/openai"
                 return OpenAiProvider(apiKey = providerConfig.apiKey, baseUrl = baseUrl) to modelName
             }
+            "deepseek" -> {
+                val baseUrl = providerConfig.baseUrl ?: "https://api.deepseek.com/v1"
+                return OpenAiProvider(apiKey = providerConfig.apiKey, baseUrl = baseUrl) to modelName
+            }
             else -> throw IllegalStateException("Unsupported provider: ${providerConfig.provider}")
         }
     }

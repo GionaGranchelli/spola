@@ -25,6 +25,7 @@ object YamlWorkflowParser {
      * Parse a YAML file into a [WorkflowDefinition].
      * Returns null if parsing fails (malformed YAML, missing required fields).
      */
+    @Deprecated("Use TramAI workflow { } DSL instead")
     fun parseFile(path: Path): WorkflowDefinition? {
         return try {
             if (!Files.isRegularFile(path)) {
@@ -42,6 +43,7 @@ object YamlWorkflowParser {
     /**
      * Parse YAML string content into a [WorkflowDefinition].
      */
+    @Deprecated("Use TramAI workflow { } DSL instead")
     fun parseContent(content: String, source: Path? = null): WorkflowDefinition? {
         return try {
             val raw: Map<String, Any?> = mapper.readValue(content, object : TypeReference<Map<String, Any?>>() {})

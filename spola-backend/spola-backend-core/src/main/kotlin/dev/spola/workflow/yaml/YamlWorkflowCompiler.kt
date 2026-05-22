@@ -19,12 +19,132 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.slf4j.LoggerFactory
 
+// ========================================================================
+// MIGRATION GUIDE: YAML → TramAI Workflow DSL
+// ========================================================================
+// This system is DEPRECATED in favor of the TramAI workflow DSL.
+// New workflows should be written directly in Kotlin using `workflow<SpolaState> { ... }`.
+//
+// Below is the complete YAML step-type-to-DSL mapping, a migration guide,
+// and per-step translation examples.
+//
+// ─────────────────────────────────────────────────────────────────────────
+// STEP TYPE MAPPING
+// ─────────────────────────────────────────────────────────────────────────
+//
+//   YAML type            → TramAI DSL equivalent
+//   ──────────              ─────────────────────
+//   ai                     → spolaAgentStep(name, persona, goal)
+//                            (internally calls WorkflowBuilder.aiStep()
+//                             → WorkflowSteps.runSpolaAgent())
+//   parallel_agents        → parallelAgentsStep(name, agents, goal, config)
+//                            (internally calls WorkflowBuilder.parallelStep()
+//                             → SpolaFactory agents in parallel)
+//   human_approval         → gateStep(name) { decide(state, ctx) }
+//                            checks intermediateResults["__approval_granted"]
+//   shell / local          → WorkflowBuilder.localStep() wrapping
+//                            YamlWorkflowStepRunner.execute()
+//                            (cf. TramAI's own shellStep() which uses
+//                             ShellWorkflowStep with security policies —
+//                             the YAML compiler uses a simpler ProcessBuilder path)
+//   composite              → WorkflowBuilder.localStep() that runs a
+//                            resolved sub-Workflow via subWorkflow.run()
+//
+// ─────────────────────────────────────────────────────────────────────────
+// FULL YAML → DSL TRANSLATION EXAMPLE
+// ─────────────────────────────────────────────────────────────────────────
+// Given this YAML:
+//
+//   name: my-workflow
+//   version: "1"
+//   description: Example workflow
+//   params:
+//     query:
+//       type: string
+//       required: true
+//   steps:
+//     - id: analyze
+//       type: ai
+//       persona: You are a code analyst.
+//       goal: "Analyze {{params.query}}"
+//       depends_on: []
+//       done:
+//         - condition: output_has_content
+//     - id: execute
+//       type: shell
+//       command: "pwd"
+//       depends_on: [analyze]
+//   done:
+//     - condition: report_generated
+//
+// The equivalent TramAI DSL is:
+//
+//   workflow<SpolaState>("my-workflow", "1") {
+//       spolaAgentStep(
+//           name = "analyze",
+//           persona = { state -> state.config.personas["analyzer"] ?: "You are a code analyst." },
+//           goal = { state ->
+//               val query = state.intermediateResults["param_query"] ?: ""
+//               "Analyze $query"
+//           },
+//           merge = { state, result ->
+//               state.copy(
+//                   result = result,
+//                   intermediateResults = state.intermediateResults + ("analyze" to result),
+//               )
+//           },
+//       )
+//       gateStep("analyze-done-check") { state, _ ->
+//           val passed = !state.result.isNullOrBlank()
+//           GateDecision(passed, if (passed) null else "output_has_content not met")
+//       }
+//       localStep("execute") { state, _ ->
+//           val output = YamlWorkflowStepRunner.execute(
+//               command = "pwd",
+//               state = state,
+//           )
+//           state.copy(
+//               result = output,
+//               intermediateResults = state.intermediateResults + ("execute" to output),
+//           )
+//       }
+//       gateStep("workflow-done-check") { state, _ ->
+//           val output = state.result ?: ""
+//           val passed = output.length >= 50 && Regex("""\w{3,}""").containsMatchIn(output)
+//           GateDecision(passed, if (passed) null else "report_generated not met")
+//       }
+//   }.build { it.result ?: it.intermediateResults.values.joinToString("\n---\n") }
+//
+// ─────────────────────────────────────────────────────────────────────────
+// DEPRECATION NOTICE
+// ─────────────────────────────────────────────────────────────────────────
+// The YAML workflow system exists for backward compatibility with
+// existing ~/.spola/workflows/*.yaml files. All new workflows should
+// use the TramAI workflow DSL directly in Kotlin. Benefits:
+//
+//   ✅ Type safety — compile-time validation of steps, params, state
+//   ✅ IDE support — autocomplete, refactoring, navigation
+//   ✅ Full DSL surface — branchStep, delayStep, httpStep, pluginStep, etc.
+//   ✅ Replay policies — explicit IDEMPOTENT / NON_REPLAYABLE control
+//   ✅ No YAML parsing overhead — Jackson/YAML dependency optional
+//   ✅ Checkpointing & resume — identical runtime support
+//
+// To migrate, replace each YAML step with its DSL equivalent from the
+// table above and inline the merge logic directly in the builder.
+// ========================================================================
+
 /**
  * Compiles a resolved YAML workflow definition into a TramAI Workflow DAG.
  *
  * This is the bridge between declarative YAML and the existing Kotlin DSL.
  * It calls the SAME builder functions that the hardcoded templates use,
  * but generates them from parsed data instead of being written by hand.
+ *
+ * ## YAML-to-DSL step mapping
+ *
+ * See the Migration Guide block comment at the top of this file for the
+ * complete YAML → TramAI workflow DSL mapping table, a full translation
+ * example, and the deprecation rationale.
  */
 object YamlWorkflowCompiler {
 
@@ -33,6 +153,10 @@ object YamlWorkflowCompiler {
     /**
      * Compile a parsed and resolved workflow definition into a runnable TramAI workflow.
      */
+    @Deprecated(
+        "Use TramAI workflow { } DSL instead",
+        ReplaceWith("workflow<SpolaState>(name) { ... }.build { ... }"),
+    )
     fun compile(
         resolved: ResolvedWorkflow,
         config: SpolaConfig,

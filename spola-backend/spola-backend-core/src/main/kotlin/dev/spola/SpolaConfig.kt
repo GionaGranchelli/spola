@@ -58,6 +58,7 @@ data class SpolaConfig(
     val maxWorkflowNestingDepth: Int = 1,
     val workflowDispatcherConfig: WorkflowDispatcherConfig = WorkflowDispatcherConfig(),
     val workflowsDir: String = Path.of(System.getProperty("user.home"), ".spola", "workflows").toString(),
+    val yamlWorkflowsEnabled: Boolean = true,
 ) {
     @Suppress("LongParameterList")
     constructor(
@@ -111,6 +112,7 @@ data class SpolaConfig(
         maxWorkflowNestingDepth: Int = 1,
         workflowDispatcherConfig: WorkflowDispatcherConfig = WorkflowDispatcherConfig(),
         workflowsDir: String = Path.of(System.getProperty("user.home"), ".spola", "workflows").toString(),
+        yamlWorkflowsEnabled: Boolean = true,
         insecure: Boolean = false,
         customProviders: List<CustomProviderConfig> = emptyList(),
     ) : this(
@@ -183,6 +185,7 @@ data class SpolaConfig(
         maxWorkflowNestingDepth = maxWorkflowNestingDepth,
         workflowDispatcherConfig = workflowDispatcherConfig,
         workflowsDir = workflowsDir,
+        yamlWorkflowsEnabled = yamlWorkflowsEnabled,
     )
 
     @get:JsonIgnore

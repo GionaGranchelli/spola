@@ -1,7 +1,6 @@
 package dev.spola.workflow
 
 import dev.spola.SpolaConfig
-import dev.spola.factory.WorkflowFactory
 import dev.spola.workflow.yaml.YamlWorkflowLoader
 import dev.tramai.orchestration.Workflow
 import java.nio.file.Path
@@ -59,84 +58,14 @@ class WorkflowTemplateRegistry {
      * @param config Spola configuration (used for default paths)
      * @param customDir Optional custom directory to scan (default: ~/.spola/workflows/)
      */
+    @Deprecated("Use TramAI workflow { } DSL instead")
     fun registerYamlWorkflows(config: SpolaConfig, customDir: Path? = null) {
+        if (!config.yamlWorkflowsEnabled) return
         YamlWorkflowLoader.loadAndRegister(this, config, customDir)
     }
 }
 
 fun WorkflowTemplateRegistry.registerBuiltInTemplates() {
-    register(object : WorkflowTemplate {
-        override val name: String = "code-review"
-        override val version: String = "1"
-
-        override fun build(config: SpolaConfig, goal: String, parametersJson: String): Workflow<SpolaState, String> =
-            WorkflowFactory.createWorkflow(
-                name = "code-review-team",
-                definitionVersion = version,
-                workflow = {
-                    with(TeamWorkflowSteps) {
-                        val reviewers = listOf("security-reviewer", "style-reviewer", "test-reviewer")
-                        parallelAgentsStep(
-                            name = "parallel-review",
-                            agents = reviewers,
-                            goal = { it.goal },
-                            config = config,
-                            merge = { state, results ->
-                                state.copy(
-                                    intermediateResults = state.intermediateResults +
-                                        reviewers.zip(results).associate { (id, result) -> id to result },
-                                )
-                            },
-                        )
-                    }
-                    aiStep(
-                        name = "summarize",
-                        input = { state ->
-                            val securityReview = state.intermediateResults["security-reviewer"] ?: ""
-                            val styleReview = state.intermediateResults["style-reviewer"] ?: ""
-                            val testReview = state.intermediateResults["test-reviewer"] ?: ""
-                            """
-                                |Aggregate the following code reviews into a concise final summary.
-                                |
-                                |## Security Review
-                                |$securityReview
-                                |
-                                |## Style Review
-                                |$styleReview
-                                |
-                                |## Test Review
-                                |$testReview
-                            """.trimMargin()
-                        },
-                        invoke = { it },
-                        merge = { state, summary -> state.copy(result = summary) },
-                    )
-                },
-                resultSelector = { it.result ?: "no result" },
-            )
-    })
-
-    register(object : WorkflowTemplate {
-        override val name: String = "jvm-debug"
-        override val version: String = "1"
-
-        override fun build(config: SpolaConfig, goal: String, parametersJson: String): Workflow<SpolaState, String> =
-            JvmWorkflowTemplates.jvmDebugWorkflow(name = name, definitionVersion = version)
-    })
-
-    register(object : WorkflowTemplate {
-        override val name: String = "jvm-refactor"
-        override val version: String = "1"
-
-        override fun build(config: SpolaConfig, goal: String, parametersJson: String): Workflow<SpolaState, String> =
-            JvmWorkflowTemplates.jvmRefactorWorkflow(name = name, definitionVersion = version)
-    })
-
-    register(object : WorkflowTemplate {
-        override val name: String = "jvm-migration"
-        override val version: String = "1"
-
-        override fun build(config: SpolaConfig, goal: String, parametersJson: String): Workflow<SpolaState, String> =
-            JvmWorkflowTemplates.jvmMigrationWorkflow(name = name, definitionVersion = version)
-    })
+    // Built-in templates are removed — use agents directly or create YAML workflows.
+    // Previous built-ins: code-review, jvm-debug, jvm-refactor, jvm-migration.
 }

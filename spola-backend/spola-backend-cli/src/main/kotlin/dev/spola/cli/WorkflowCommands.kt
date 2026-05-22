@@ -11,7 +11,7 @@ import dev.spola.workflow.WorkflowTemplateRegistry
 import dev.spola.workflow.NewWorkflowExecution
 import dev.spola.workflow.registerBuiltInTemplates
 import dev.spola.workflow.yaml.WorkflowExport
-import dev.spola.workflow.yaml.YamlWorkflowLoader
+
 import dev.tramai.orchestration.workflow
 import kotlinx.coroutines.runBlocking
 import picocli.CommandLine
@@ -57,13 +57,16 @@ class WorkflowRunCommand : Callable<Int> {
     @Option(names = ["--param"], description = ["Parameters in key=value format (can be repeated)"])
     var params: List<String> = emptyList()
 
+    @Option(names = ["--workdir", "--working-directory"], description = ["Working directory for the workflow execution"])
+    var workingDirectory: String? = null
+
     override fun call(): Int = runBlocking {
         val config = buildConfig(root)
 
         // Build the registry with both built-in + YAML workflows
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
-            YamlWorkflowLoader.loadAndRegister(this, config)
+            registerYamlWorkflows(config)
         }
 
         val executionStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
@@ -75,13 +78,14 @@ class WorkflowRunCommand : Callable<Int> {
 
         val parametersJson = buildParametersJson(params)
         val escapedParams = parametersJson.replace("\"", "\\\"")
+        val workingDirPart = if (workingDirectory != null) ""","workingDirectory":"${workingDirectory!!.replace("\"", "\\\"")}"""" else ""
 
         val record = executionService.enqueue(
             NewWorkflowExecution(
                 definitionId = null,
                 workflowName = workflowName,
                 triggerSource = "cli",
-                inputJson = """{"goal":"${goal.replace("\"", "\\\"")}","parametersJson":"${escapedParams}"}""",
+                inputJson = """{"goal":"${goal.replace("\"", "\\\"")}","parametersJson":"${escapedParams}"$workingDirPart}""",
             )
         )
 
@@ -111,7 +115,7 @@ class WorkflowListCommand : Callable<Int> {
         val config = buildConfig(root)
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
-            YamlWorkflowLoader.loadAndRegister(this, config)
+            registerYamlWorkflows(config)
         }
 
         val workflows = registry.list()
@@ -149,7 +153,7 @@ class WorkflowExportCommand : Callable<Int> {
         val config = buildConfig(root)
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
-            YamlWorkflowLoader.loadAndRegister(this, config)
+            registerYamlWorkflows(config)
         }
 
         val yaml = WorkflowExport.exportTemplate(registry, workflowName)
@@ -183,7 +187,7 @@ class WorkflowApproveCommand : Callable<Int> {
         val executionStore = SqliteWorkflowExecutionStore(config.database.workflowsDbPath)
         val registry = WorkflowTemplateRegistry().apply {
             registerBuiltInTemplates()
-            YamlWorkflowLoader.loadAndRegister(this, config)
+            registerYamlWorkflows(config)
         }
         val executionService = WorkflowExecutionService(
             config = config,

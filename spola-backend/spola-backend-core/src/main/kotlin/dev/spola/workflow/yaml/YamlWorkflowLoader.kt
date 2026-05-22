@@ -17,6 +17,10 @@ object YamlWorkflowLoader {
         System.getProperty("user.home"), ".spola", "workflows"
     )
 
+    @Deprecated(
+        "Use TramAI workflow { } DSL instead",
+        ReplaceWith("workflow<SpolaState>(name) { ... }.build { ... }"),
+    )
     fun loadAndRegister(
         registry: WorkflowTemplateRegistry,
         config: SpolaConfig,
@@ -72,6 +76,10 @@ class YamlWorkflowTemplate(
     override val version: String get() = definition.version
     override val supportsRecursiveCompilation: Boolean = true
 
+    @Deprecated(
+        "Use TramAI workflow { } DSL instead",
+        ReplaceWith("workflow<SpolaState>(name) { ... }.build { ... }"),
+    )
     override fun compileRecursive(
         config: SpolaConfig,
         goal: String,
@@ -92,6 +100,10 @@ class YamlWorkflowTemplate(
         )
     }
 
+    @Deprecated(
+        "Use TramAI workflow { } DSL instead",
+        ReplaceWith("workflow<SpolaState>(name) { ... }.build { ... }"),
+    )
     override fun build(
         config: SpolaConfig,
         goal: String,

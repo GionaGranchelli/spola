@@ -1,0 +1,142 @@
+name: code-review
+version: "1"
+description: >
+  Multi-step code review workflow: fetch files from the repository, run an AI
+  security/style review, pause for human approval, apply approved fixes, and
+  produce a final summary report.
+
+params:
+  files:
+    type: string
+    description: "File glob pattern to review (e.g., '**/*.kt', 'src/**')"
+    default: "**/*.kt"
+  branch:
+    type: string
+    description: "Git branch to review (defaults to current working branch)"
+    default: ""
+  severity:
+    type: string
+    description: "Minimum issue severity to flag (low, medium, high, critical)"
+    default: "medium"
+    required: false
+
+steps:
+  # ── Step 1: Fetch files ──────────────────────────────────────────────────
+  - id: fetch-files
+    type: shell
+    command: |
+      echo "Fetching files matching '{{params.files}}'..."
+      if [ -n "{{params.branch}}" ]; then
+        git fetch origin "{{params.branch}}" 2>/dev/null || true
+        git checkout "{{params.branch}}" 2>/dev/null || true
+      fi
+      FILES=$(git diff --name-only HEAD~1 2>/dev/null || \
+              find . -path '*/build' -prune -o -name '*.kt' -print -o -name '*.java' -print -o -name '*.py' -print | head -20)
+      echo "Changed files:"
+      echo "$FILES"
+      echo ""
+      for f in $FILES; do
+        if [ -f "$f" ]; then
+          echo "=== $f ==="
+          wc -l < "$f"
+          head -50 "$f"
+          echo "..."
+        fi
+      done
+    timeout: 30
+    on_error: continue
+    done:
+      - condition: output_has_content
+
+  # ── Step 2: AI Review ────────────────────────────────────────────────────
+  - id: ai-review
+    type: ai
+    depends_on: [fetch-files]
+    persona: |
+      You are a senior software engineer conducting a thorough code review.
+      Check for:
+      - Security vulnerabilities (hardcoded secrets, injection risks, auth issues)
+      - Code style and adherence to project conventions
+      - Performance concerns, memory leaks, and concurrency bugs
+      - Test coverage and missing edge cases
+      - Dead code, unused imports, and overly complex logic
+
+      Rate each finding as: CRITICAL, HIGH, MEDIUM, or LOW severity.
+    goal: |
+      Review the following code for quality, security, and correctness.
+
+      Files and content from repository:
+      {{step.fetch-files.output}}
+
+      Minimum severity to flag: {{params.severity}}
+      Original goal: {{state.goal}}
+    done:
+      - condition: output_has_content
+      - condition: output_contains
+        value: "CRITICAL|HIGH|MEDIUM|LOW"
+
+  # ── Step 3: Human Approval Gate ──────────────────────────────────────────
+  - id: human-approval
+    type: human_approval
+    depends_on: [ai-review]
+    prompt: |
+      The AI review is complete. Please review the findings below and approve
+      or reject the proposed fixes.
+
+      Findings:
+      {{step.ai-review.output}}
+
+      If approved, fixes will be applied automatically. If rejected, the
+      workflow will produce a report with recommendations only.
+
+  # ── Step 4: Apply Fixes ──────────────────────────────────────────────────
+  - id: apply-fixes
+    type: shell
+    depends_on: [human-approval]
+    command: |
+      echo "Applying fixes based on approved review..."
+      REVIEW_RESULT='{{step.ai-review.output}}'
+      echo "Review summary available. Generating fix patches..."
+      echo ""
+      echo "=== Proposed changes ==="
+      echo "Fixes would be applied to files matching '{{params.files}}'"
+      echo ""
+      echo "Note: Automatic fix application is a placeholder."
+      echo "In production, this step would run lint --fix, apply suggested"
+      echo "patches, or execute automated refactoring tools."
+    timeout: 60
+    on_error: continue
+    done:
+      - condition: output_has_content
+
+  # ── Step 5: Report Results ───────────────────────────────────────────────
+  - id: report-results
+    type: ai
+    depends_on: [apply-fixes]
+    persona: |
+      You are a technical documentation specialist. Produce clear, actionable
+      summaries in Markdown format.
+    goal: |
+      Generate a final code review report. Include:
+
+      1. **Summary** — What was reviewed and the overall assessment
+      2. **Findings** — Categorized by severity (CRITICAL, HIGH, MEDIUM, LOW)
+      3. **Fixes Applied** — What changes were made (if any)
+      4. **Recommendations** — Suggested follow-up actions
+
+      ## Review Findings
+      {{step.ai-review.output}}
+
+      ## Fixes Applied
+      {{step.apply-fixes.output}}
+
+      Approval status was received via the human approval gate.
+    done:
+      - condition: output_has_content
+      - condition: markdown_valid
+      - condition: output_contains
+        value: "## "
+
+done:
+  - condition: all_steps_passed
+  - condition: report_generated

@@ -1,0 +1,170 @@
+name: rag-pipeline
+version: "1"
+description: >
+  Retrieval-Augmented Generation pipeline. Loads documents from a local source,
+  generates embeddings via an AI step, queries a vector store through AI, and
+  produces a context-grounded response.
+
+params:
+  source_dir:
+    type: string
+    description: "Directory containing documents to index"
+    default: "./docs"
+    required: true
+  query:
+    type: string
+    description: "User query to answer using the indexed documents"
+    default: ""
+    required: false
+  chunk_size:
+    type: number
+    description: "Character count per document chunk"
+    default: 1000
+    required: false
+  top_k:
+    type: number
+    description: "Number of relevant chunks to retrieve"
+    default: 5
+    required: false
+
+steps:
+  # ── Step 1: Load Documents ───────────────────────────────────────────────
+  - id: load-documents
+    type: local
+    command: |
+      echo "Loading documents from {{params.source_dir}}..."
+      DIR="{{params.source_dir}}"
+      CHUNK_SIZE={{params.chunk_size}}
+
+      if [ ! -d "$DIR" ]; then
+        echo "[WARN] Directory '$DIR' does not exist. Creating sample."
+        mkdir -p "$DIR"
+        cat > "$DIR/sample.md" << 'EOFSAMPLE'
+      # Sample Document
+
+      Spola is an open-source autonomous agent framework built on Kotlin/JVM.
+      It provides type-safe state graphs, a deterministic process engine, and
+      bidirectional MCP support.
+
+      ## Key Features
+
+      - **Type-safe workflows** — Compile-time verified state transitions via sealed classes
+      - **Process engine** — Deterministic DAG with AI, shell, gate, and plugin steps
+      - **MCP** — Both server AND client in minimal code
+      - **CLI + REST API + MCP** — Three interfaces from one engine
+      EOFSAMPLE
+      fi
+
+      echo "=== Documents found ==="
+      find "$DIR" -type f | sort
+
+      echo ""
+      echo "=== Chunking ==="
+      for f in $(find "$DIR" -type f | sort); do
+        echo "--- $f ---"
+        CONTENT=$(cat "$f")
+        LEN=${#CONTENT}
+        echo "Length: $LEN chars"
+        if [ "$LEN" -gt "$CHUNK_SIZE" ]; then
+          echo "Chunks: ~$(( (LEN + CHUNK_SIZE - 1) / CHUNK_SIZE ))"
+        else
+          echo "Chunks: 1 (within size limit)"
+        fi
+        echo ""
+        echo "$CONTENT" | head -200
+        echo ""
+      done
+    timeout: 30
+    done:
+      - condition: output_has_content
+
+  # ── Step 2: Generate Embeddings ──────────────────────────────────────────
+  - id: generate-embeddings
+    type: ai
+    depends_on: [load-documents]
+    persona: >
+      You are an embedding generation specialist. Your task is to analyze
+      document content and produce structured vector-ready representations.
+    goal: |
+      Analyze the following documents and produce structured representations
+      suitable for embedding and vector search.
+
+      Source documents:
+      {{step.load-documents.output}}
+
+      For each document chunk, extract:
+      1. **Chunk ID** — Unique identifier
+      2. **Source file** — Original filename
+      3. **Content** — The raw text
+      4. **Keywords** — Up to 10 relevant keywords/phrases
+      5. **Summary** — 1-2 sentence description of content
+
+      Format as JSON-like structured data for downstream embedding.
+    done:
+      - condition: output_has_content
+      - condition: output_contains
+        value: "Chunk|chunk|embedding|vector"
+
+  # ── Step 3: Query Vector Store ───────────────────────────────────────────
+  - id: query-vector-store
+    type: ai
+    depends_on: [generate-embeddings]
+    persona: >
+      You are a semantic search and retrieval specialist. Your task is to
+      analyze a user query against a set of document embeddings and identify
+      the most relevant chunks. Use semantic understanding, not keyword matching.
+    goal: |
+      Given the following user query and document embeddings, identify the
+      top {{params.top_k}} most semantically relevant document chunks.
+
+      ## User Query
+      {{params.query}}
+
+      ## Document Embeddings
+      {{step.generate-embeddings.output}}
+
+      For each relevant chunk found:
+      1. **Chunk ID** — Reference the original chunk identifier
+      2. **Source file** — Original filename
+      3. **Relevance score** — 0.0 to 1.0 (1.0 = perfect match)
+      4. **Relevant excerpt** — The portion of content most relevant to the query
+      5. **Match reason** — Why this chunk matches the query
+
+      Return results ranked by relevance score descending. If no chunks are
+      semantically relevant to the query, state that clearly.
+    done:
+      - condition: output_has_content
+
+  # ── Step 4: Generate Response ────────────────────────────────────────────
+  - id: generate-response
+    type: ai
+    depends_on: [query-vector-store]
+    persona: |
+      You are an AI assistant answering questions using only the provided
+      context. If the context does not contain enough information to answer,
+      state that clearly. Cite sources when possible.
+    goal: |
+      Answer the following query using the provided context documents.
+
+      ## User Query
+      {{params.query}}
+
+      ## Retrieved Context
+      {{step.query-vector-store.output}}
+
+      ## Original Goal
+      {{state.goal}}
+
+      Instructions:
+      - Base your answer ONLY on the context above
+      - If the context is insufficient, say so
+      - Cite specific document sources where applicable
+      - Format as well-structured Markdown
+    done:
+      - condition: output_has_content
+      - condition: output_contains
+        value: "## |# |\\- |\\d\\. "
+
+done:
+  - condition: all_steps_passed
+  - condition: report_generated

@@ -1,0 +1,173 @@
+name: multi-approval
+version: "1"
+description: >
+  Multi-signer approval workflow. Prepares a proposal using AI, routes it
+  through a manager approval gate, then a director approval gate, and finally
+  executes the approved action and notifies all stakeholders.
+
+params:
+  proposal_topic:
+    type: string
+    description: "Topic or description of the proposal"
+    default: ""
+    required: true
+  proposal_detail:
+    type: string
+    description: "Detailed proposal content (markdown supported)"
+    default: ""
+    required: false
+  notify_channels:
+    type: array
+    description: "List of notification channels or recipients"
+    default: ["team-email", "slack-general"]
+    required: false
+
+steps:
+  # ── Step 1: Prepare Proposal ─────────────────────────────────────────────
+  - id: prepare-proposal
+    type: ai
+    persona: |
+      You are a business analyst and proposal writer. Structure proposals
+      clearly with:
+      - Executive summary
+      - Background / context
+      - Proposed changes
+      - Expected impact (benefits, risks, costs)
+      - Implementation timeline
+      - Success criteria
+    goal: |
+      Prepare a detailed proposal on the following topic.
+
+      ## Topic
+      {{params.proposal_topic}}
+
+      ## Additional Detail
+      {{params.proposal_detail}}
+
+      ## Context
+      {{state.goal}}
+
+      Produce a well-structured Markdown proposal document suitable for
+      review by management and executive leadership.
+    done:
+      - condition: output_has_content
+      - condition: markdown_valid
+      - condition: output_contains
+        value: "## |# "
+
+  # ── Step 2: Manager Review ───────────────────────────────────────────────
+  - id: manager-review
+    type: human_approval
+    depends_on: [prepare-proposal]
+    prompt: |
+      ### Manager Approval Required
+
+      Please review the following proposal and decide whether to approve
+      it for further consideration by executive leadership.
+
+      ---
+
+      {{step.prepare-proposal.output}}
+
+      ---
+
+      **Instructions:**
+      - Approve if the proposal is feasible within team resources
+      - Reject if significant blockers exist at the team level
+      - Provide brief justification for your decision
+
+  # ── Step 3: Director Review ──────────────────────────────────────────────
+  - id: director-review
+    type: human_approval
+    depends_on: [manager-review]
+    prompt: |
+      ### Director Approval Required
+
+      The proposal below has passed the manager-level review. Please review
+      and decide whether to authorize execution.
+
+      ---
+
+      {{step.prepare-proposal.output}}
+
+      ---
+
+      **Manager's decision context:**
+      The manager review gate has been resolved.
+
+      **Instructions:**
+      - Approve if the proposal aligns with strategic objectives
+      - Reject if there are strategic, budgetary, or compliance concerns
+      - Provide brief justification for your decision
+
+  # ── Step 4: Execute ──────────────────────────────────────────────────────
+  - id: execute-proposal
+    type: shell
+    depends_on: [director-review]
+    command: |
+      echo "========================================"
+      echo "  EXECUTING APPROVED PROPOSAL"
+      echo "========================================"
+      echo ""
+      echo "Proposal: {{params.proposal_topic}}"
+      echo ""
+      echo "=== Execution Plan ==="
+      echo "1. ✅ Manager approval received"
+      echo "2. ✅ Director approval received"
+      echo "3. 🚀 Executing proposal actions..."
+      echo ""
+      echo "=== Steps ==="
+      echo "- Phase 1: Preparation"
+      echo "- Phase 2: Implementation"
+      echo "- Phase 3: Verification"
+      echo "- Phase 4: Handover"
+      echo ""
+      echo "Execution timestamp: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+      echo "Status: IN_PROGRESS"
+      echo ""
+
+      SAFE_TOPIC=$(echo "{{params.proposal_topic}}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+      echo "Log file: /tmp/proposal-${SAFE_TOPIC}.log"
+      echo "========================================"
+    timeout: 120
+    done:
+      - condition: output_has_content
+
+  # ── Step 5: Notify Stakeholders ──────────────────────────────────────────
+  - id: notify-stakeholders
+    type: ai
+    depends_on: [execute-proposal]
+    persona: |
+      You are a communications specialist. Draft clear, professional
+      notifications tailored to different audience channels.
+    goal: |
+      Draft stakeholder notifications for the approved and executed proposal.
+
+      ## Proposal
+      {{params.proposal_topic}}
+
+      ## Execution Details
+      {{step.execute-proposal.output}}
+
+      ## Proposal Content
+      {{step.prepare-proposal.output}}
+
+      ## Notification Channels
+      {{params.notify_channels}}
+
+      Produce a notification message that:
+      1. States what was approved and executed
+      2. Summarizes the proposal key points
+      3. Provides the execution status
+      4. Includes next steps or action items for recipients
+
+      Format: Markdown, professional but concise tone.
+    done:
+      - condition: output_has_content
+      - condition: markdown_valid
+      - condition: output_contains
+        value: "approved|executed|completed"
+
+done:
+  - condition: all_steps_passed
+  - condition: report_generated

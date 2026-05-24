@@ -35,6 +35,9 @@ class ReplSession(
     /** Current session ID for checkpoint save/load. Null means new unsaved session. */
     private var sessionId: String? = null
 
+    /** Token usage for the most recent goal execution. */
+    private var lastTurnTokenUsage = TokenUsage(0, 0, 0)
+
     /** Number of goals executed in this session. */
     var turnNumber: Int = 0
         private set
@@ -42,17 +45,28 @@ class ReplSession(
     /** Run a single goal, mutating the session transcript in-place. */
     suspend fun runGoal(goal: String): String {
         turnNumber++
-        return instance.agent.runFull(
+        val before = instance.agent.getCumulativeTokens()
+        val result = instance.agent.runFull(
             persona = instance.persona,
             goal = goal,
             transcript = transcript,
             observer = instance.observer,
         )
+        val after = instance.agent.getCumulativeTokens()
+        lastTurnTokenUsage = TokenUsage(
+            inputTokens = after.inputTokens - before.inputTokens,
+            outputTokens = after.outputTokens - before.outputTokens,
+            thinkingTokens = after.thinkingTokens - before.thinkingTokens,
+        )
+        return result
     }
 
     /** Clear the conversation transcript and reset turn counter. */
     fun clear() {
         transcript.clear()
+        instance.agent.resetTokenCounters()
+        instance.agent.setPinnedMessageIds(emptySet())
+        lastTurnTokenUsage = TokenUsage(0, 0, 0)
         turnNumber = 0
     }
 
@@ -74,6 +88,8 @@ class ReplSession(
         // transcript is never modified concurrently by runGoal during a /session load.
         transcript.clear()
         transcript.addAll(conversation)
+        instance.agent.resetTokenCounters()
+        lastTurnTokenUsage = TokenUsage(0, 0, 0)
         sessionId = sid
         val lastTurn = cm.listForSession(sid).maxOfOrNull { it.turnNumber } ?: 0
         turnNumber = lastTurn
@@ -101,13 +117,29 @@ class ReplSession(
     /** Return an immutable snapshot of the conversation. */
     fun getConversation(): List<ChatMessage> = transcript.toList()
 
+    fun getLastTurnTokenUsage(): TokenUsage = lastTurnTokenUsage
+
+    fun getCumulativeTokenUsage(): TokenUsage = instance.agent.getCumulativeTokens()
+
+    fun getPinnedMessageIds(): Set<Int> = instance.agent.getPinnedMessageIds()
+
+    fun pinMessageId(messageId: Int) {
+        instance.agent.pinMessageId(messageId)
+    }
+
+    fun unpinMessageId(messageId: Int) {
+        instance.agent.unpinMessageId(messageId)
+    }
+
     /**
      * Replace the underlying SpolaInstance (for /model or /provider switch).
      * The conversation transcript survives the switch.
      */
     fun replaceInstance(newInstance: SpolaInstance) {
+        val tokenUsage = instance.agent.getCumulativeTokens()
         instance.close()
         instance = newInstance
+        instance.agent.setCumulativeTokens(tokenUsage)
     }
 
     /** Close the underlying SpolaInstance and release resources. */
@@ -260,6 +292,14 @@ private suspend fun runGoal(session: ReplSession, goal: String) {
                 println("${ANSI_DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}")
             }
             val elapsed = (System.nanoTime() - startTime) / 1_000_000_000.0
+            val turnTokens = session.getLastTurnTokenUsage()
+            val totalTokens = session.getCumulativeTokenUsage()
+            println(
+                "${ANSI_DIM}[Tokens this turn: ${formatTokenCount(turnTokens.inputTokens)} in | " +
+                    "${formatTokenCount(turnTokens.outputTokens)} out | ${formatTokenCount(turnTokens.thinkingTokens)} think] " +
+                    "[Total: ${formatTokenCount(totalTokens.inputTokens)} in | ${formatTokenCount(totalTokens.outputTokens)} out | " +
+                    "${formatTokenCount(totalTokens.thinkingTokens)} think]${ANSI_RESET}",
+            )
             println("${ANSI_DIM}Completed in ${String.format("%.1f", elapsed)}s${ANSI_RESET}")
         } catch (e: Exception) {
             println("${ANSI_RED}Error: ${e.message}${ANSI_RESET}")
@@ -325,13 +365,20 @@ class ConsoleObserver(
         println("${ANSI_DIM}🤖 LLM call: $provider/$model${ANSI_RESET}")
     }
 
-    override suspend fun onLlmResult(model: String, provider: String, inputTokens: Int?, outputTokens: Int?) {
+    override suspend fun onLlmResult(
+        model: String,
+        provider: String,
+        inputTokens: Int?,
+        outputTokens: Int?,
+        thinkingTokens: Int?,
+    ) {
         val tokenInfo = buildString {
             append("${ANSI_DIM}✅ LLM result: $provider/$model")
-            if (inputTokens != null || outputTokens != null) {
+            if (inputTokens != null || outputTokens != null || thinkingTokens != null) {
                 val inp = inputTokens?.toString() ?: "?"
                 val out = outputTokens?.toString() ?: "?"
-                append(" (in: $inp, out: $out)")
+                val think = thinkingTokens?.toString() ?: "?"
+                append(" (in: $inp, out: $out, think: $think)")
             }
             append("${ANSI_RESET}")
         }
@@ -346,3 +393,5 @@ class ConsoleObserver(
         val DEBUG_ONLY_STATUSES = setOf("llm_request")
     }
 }
+
+fun formatTokenCount(count: Long): String = java.lang.String.format("%,d", count)

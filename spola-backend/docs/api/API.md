@@ -101,7 +101,7 @@ Response:
 ```json
 {
   "status": "ok",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
 ```
 
@@ -1618,7 +1618,7 @@ Response:
   "port": 8082,
   "token": "abc123-token",
   "trustId": "uuid-trust-id",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
 ```
 

@@ -12,6 +12,7 @@ import dev.spola.memory.MemoryEntry
 import dev.spola.scheduler.ScheduledJob
 import dev.spola.toTypeString
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -26,6 +27,11 @@ data class AgentRunRequest(
     val goal: String,
     val model: String? = null,
     val persona: String? = null,
+)
+
+@Serializable
+data class ExecRequest(
+    val command: String,
 )
 
 @Serializable
@@ -169,6 +175,18 @@ data class ErrorEventPayload(
 data class CompleteEventPayload(
     val result: String,
     val turns: Int,
+)
+
+@Serializable
+data class TokenUsageEventPayload(
+    val type: String = "token_usage",
+    val turn: Int,
+    val input_tokens: Int,
+    val output_tokens: Int,
+    val thinking_tokens: Int,
+    val cumulative_input: Long,
+    val cumulative_output: Long,
+    val cumulative_thinking: Long,
 )
 
 // Delivery API models
@@ -382,6 +400,7 @@ data class SessionInfo(
     val lastActiveAt: Long = createdAt,
     val modelId: String,
     val providerId: String = "",
+    val pinnedMessageIds: Set<Int> = emptySet(),
 )
 
 @Serializable
@@ -394,6 +413,18 @@ data class CreateSessionRequest(
 @Serializable
 data class SessionModelUpdate(
     val modelId: String,
+)
+
+@Serializable
+data class PinRequest(
+    @SerialName("message_ids")
+    val messageIds: List<Int>,
+)
+
+@Serializable
+data class PinResponse(
+    @SerialName("message_ids")
+    val messageIds: List<Int>,
 )
 
 @Serializable

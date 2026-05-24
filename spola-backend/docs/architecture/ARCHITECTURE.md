@@ -1,6 +1,6 @@
 # Spola Architecture
 
-**Version:** 0.1.0 | **Modules:** `spola-backend-core` + `spola-backend-cli` | **LLM Layer:** TramAI
+**Version:** 0.1.1 | **Modules:** `spola-backend-core` + `spola-backend-cli` | **LLM Layer:** TramAI
 
 ## Module Map
 

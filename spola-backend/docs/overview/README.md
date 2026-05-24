@@ -1,7 +1,7 @@
 # Spola — JVM Autonomous Coding Agent
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/nousresearch/spola)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/nousresearch/spola)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/nousresearch/spola)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-21%2B-orange.svg)](https://adoptium.net)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.3-purple.svg)](https://kotlinlang.org)
@@ -19,7 +19,7 @@
 ├────────────────────────┬─────────────────────────┬──────────────────────┤
 │    CLI + REPL          │    Web Dashboard         │    REST API          │
 │                        │                         │                      │
-│  Spola v0.1.0          │  ┌──────────────────┐    │  curl localhost:8082 │
+│  Spola v0.1.1          │  ┌──────────────────┐    │  curl localhost:8082 │
 │  Type a goal...        │  │  💬 Chat  🧰 Tools│    │  POST /api/agent/run│
 │                        │  │  🧠 Memory ⏰ Jobs │    │  SSE streaming     │
 │  > review this PR      │  │  📊 Metrics       │    │  40+ endpoints     │

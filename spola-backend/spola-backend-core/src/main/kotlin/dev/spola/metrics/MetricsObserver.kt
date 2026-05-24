@@ -70,10 +70,20 @@ class MetricsObserver(
         next?.onLlmCall(model, provider)
     }
 
-    override suspend fun onLlmResult(model: String, provider: String, inputTokens: Int?, outputTokens: Int?) {
-        if (inputTokens != null && outputTokens != null) {
-            metrics.recordLlmTokens(inputTokens = inputTokens, outputTokens = outputTokens)
+    override suspend fun onLlmResult(
+        model: String,
+        provider: String,
+        inputTokens: Int?,
+        outputTokens: Int?,
+        thinkingTokens: Int?,
+    ) {
+        if (inputTokens != null || outputTokens != null || thinkingTokens != null) {
+            metrics.recordLlmTokens(
+                inputTokens = inputTokens ?: 0,
+                outputTokens = outputTokens ?: 0,
+                thinkingTokens = thinkingTokens ?: 0,
+            )
         }
-        next?.onLlmResult(model, provider, inputTokens, outputTokens)
+        next?.onLlmResult(model, provider, inputTokens, outputTokens, thinkingTokens)
     }
 }

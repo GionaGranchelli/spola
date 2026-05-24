@@ -16,6 +16,11 @@ data class AgentRunResponse(
 )
 
 @Serializable
+data class ExecRequest(
+    val command: String,
+)
+
+@Serializable
 data class HealthResponse(
     val status: String,
     val version: String

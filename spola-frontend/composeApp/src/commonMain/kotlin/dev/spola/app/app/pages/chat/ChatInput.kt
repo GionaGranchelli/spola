@@ -4,16 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -131,93 +128,46 @@ fun ChatInput(
         Column {
             HorizontalDivider(color = SpolaColors.bgElevated)
 
-            BoxWithConstraints(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val compactLayout = maxWidth < 720.dp
-                val inputFieldWidth = maxWidth - 104.dp
+                ChatInputField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    onSend = onSend,
+                    isRunning = isRunning,
+                    isSessionSelected = isSessionSelected,
+                    modifier = Modifier.weight(1f),
+                )
 
-                if (compactLayout) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ChatInputField(
-                            value = value,
-                            onValueChange = onValueChange,
-                            onSend = onSend,
-                            isRunning = isRunning,
-                            isSessionSelected = isSessionSelected,
-                            modifier = Modifier.fillMaxWidth(),
+                Button(
+                    onClick = onSend,
+                    enabled = value.isNotBlank() && !isRunning && isSessionSelected,
+                    modifier = Modifier
+                        .height(48.dp)
+                        .semantics {
+                            contentDescription = if (isSessionSelected) "Send message" else "Send message — select a session first"
+                            role = Role.Button
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SpolaColors.accent,
+                        disabledContainerColor = SpolaColors.accent.copy(alpha = 0.3f),
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    if (isRunning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = SpolaColors.textPrimary,
                         )
-                        Button(
-                            onClick = onSend,
-                            enabled = value.isNotBlank() && !isRunning && isSessionSelected,
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .height(48.dp)
-                                .semantics {
-                                    contentDescription = if (isSessionSelected) "Send message" else "Send message — select a session first"
-                                    role = Role.Button
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = SpolaColors.accent,
-                                disabledContainerColor = SpolaColors.accent.copy(alpha = 0.3f),
-                            ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) {
-                            if (isRunning) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = SpolaColors.textPrimary,
-                                )
-                            } else {
-                                Text("Send", fontSize = 13.sp)
-                            }
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ChatInputField(
-                            value = value,
-                            onValueChange = onValueChange,
-                            onSend = onSend,
-                            isRunning = isRunning,
-                            isSessionSelected = isSessionSelected,
-                            modifier = Modifier.width(inputFieldWidth),
-                        )
-
-                        Button(
-                            onClick = onSend,
-                            enabled = value.isNotBlank() && !isRunning && isSessionSelected,
-                            modifier = Modifier
-                                .height(48.dp)
-                                .semantics {
-                                    contentDescription = if (isSessionSelected) "Send message" else "Send message — select a session first"
-                                    role = Role.Button
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = SpolaColors.accent,
-                                disabledContainerColor = SpolaColors.accent.copy(alpha = 0.3f),
-                            ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) {
-                            if (isRunning) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = SpolaColors.textPrimary,
-                                )
-                            } else {
-                                Text("Send", fontSize = 13.sp)
-                            }
-                        }
+                    } else {
+                        Text("Send", fontSize = 13.sp)
                     }
                 }
             }

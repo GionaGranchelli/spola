@@ -11,13 +11,40 @@ import java.net.NetworkInterface
 import javax.imageio.ImageIO
 
 /**
- * Detects the machine's LAN IP address by iterating network interfaces.
- * Prefers IPv4, non-loopback, active interfaces. Falls back to "localhost".
+ * Detects the machine's LAN IP address.
+ * First tries to find the interface matching the default route (via reading /proc/net/route).
+ * Falls back to iterating non-loopback, non-virtual IPv4 interfaces.
+ * Skips Docker/bridge/virtual interfaces (docker, br-, veth, etc.).
+ * Falls back to "localhost".
  */
 fun detectLanIp(): String {
+    // Strategy 1: Parse /proc/net/route to find the interface with the default gateway.
+    try {
+        val defaultGwIface = java.io.File("/proc/net/route").useLines { lines ->
+            lines.drop(1) // skip header
+                .map { it.split('\t') }
+                .firstOrNull { parts -> parts.size > 1 && parts[1] == "00000000" }
+                ?.getOrNull(0)
+        }
+        if (defaultGwIface != null) {
+            val ni = NetworkInterface.getByName(defaultGwIface)
+            if (ni != null && !ni.isLoopback && ni.isUp) {
+                val addr = ni.inetAddresses.asSequence()
+                    .firstOrNull { it is java.net.Inet4Address && !it.isLoopbackAddress }
+                if (addr != null) return addr.hostAddress
+            }
+        }
+    } catch (_: Exception) {
+        // Fall through to strategy 2
+    }
+
+    // Strategy 2: Iterate interfaces, skip loopback/down/docker/bridge/virtual.
+    val virtualPrefixes = listOf("docker", "br-", "veth", "vbox", "vmnet", "tailscale")
     val interfaces = NetworkInterface.getNetworkInterfaces().asSequence()
     for (ni in interfaces) {
         if (ni.isLoopback || !ni.isUp) continue
+        val name = ni.name.lowercase()
+        if (virtualPrefixes.any { name.startsWith(it) }) continue
         val addr = ni.inetAddresses.asSequence()
             .firstOrNull { it is java.net.Inet4Address && !it.isLoopbackAddress }
         if (addr != null) return addr.hostAddress

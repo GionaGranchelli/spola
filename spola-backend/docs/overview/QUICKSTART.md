@@ -61,7 +61,7 @@ Build the distribution, then run the binary directly for an interactive session:
 You'll see:
 
 ```
-Spola v0.1.0 — JVM Autonomous Coding Agent
+Spola v0.1.1 — JVM Autonomous Coding Agent
 Type your goal, or /help for commands.
 
 >

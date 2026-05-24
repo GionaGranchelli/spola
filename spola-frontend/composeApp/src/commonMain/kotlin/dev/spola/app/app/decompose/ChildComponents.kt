@@ -3,6 +3,7 @@ package dev.spola.app.app.decompose
 import com.arkivanov.decompose.value.Value
 import dev.spola.app.models.Message
 import dev.spola.app.models.StreamEvent
+import dev.spola.app.models.TokenUsageData
 import kotlinx.coroutines.flow.StateFlow
 
 interface AgentRunComponent {
@@ -14,6 +15,7 @@ interface AgentRunComponent {
     val status: Value<String>
     val finalResponse: Value<String>
     val isRunning: StateFlow<Boolean>
+    val tokenUsage: StateFlow<TokenUsageData?>
 
     fun setSession(sessionId: String)
     fun updateGoal(goal: String)

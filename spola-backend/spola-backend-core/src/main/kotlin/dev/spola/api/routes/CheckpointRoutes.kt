@@ -17,13 +17,13 @@ fun Route.apiCheckpointRoutes(
     checkpointManager: CheckpointManager,
 ) {
     get("/checkpoint") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val checkpoints = checkpointManager.list()
         call.respond(CheckpointListResponse(checkpoints = checkpoints.map { it.toResponse() }))
     }
 
     get("/checkpoint/{id}/diff") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val idStr = call.requirePathParameter("id", "checkpoint id")
         val id = idStr.toRequiredLong("checkpoint id")
         val cp = checkpointManager.loadCheckpoint(id).orNotFound { "checkpoint not found: $id" }
@@ -39,7 +39,7 @@ fun Route.apiCheckpointRoutes(
     }
 
     get("/checkpoint/session/{sessionId}/diffs") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val sessionId = call.requirePathParameter("sessionId", "session id")
         val checkpoints = checkpointManager.listForSession(sessionId)
         call.respond(
@@ -58,7 +58,7 @@ fun Route.apiCheckpointRoutes(
     }
 
     get("/checkpoint/resume/{session_id}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val sessionId = call.requirePathParameter("session_id")
         val loaded = checkpointManager.loadConversation(sessionId)
         if (loaded == null) {

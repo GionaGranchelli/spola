@@ -6,6 +6,7 @@ import dev.spola.checkpoint.toSerializable
 import dev.spola.sqlite.SqliteStoreSupport
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
@@ -33,6 +34,11 @@ class SqliteSessionStore(dbPath: String) : AutoCloseable {
         runBlocking {
             SqliteStoreSupport.retryingTransaction(database) {
                 SchemaUtils.create(Sessions, SessionMessages)
+                try {
+                    exec("ALTER TABLE sessions ADD COLUMN pinned_message_ids TEXT NOT NULL DEFAULT '[]'")
+                } catch (_: Exception) {
+                    // Column already exists.
+                }
             }
         }
     }
@@ -44,6 +50,7 @@ class SqliteSessionStore(dbPath: String) : AutoCloseable {
         val lastActiveAt = long("last_active_at")
         val modelId = varchar("model_id", 256)
         val providerId = varchar("provider_id", 256).default("")
+        val pinnedMessageIds = text("pinned_message_ids").default("[]")
 
         override val primaryKey = PrimaryKey(id)
     }
@@ -66,6 +73,7 @@ class SqliteSessionStore(dbPath: String) : AutoCloseable {
                     it[lastActiveAt] = session.lastActiveAt
                     it[modelId] = session.modelId
                     it[providerId] = session.providerId
+                    it[pinnedMessageIds] = encodePinnedMessageIds(session.pinnedMessageIds)
                 }
             }
         }
@@ -97,6 +105,7 @@ class SqliteSessionStore(dbPath: String) : AutoCloseable {
                 it[lastActiveAt] = session.lastActiveAt
                 it[modelId] = session.modelId
                 it[providerId] = session.providerId
+                it[pinnedMessageIds] = encodePinnedMessageIds(session.pinnedMessageIds)
             }
             session
         }
@@ -171,7 +180,15 @@ class SqliteSessionStore(dbPath: String) : AutoCloseable {
         lastActiveAt = row[Sessions.lastActiveAt],
         modelId = row[Sessions.modelId],
         providerId = row[Sessions.providerId],
+        pinnedMessageIds = decodePinnedMessageIds(row[Sessions.pinnedMessageIds]),
     )
+
+    private fun encodePinnedMessageIds(messageIds: Set<Int>): String =
+        json.encodeToString(messageIds.sorted())
+
+    private fun decodePinnedMessageIds(raw: String): Set<Int> =
+        runCatching { json.decodeFromString<List<Int>>(raw).toSet() }
+            .getOrDefault(emptySet())
 
     override fun close() {
         // Exposed manages connection lifecycle

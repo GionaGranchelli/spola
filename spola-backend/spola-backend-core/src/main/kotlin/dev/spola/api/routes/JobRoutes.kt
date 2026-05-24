@@ -18,12 +18,12 @@ fun Route.apiJobRoutes(
     jobStore: SpolaJobStore,
 ) {
     get("/jobs") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         call.respond(JobsResponse(jobStore.list().map { it.toResponse() }))
     }
 
     post("/jobs") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val request = call.receive<CreateJobRequest>()
         val job = jobStore.add(
             name = request.name,
@@ -36,7 +36,7 @@ fun Route.apiJobRoutes(
     }
 
     delete("/jobs/{id}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val id = call.requirePathParameter("id", "job id")
         val removed = jobStore.remove(id)
         if (!removed) {

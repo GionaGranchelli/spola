@@ -11,6 +11,11 @@ import dev.tramai.openai.OpenAiProvider
 private const val OPENAI_COMPAT = "openai-compat"
 private val OPENAI_COMPAT_TYPES = setOf("openai", OPENAI_COMPAT, "ollama", "google", "deepseek")
 
+data class ProviderContextInfo(
+    val providerId: String,
+    val contextWindow: Int,
+)
+
 /**
  * Wraps TramAI's [ProviderRegistry] to build it from [SpolaConfig], with
  * fallback-chain support, model routing, and support for all current Spola
@@ -24,6 +29,13 @@ private val OPENAI_COMPAT_TYPES = setOf("openai", OPENAI_COMPAT, "ollama", "goog
  * - A single registry snapshot that is safe for concurrent use
  */
 object SpolaProviderRegistry {
+    private val knownContextWindows = mapOf(
+        "openai/gpt-4o" to ProviderContextInfo("openai", 128000),
+        "openai/gpt-4o-mini" to ProviderContextInfo("openai", 128000),
+        "anthropic/claude-sonnet-4" to ProviderContextInfo("anthropic", 200000),
+        "anthropic/claude-sonnet-4-20250514" to ProviderContextInfo("anthropic", 200000),
+        "deepseek/deepseek-chat" to ProviderContextInfo("deepseek", 64000),
+    )
 
     /**
      * Builds a fully-configured [ProviderRegistry] from [SpolaConfig].
@@ -148,6 +160,34 @@ object SpolaProviderRegistry {
             model = modelName,
         )
         return registry.resolveCandidates(operation)
+    }
+
+    /**
+     * Returns the known input context window for a provider/model combination.
+     *
+     * Returns null when the provider is unknown, the model is unknown, or the
+     * provider is model-dependent and not auto-detected.
+     */
+    fun getContextWindow(providerId: String, modelName: String): Int? {
+        val normalizedProviderId = providerId.lowercase()
+        val normalizedModelName = modelName.lowercase()
+
+        if (normalizedProviderId == "ollama") {
+            return null
+        }
+
+        val directMatch = knownContextWindows["$normalizedProviderId/$normalizedModelName"]
+        if (directMatch != null) {
+            return directMatch.contextWindow
+        }
+
+        return when (normalizedModelName) {
+            "gpt-4o", "gpt-4o-mini" -> knownContextWindows["openai/$normalizedModelName"]?.contextWindow
+            "claude-sonnet-4", "claude-sonnet-4-20250514" ->
+                knownContextWindows["anthropic/$normalizedModelName"]?.contextWindow
+            "deepseek-chat" -> knownContextWindows["deepseek/$normalizedModelName"]?.contextWindow
+            else -> null
+        }
     }
 
     // -----------------------------------------------------------------

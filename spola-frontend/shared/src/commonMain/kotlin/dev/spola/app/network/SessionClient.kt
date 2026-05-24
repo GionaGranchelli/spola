@@ -6,6 +6,7 @@ import dev.spola.app.models.Message
 import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.SessionModelUpdateRequest
 import dev.spola.app.models.StreamEvent
+import dev.spola.app.models.BackendMessage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpTimeoutConfig
@@ -33,6 +34,13 @@ class SessionClient(
     suspend fun getSession(sessionId: String): ChatSession = client.get("api/session/$sessionId").body()
 
     suspend fun getMessages(sessionId: String): List<Message> = client.get("api/session/$sessionId/messages").body()
+
+    /**
+     * Fetch messages in the raw backend format (role + content only).
+     * The backend returns [BackendMessage] without frontend fields like id/sessionId/timestamp.
+     */
+    suspend fun getBackendMessages(sessionId: String): List<BackendMessage> =
+        client.get("api/session/$sessionId/messages").body()
 
     suspend fun createSession(session: ChatSession): ChatSession =
         client.post("api/session") {

@@ -72,8 +72,8 @@ android {
         applicationId = "dev.spola.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.0.7"
+        versionCode = 15
+        versionName = "0.0.15"
     }
     
     packaging {

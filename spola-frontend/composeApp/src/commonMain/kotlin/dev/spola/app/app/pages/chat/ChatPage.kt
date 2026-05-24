@@ -9,10 +9,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -29,6 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.spola.app.app.decompose.DashboardComponent
@@ -94,6 +99,34 @@ fun ChatPage(
 
     if (state.createDialogVisible) {
         ChatCreateSessionDialog(component = component.sessionList)
+    }
+}
+
+@Composable
+private fun TokenUsageBar(
+    turnTokens: String,
+    cumulativeTokens: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .background(SpolaColors.bgElevated)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = "[$turnTokens]",
+            color = SpolaColors.textMuted,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "[$cumulativeTokens]",
+            color = SpolaColors.textMuted,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+        )
     }
 }
 
@@ -217,16 +250,44 @@ private fun ChatContent(
     onModelSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        MessageList(
-            messages = state.visibleMessages,
-            isStreaming = state.isRunning,
-            toolEvents = state.toolEvents,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 49.dp, bottom = 92.dp),
-        )
+    Box(modifier = modifier.imePadding()) {
+        Column(Modifier.fillMaxSize()) {
+            // Reserve space for ChatStatusBar overlay at the top
+            Spacer(Modifier.height(49.dp))
 
+            // Messages fill remaining space dynamically
+            MessageList(
+                messages = state.visibleMessages,
+                isStreaming = state.isRunning,
+                toolEvents = state.toolEvents,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+
+            // Token usage bar — visible when token data is available
+            val turnTokens = state.turnTokens
+            val cumulativeTokens = state.cumulativeTokens
+            if (turnTokens != null && cumulativeTokens != null) {
+                TokenUsageBar(
+                    turnTokens = turnTokens,
+                    cumulativeTokens = cumulativeTokens,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            // Input bar at bottom of Column
+            ChatInput(
+                value = state.goal,
+                onValueChange = onGoalChange,
+                onSend = onSend,
+                isRunning = state.isRunning,
+                isSessionSelected = state.isSessionSelected,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // Status bar overlay at top
         ChatStatusBar(
             modelId = state.selectedModelId,
             models = state.models,
@@ -234,17 +295,6 @@ private fun ChatContent(
             isConnected = true,
             onModelSelected = onModelSelected,
             onToggleSidebar = onToggleSidebar,
-        )
-
-        ChatInput(
-            value = state.goal,
-            onValueChange = onGoalChange,
-            onSend = onSend,
-            isRunning = state.isRunning,
-            isSessionSelected = state.isSessionSelected,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth(),
         )
     }
 }

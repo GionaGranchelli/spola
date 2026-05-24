@@ -7,8 +7,10 @@ import dev.spola.app.models.PairingInfoResponse
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
 import dev.spola.app.models.SystemEvent
+import dev.spola.app.models.BackendMessage
 import dev.spola.models.AgentRunRequest
 import dev.spola.models.AgentRunResponse
+import dev.spola.models.ExecRequest
 import dev.spola.models.ScheduledJobResponse
 import dev.spola.models.ToolInfo
 import io.ktor.client.HttpClient
@@ -52,15 +54,16 @@ class SpolaClient(
         prettyPrint = true
         isLenient = true
         ignoreUnknownKeys = true
+        coerceInputValues = true
     }
 
     private val client = httpClient.config {
         expectSuccess = true
         install(SSE)
         install(HttpTimeout) {
-            requestTimeoutMillis = 600000
+            requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
             connectTimeoutMillis = 20000
-            socketTimeoutMillis = 600000
+            socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
         }
         install(ContentNegotiation) {
             json(json)
@@ -102,30 +105,107 @@ class SpolaClient(
     fun streamSystemEvents(): Flow<SystemEvent> =
         sessionClient.streamWithRetry("api/system/stream") { _, data -> json.decodeFromString<SystemEvent>(data) }
 
-    fun streamAgentRun(goal: String, persona: String? = null): Flow<StreamEvent> = flow {
-        client.sse(
-            urlString = "api/agent/run/stream",
-            request = {
-                method = HttpMethod.Post
-                contentType(ContentType.Application.Json)
-                setBody(AgentRunRequest(goal = goal, persona = persona))
-                timeout {
-                    requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
-                    socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+    /**
+     * Run an agent in a session context — uses POST /api/session/{id}/run/stream.
+     * The backend loads existing conversation history, runs the agent with the new goal,
+     * and persists the full conversation after completion.
+     */
+    fun streamSessionAgentRun(sessionId: String, goal: String, persona: String? = null): Flow<StreamEvent> = flow {
+        try {
+            client.sse(
+                urlString = "api/session/$sessionId/run/stream",
+                request = {
+                    method = HttpMethod.Post
+                    contentType(ContentType.Application.Json)
+                    setBody(AgentRunRequest(goal = goal, persona = persona))
+                    timeout {
+                        requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                        socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    }
+                },
+            ) {
+                incoming.collect { event ->
+                    val data = event.data ?: return@collect
+                    val type = event.event ?: return@collect
+                    // Skip keepalive pings — they are not JSON events
+                    if (type == "keepalive") return@collect
+                    emit(parseAgentRunEvent(type, data))
                 }
-            },
-        ) {
-            incoming.collect { event ->
-                val data = event.data ?: return@collect
-                val type = event.event ?: return@collect
-                emit(parseAgentRunEvent(type, data))
             }
+        } catch (e: Exception) {
+            // Graceful connection close after server sends "complete" is expected.
+            // Treat as normal stream end, not an error.
+            if (!isRecoverableSseDisconnect(e)) {
+                throw e
+            }
+            // Logged silently — stream ends normally
+        }
+    }
+
+    fun streamSessionExec(sessionId: String, command: String): Flow<StreamEvent> = flow {
+        try {
+            client.sse(
+                urlString = "api/session/$sessionId/exec/stream",
+                request = {
+                    method = HttpMethod.Post
+                    contentType(ContentType.Application.Json)
+                    setBody(ExecRequest(command = command))
+                    timeout {
+                        requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                        socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    }
+                },
+            ) {
+                incoming.collect { event ->
+                    val data = event.data ?: return@collect
+                    val type = event.event ?: return@collect
+                    if (type == "keepalive") return@collect
+                    emit(parseAgentRunEvent(type, data))
+                }
+            }
+        } catch (e: Exception) {
+            if (!isRecoverableSseDisconnect(e)) {
+                throw e
+            }
+        }
+    }
+
+    fun streamAgentRun(goal: String, persona: String? = null): Flow<StreamEvent> = flow {
+        try {
+            client.sse(
+                urlString = "api/agent/run/stream",
+                request = {
+                    method = HttpMethod.Post
+                    contentType(ContentType.Application.Json)
+                    setBody(AgentRunRequest(goal = goal, persona = persona))
+                    timeout {
+                        requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                        socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                    }
+                },
+            ) {
+                incoming.collect { event ->
+                    val data = event.data ?: return@collect
+                    val type = event.event ?: return@collect
+                    // Skip keepalive pings — they are not JSON events
+                    if (type == "keepalive") return@collect
+                    emit(parseAgentRunEvent(type, data))
+                }
+            }
+        } catch (e: Exception) {
+            // Graceful connection close after server sends "complete" is expected.
+            // Treat as normal stream end, not an error.
+            if (!isRecoverableSseDisconnect(e)) {
+                throw e
+            }
+            // Logged silently — stream ends normally
         }
     }
 
     suspend fun getSessions(): List<ChatSession> = sessionClient.getSessions()
     suspend fun getSession(sessionId: String): ChatSession = sessionClient.getSession(sessionId)
     suspend fun getMessages(sessionId: String): List<Message> = sessionClient.getMessages(sessionId)
+    suspend fun getBackendMessages(sessionId: String): List<BackendMessage> = sessionClient.getBackendMessages(sessionId)
     suspend fun createSession(session: ChatSession): ChatSession = sessionClient.createSession(session)
     suspend fun deleteSession(id: String) = sessionClient.deleteSession(id)
     suspend fun sendMessage(sessionId: String, content: String): Message = sessionClient.sendMessage(sessionId, content)
@@ -195,7 +275,15 @@ class SpolaClient(
     }
 
     private fun parseAgentRunEvent(type: String, data: String): StreamEvent {
-        val payload = json.parseToJsonElement(data).jsonObject
+        val payload = try {
+            json.parseToJsonElement(data).jsonObject
+        } catch (_: Exception) {
+            // Non-JSON data (e.g. keepalive pings) — return as unsupported type
+            return StreamEvent(
+                type = StreamEventType.error,
+                content = "Unsupported event type: $type",
+            )
+        }
         return when (type) {
             "status" -> {
                 val status = payload["status"]?.jsonPrimitive?.contentOrNull
@@ -233,6 +321,16 @@ class SpolaClient(
             "complete" -> StreamEvent(
                 type = StreamEventType.complete,
                 content = payload["result"]?.jsonPrimitive?.contentOrNull,
+            )
+
+            "token_usage" -> StreamEvent(
+                type = StreamEventType.token_usage,
+                inputTokens = payload["input_tokens"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+                outputTokens = payload["output_tokens"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+                thinkingTokens = payload["thinking_tokens"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+                cumulativeInput = payload["cumulative_input"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+                cumulativeOutput = payload["cumulative_output"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+                cumulativeThinking = payload["cumulative_thinking"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
             )
 
             else -> StreamEvent(

@@ -43,9 +43,13 @@ private class SpolaOperationObservation(
 ) : OperationObservation {
 
     override fun onProviderResponse(response: ModelResponse) {
-        val inputTokens = response.inputTokens ?: return
-        val outputTokens = response.outputTokens ?: return
-        metrics.recordLlmTokens(inputTokens = inputTokens, outputTokens = outputTokens)
+        if (response.inputTokens != null || response.outputTokens != null || response.extractThinkingTokens() != null) {
+            metrics.recordLlmTokens(
+                inputTokens = response.inputTokens ?: 0,
+                outputTokens = response.outputTokens ?: 0,
+                thinkingTokens = response.extractThinkingTokens() ?: 0,
+            )
+        }
     }
 
     override fun onProviderFailure(error: Throwable) {
@@ -73,4 +77,20 @@ private class SpolaOperationObservation(
         // Metrics are recorded incrementally as events fire.
         // No aggregate counter needed at call completion.
     }
+}
+
+private fun ModelResponse.extractThinkingTokens(): Int? {
+    for (methodName in listOf("getThinkingTokens", "thinkingTokens")) {
+        val value = runCatching {
+            javaClass.methods
+                .firstOrNull { it.name == methodName && it.parameterCount == 0 }
+                ?.invoke(this)
+        }.getOrNull()
+        when (value) {
+            is Int -> return value
+            is Long -> return value.toInt()
+            is Number -> return value.toInt()
+        }
+    }
+    return null
 }

@@ -125,7 +125,13 @@ data class StreamEvent(
     val type: StreamEventType,
     val content: String? = null,
     val toolName: String? = null,
-    val toolArgs: String? = null
+    val toolArgs: String? = null,
+    val inputTokens: Int? = null,
+    val outputTokens: Int? = null,
+    val thinkingTokens: Int? = null,
+    val cumulativeInput: Long? = null,
+    val cumulativeOutput: Long? = null,
+    val cumulativeThinking: Long? = null,
 )
 
 @Serializable
@@ -172,6 +178,34 @@ data class FileMetadata(
     val size: Long,
     val timestamp: Long
 )
+
+/**
+ * Backend message response — returned by GET /api/session/{id}/messages.
+ * The backend stores messages as (role: String, content: String) without
+ * frontend fields like id, sessionId, timestamp.
+ */
+@Serializable
+data class BackendMessage(
+    val role: String,
+    val content: String,
+)
+
+/** Convert a BackendMessage (from API) into a fully-formed Message for display. */
+fun BackendMessage.toMessage(sessionId: String, id: String, timestamp: Long): Message {
+    val messageRole = when (role.lowercase()) {
+        "user" -> MessageRole.USER
+        "assistant" -> MessageRole.ASSISTANT
+        "system" -> MessageRole.SYSTEM
+        else -> MessageRole.USER
+    }
+    return Message(
+        id = id,
+        sessionId = sessionId,
+        role = messageRole,
+        content = content,
+        timestamp = timestamp,
+    )
+}
 
 @Serializable
 data class KanbanCard(
@@ -252,6 +286,59 @@ data class WorkflowRunResponse(
 )
 
 @Serializable
+data class WorkflowCheckpointResponse(
+    val id: String,
+    val executionId: String,
+    val stepName: String,
+    val stepIndex: Int = 0,
+    val timestamp: Long,
+    val stateSummary: String? = null,
+    val resumable: Boolean = false,
+)
+
+@Serializable
+data class WorkflowStepMetrics(
+    val stepName: String,
+    val inputTokens: Int = 0,
+    val outputTokens: Int = 0,
+    val thinkingTokens: Int = 0,
+    val durationMs: Long = 0,
+    val status: String = "unknown",
+    val startedAt: Long? = null,
+    val completedAt: Long? = null,
+)
+
+@Serializable
+data class WorkflowMetricsResponse(
+    val executionId: String,
+    val steps: List<WorkflowStepMetrics> = emptyList(),
+    val totalInputTokens: Int = 0,
+    val totalOutputTokens: Int = 0,
+    val totalThinkingTokens: Int = 0,
+    val totalDurationMs: Long = 0,
+)
+
+@Serializable
+data class GateDecisionRequest(
+    val executionId: String,
+    val stepName: String,
+    val approved: Boolean,
+    val reason: String? = null,
+)
+
+@Serializable
+data class WorkflowStreamEvent(
+    val type: String,
+    val step: String? = null,
+    val status: String? = null,
+    val workflow: String? = null,
+    val workflowId: String? = null,
+    val message: String? = null,
+    val error: String? = null,
+    val executionId: String? = null,
+)
+
+@Serializable
 data class SystemEvent(
     val type: SystemEventType,
     val details: String? = null
@@ -264,8 +351,17 @@ enum class SystemEventType {
 
 @Serializable
 enum class StreamEventType {
-    status, tool_call, tool_result, token, error, complete
+    status, tool_call, tool_result, token, error, complete, token_usage
 }
+
+data class TokenUsageData(
+    val inputTokens: Int = 0,
+    val outputTokens: Int = 0,
+    val thinkingTokens: Int = 0,
+    val cumulativeInput: Long = 0,
+    val cumulativeOutput: Long = 0,
+    val cumulativeThinking: Long = 0,
+)
 
 @Serializable
 data class FileTransferRequest(

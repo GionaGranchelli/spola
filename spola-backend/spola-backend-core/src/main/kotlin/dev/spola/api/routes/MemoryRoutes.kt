@@ -15,7 +15,7 @@ fun Route.apiMemoryRoutes(
     memoryStore: MemoryStore,
 ) {
     get("/memory") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val query = call.request.queryParameters["q"]?.trim().orEmpty()
         val entries = if (query.isBlank()) {
             memoryStore.listAll()
@@ -31,7 +31,7 @@ fun Route.apiMemoryRoutes(
     }
 
     delete("/memory/{key}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val key = call.requirePathParameter("key", "memory key")
         val deleted = memoryStore.delete(key)
         if (!deleted) {

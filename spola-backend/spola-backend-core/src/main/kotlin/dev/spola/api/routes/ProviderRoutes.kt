@@ -37,7 +37,7 @@ fun Route.apiProviderRoutes(
 ) {
     // ── GET /api/providers — list all available providers ──
     get("/providers") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val builtinProviders = listOf(
             ProviderInfoResponse(
                 name = "openai",
@@ -97,7 +97,7 @@ fun Route.apiProviderRoutes(
 
     // ── POST /api/providers — add a custom provider ──
     post("/providers") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val body = call.receive<CreateProviderRequest>()
         val currentConfig = configStore.load()
 
@@ -138,7 +138,7 @@ fun Route.apiProviderRoutes(
 
     // ── DELETE /api/providers/{name} — remove a custom provider ──
     delete("/providers/{name}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val name = call.parameters["name"] ?: return@delete run {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing provider name"))
         }
@@ -159,7 +159,7 @@ fun Route.apiProviderRoutes(
 
     // ── POST /api/provider/test — test a provider connection ──
     post("/provider/test") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val body = try {
             call.receive<ProviderTestRequest>()
         } catch (e: Exception) {

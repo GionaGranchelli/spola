@@ -75,8 +75,14 @@ class SpolaTracerObserver(
         next?.onLlmCall(model, provider)
     }
 
-    override suspend fun onLlmResult(model: String, provider: String, inputTokens: Int?, outputTokens: Int?) {
+    override suspend fun onLlmResult(
+        model: String,
+        provider: String,
+        inputTokens: Int?,
+        outputTokens: Int?,
+        thinkingTokens: Int?,
+    ) {
         tracer.endLlmCallSpan(inputTokens, outputTokens)
-        next?.onLlmResult(model, provider, inputTokens, outputTokens)
+        next?.onLlmResult(model, provider, inputTokens, outputTokens, thinkingTokens)
     }
 }

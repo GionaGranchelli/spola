@@ -158,11 +158,12 @@ class SpolaMetrics(
         llmCallsTotal?.labels(provider, model)?.inc()
     }
 
-    /** Record input/output token counts from an LLM response. */
-    fun recordLlmTokens(inputTokens: Int, outputTokens: Int) {
+    /** Record input/output/thinking token counts from an LLM response. */
+    fun recordLlmTokens(inputTokens: Int = 0, outputTokens: Int = 0, thinkingTokens: Int = 0) {
         val c = llmTokensTotal ?: return
         c.labels("input").inc(inputTokens.toDouble())
         c.labels("output").inc(outputTokens.toDouble())
+        c.labels("thinking").inc(thinkingTokens.toDouble())
     }
 
     /** Record a scheduler job execution. */

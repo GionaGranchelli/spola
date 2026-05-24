@@ -1,6 +1,6 @@
 # Spola CLI Reference
 
-**Version:** 0.1.0 | **Binary:** `spola` (in `spola-backend-cli/build/install/spola/bin/spola`)
+**Version:** 0.1.1 | **Binary:** `spola` (in `spola-backend-cli/build/install/spola/bin/spola`)
 
 Run via Gradle during development:
 
@@ -97,7 +97,7 @@ Omit the goal argument to enter interactive mode.
 ```
 
 ```
-Spola v0.1.0 — JVM Autonomous Coding Agent
+Spola v0.1.1 — JVM Autonomous Coding Agent
 Type your goal, or /help for commands.
 
 > write a fibonacci function in Kotlin
@@ -794,7 +794,7 @@ Once connected:
 
 ```
 Connecting to http://192.168.1.42:8082...
-Server: {"status":"ok","version":"0.1.0"}
+Server: {"status":"ok","version":"0.1.1"}
 Connected (session: sess_abc)
 > review the code in the auth module
 ```

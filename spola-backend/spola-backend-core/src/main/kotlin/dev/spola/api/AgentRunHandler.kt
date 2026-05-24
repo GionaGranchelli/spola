@@ -54,12 +54,14 @@ class AgentRunHandler(
     suspend fun runWithConversation(
         request: AgentRunRequest,
         preloadedConversation: List<ChatMessage>?,
+        pinnedMessageIds: Set<Int> = emptySet(),
     ): CompletedRun {
         require(request.goal.isNotBlank()) { "goal must not be blank" }
 
         return runState.track {
             val instance = instanceFactory(baseConfig, request.model)
             try {
+                instance.agent.setPinnedMessageIds(pinnedMessageIds)
                 val persona = request.persona ?: instance.persona
                 val enrichedPersona = enrichPersonaWithMemory(instance, persona)
                 val transcript = preloadedConversation?.toMutableList()?.let {
@@ -95,8 +97,10 @@ class AgentRunHandler(
         persona: String,
         goal: String,
         preloadedConversation: MutableList<ChatMessage>? = null,
+        pinnedMessageIds: Set<Int> = emptySet(),
         observer: dev.spola.AgentRunObserver? = null,
     ): String {
+        agent.setPinnedMessageIds(pinnedMessageIds)
         val transcript = preloadedConversation?.let {
             preloadTranscript(it, persona)
         }

@@ -24,12 +24,12 @@ fun Route.apiConfigRoutes(
     configStore: SpolaConfigFileStore,
 ) {
     get("/config") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         call.respond(ConfigResponse.fromConfig(config, configStore.configPath.toString()))
     }
 
     post("/config/save") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val body = call.receive<JsonObject>()
         val savedConfig = mergeConfig(configStore.load(), body)
         configStore.save(savedConfig)

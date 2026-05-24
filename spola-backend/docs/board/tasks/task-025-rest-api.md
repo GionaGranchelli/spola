@@ -12,7 +12,7 @@ Add a new module `spola-server` (or integrate into spola-backend-core) with Ktor
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /api/health | Health check → `{"status":"ok","version":"0.1.0"}` |
+| GET | /api/health | Health check → `{"status":"ok","version":"0.1.1"}` |
 | POST | /api/agent/run | Run agent one-shot with a goal |
 | GET | /api/jobs | List scheduled jobs |
 | POST | /api/jobs | Create a scheduled job |

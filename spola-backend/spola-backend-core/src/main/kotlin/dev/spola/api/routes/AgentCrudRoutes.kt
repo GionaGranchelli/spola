@@ -26,21 +26,21 @@ fun Route.apiAgentCrudRoutes(
     val localAgentStore = providedAgentStore ?: SqliteAgentStore(config.database.agentsDbPath)
 
     get("/agents") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val tag = call.request.queryParameters["tag"]?.trim().orEmpty()
         val agents = localAgentStore.list(tag.ifBlank { null })
         call.respond(agents.map { it.toResponse() })
     }
 
     get("/agents/{id}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val id = call.requirePathParameter("id", "agent id")
         val agent = localAgentStore.get(id).orNotFound { "agent not found: $id" }
         call.respond(agent.toResponse())
     }
 
     post("/agents") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val request = call.receive<AgentCreateRequest>()
         val agent = AgentDefinition(
             id = request.id, name = request.name,
@@ -60,7 +60,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     put("/agents/{id}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val id = call.requirePathParameter("id", "agent id")
         val existing = localAgentStore.get(id).orNotFound { "agent not found: $id" }
         val request = call.receive<AgentUpdateRequest>()
@@ -100,7 +100,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     delete("/agents/{id}") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val id = call.requirePathParameter("id", "agent id")
         if (localAgentStore.delete(id)) {
             call.respond(HttpStatusCode.NoContent)
@@ -110,7 +110,7 @@ fun Route.apiAgentCrudRoutes(
     }
 
     post("/agents/run") {
-        call.enforceBearerAuth(config.security.apiKey)
+        call.enforceBearerAuth(config.security.apiKey, insecure = config.security.insecure)
         val request = call.receive<AgentRunAgentRequest>()
         val agentDef = localAgentStore.get(request.agentId)
             .orNotFound { "agent not found: ${request.agentId}" }

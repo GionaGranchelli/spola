@@ -288,6 +288,122 @@ class WorkflowExecutionService(
 
     suspend fun listBySessionId(sessionId: String): List<WorkflowExecutionRecord> =
         executionStore.listBySessionId(sessionId)
+
+    // ── Dashboard/Monitoring methods ─────────────────────────────────
+
+    /**
+     * Return checkpoint history for an execution.
+     * Currently extracts checkpoint info from the execution record's [checkpointKey].
+     * Extended in future to query TramAI's checkpoint store by execution ID.
+     */
+    suspend fun getCheckpointHistory(executionId: String): List<WorkflowCheckpointResponse> {
+        val record = executionStore.get(executionId) ?: return emptyList()
+        val checkpoints = mutableListOf<WorkflowCheckpointResponse>()
+
+        // If the execution has a checkpoint key, report it
+        if (record.checkpointKey != null) {
+            checkpoints.add(
+                WorkflowCheckpointResponse(
+                    id = record.checkpointKey,
+                    executionId = executionId,
+                    stepName = "checkpoint_${record.checkpointKey.take(8)}",
+                    timestamp = record.updatedAt,
+                    stateSummary = "Status: ${record.status.name}, Resumable: ${record.resumable}",
+                    resumable = record.resumable,
+                ),
+            )
+        }
+
+        // If the execution has started, include a timeline checkpoint
+        if (record.startedAt != null) {
+            checkpoints.add(
+                0,
+                WorkflowCheckpointResponse(
+                    id = "${executionId}_start",
+                    executionId = executionId,
+                    stepName = "workflow_start",
+                    timestamp = record.startedAt,
+                    stateSummary = "Workflow '${record.workflowName}' started",
+                ),
+            )
+        }
+
+        return checkpoints
+    }
+
+    /**
+     * Return step metrics for a completed execution.
+     * Current implementation extracts metrics from execution record timestamps.
+     * Extended in future to query SpolaOperationObserver's step timing data.
+     */
+    suspend fun getStepMetrics(executionId: String): WorkflowMetricsResponse {
+        val record = executionStore.get(executionId) ?: return WorkflowMetricsResponse(
+            executionId = executionId,
+        )
+
+        val totalDurationMs = when {
+            record.completedAt != null && record.startedAt != null ->
+                record.completedAt - record.startedAt
+            record.startedAt != null ->
+                System.currentTimeMillis() - record.startedAt
+            else -> 0L
+        }
+
+        return WorkflowMetricsResponse(
+            executionId = executionId,
+            steps = emptyList(),
+            totalInputTokens = 0,
+            totalOutputTokens = 0,
+            totalThinkingTokens = 0,
+            totalDurationMs = totalDurationMs,
+        )
+    }
+
+    /**
+     * Resume execution from its latest checkpoint.
+     * Delegates to [approveExecution] since the resume path is the same
+     * for approval and checkpoint replay.
+     */
+    suspend fun resumeFromCheckpoint(executionId: String): Boolean {
+        val record = executionStore.get(executionId) ?: return false
+        // If in WAITING_APPROVAL, reuse the approve path
+        if (record.status == WorkflowExecutionStatus.WAITING_APPROVAL) {
+            return approveExecution(executionId)
+        }
+        // For COMPLETED/FAILED executions, re-enqueue for replay
+        if (record.status == WorkflowExecutionStatus.COMPLETED || record.status == WorkflowExecutionStatus.FAILED) {
+            val replayed = executionStore.create(
+                NewWorkflowExecution(
+                    definitionId = record.definitionId,
+                    workflowName = record.workflowName,
+                    userId = record.userId,
+                    sessionId = record.sessionId,
+                    triggerSource = "replay",
+                    triggerRef = executionId,
+                    inputJson = record.inputJson,
+                ),
+            )
+            // Start running immediately in background
+            kotlinx.coroutines.GlobalScope.launch {
+                runCatching { runExecution(replayed) }
+            }
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Decide on a gate step (approve or reject).
+     * Approval routes through [approveExecution].
+     * Rejection marks the execution as cancelled.
+     */
+    suspend fun decideGate(executionId: String, stepName: String, approved: Boolean): Boolean {
+        if (approved) {
+            return approveExecution(executionId)
+        }
+        // Rejection: cancel the execution
+        return requestCancel(executionId)
+    }
 }
 
 /**

@@ -3,8 +3,11 @@ package dev.spola
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import dev.spola.compression.ConversationCompactionConfig
+import dev.spola.compression.ConversationCompactor
 import dev.spola.compression.TokenJuice
 import dev.spola.checkpoint.CheckpointManager
+import dev.spola.factory.SpolaProviderRegistry
 import dev.tramai.core.model.FinishReason
 import dev.tramai.core.model.Message
 import dev.tramai.core.model.MessageRole
@@ -32,6 +35,22 @@ class SpolaAgent(
     private var effectiveModel: ModelName = ModelName(effectiveModel)
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val conversation = mutableListOf<ChatMessage>()
+    private val pinnedMessageIds = linkedSetOf<Int>()
+    private var cumulativeInputTokens: Long = 0
+    private var cumulativeOutputTokens: Long = 0
+    private var cumulativeThinkingTokens: Long = 0
+    private val conversationCompactor = ConversationCompactor(
+        ConversationCompactionConfig(
+            enabled = config.compressionEnabled,
+            trigger = ConversationCompactionConfig.Trigger.TOKEN_BUDGET,
+        ),
+    )
+    private val fallbackConversationCompactor = ConversationCompactor(
+        ConversationCompactionConfig(
+            enabled = config.compressionEnabled,
+            trigger = ConversationCompactionConfig.Trigger.MESSAGE_COUNT,
+        ),
+    )
 
     /**
      * Run the agent to completion with a given system persona and user goal.
@@ -52,7 +71,9 @@ class SpolaAgent(
      */
     suspend fun run(persona: String, goal: String, observer: AgentRunObserver?, sessionId: SessionId? = null): String {
         val resolvedSessionId = sessionId ?: checkpointManager?.generateSessionId()
+        resetTokenCounters()
         conversation.clear()
+        pinnedMessageIds.clear()
         conversation.add(SystemMessage(persona))
         conversation.add(UserMessage(goal))
 
@@ -86,6 +107,9 @@ class SpolaAgent(
         transcript: MutableList<ChatMessage>,
         observer: AgentRunObserver? = null,
     ): String {
+        if (transcript.isEmpty()) {
+            resetTokenCounters()
+        }
         transcript.add(UserMessage(goal))
         return runLoop(observer, sessionId = null, transcript = transcript)
     }
@@ -96,6 +120,21 @@ class SpolaAgent(
     }
 
     fun getCheckpointManager(): CheckpointManager? = checkpointManager
+
+    fun getPinnedMessageIds(): Set<Int> = pinnedMessageIds.toSet()
+
+    fun setPinnedMessageIds(messageIds: Set<Int>) {
+        pinnedMessageIds.clear()
+        pinnedMessageIds.addAll(messageIds.sorted())
+    }
+
+    fun pinMessageId(messageId: Int) {
+        pinnedMessageIds.add(messageId)
+    }
+
+    fun unpinMessageId(messageId: Int) {
+        pinnedMessageIds.remove(messageId)
+    }
 
     /**
      * Core ReAct loop. Shared between [run] and [runFull].
@@ -114,7 +153,11 @@ class SpolaAgent(
         try {
             for (turn in 1..config.agent.maxTurns) {
                 observer?.onStatus("thinking", "Running turn $turn")
+                println("[AGENT] Turn $turn/${config.agent.maxTurns} starting — messages=${messages.size}")
                 val response = callLlm(observer, messages)
+                cumulativeInputTokens += response.inputTokens?.toLong() ?: 0
+                cumulativeOutputTokens += response.outputTokens?.toLong() ?: 0
+                cumulativeThinkingTokens += response.extractThinkingTokens()?.toLong() ?: 0
                 if (response.content.isNotBlank()) {
                     observer?.onToken(response.content)
                 }
@@ -123,12 +166,14 @@ class SpolaAgent(
                 if (toolCalls.isNullOrEmpty()) {
                     // LLM responded with text — final answer
                     val text = response.content
+                    println("[AGENT] Turn $turn complete — final answer received (len=${text.length}, tokens_in=${response.inputTokens}, tokens_out=${response.outputTokens})")
                     messages.add(AssistantMessage(content = text))
                     observer?.onStatus("complete", "Agent run completed")
                     return text
                 }
 
                 // LLM wants to call tools
+                println("[AGENT] Turn $turn — ${toolCalls.size} tool call(s) from LLM")
                 val parsedToolCalls = toolCalls.map { tc ->
                     dev.spola.ToolCall(
                         id = tc.id,
@@ -146,6 +191,7 @@ class SpolaAgent(
                 for ((index, tc) in toolCalls.withIndex()) {
                     observer?.onToolCall(parsedToolCalls[index])
                     val result = executeTool(ToolName(tc.name), tc.argumentsJson)
+                    println("[AGENT]   tool[${index+1}/${toolCalls.size}] ${tc.name}: success=${result.success} out_len=${result.output.length}")
                     observer?.onToolResult(parsedToolCalls[index], result)
                     messages.add(ToolResultMessage(
                         toolCallId = tc.id,
@@ -165,15 +211,33 @@ class SpolaAgent(
                     }
                 }
             }
+            println("[AGENT] MAX TURNS EXCEEDED — limit=${config.agent.maxTurns}, messages=${messages.size}")
             throw MaxTurnsExceededException(config.agent.maxTurns)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Client disconnected mid-run — no need to send an error event (the SSE connection is gone).
+            // Save checkpoint if possible, then re-throw cleanly.
+            println("[AGENT] CANCELLED (client disconnect) at turn, messages=${messages.size}")
+            if (resolvedSessionId != null && config.autoCheckpoint) {
+                try {
+                    checkpointManager?.save(resolvedSessionId, -1, messages.toList())
+                } catch (_: Exception) {}
+            }
+            throw e
         } catch (e: Exception) {
+            println("[AGENT] EXCEPTION: ${e.message ?: e::class.simpleName}")
             observer?.onError(e)
             throw e
         }
     }
 
     private suspend fun callLlm(observer: AgentRunObserver?, messages: List<ChatMessage> = conversation): ModelResponse {
-        val tramaiMessages = messages.map { msg ->
+        val contextWindow = SpolaProviderRegistry.getContextWindow(provider.providerId(), effectiveModel.value)
+        val compactedMessages = if (contextWindow != null) {
+            conversationCompactor.compact(messages, pinnedMessageIds, contextWindow)
+        } else {
+            fallbackConversationCompactor.compact(messages, pinnedMessageIds)
+        }
+        val tramaiMessages = compactedMessages.map { msg ->
             when (msg) {
                 is SystemMessage -> Message(
                     role = MessageRole.SYSTEM,
@@ -219,12 +283,18 @@ class SpolaAgent(
 
         observer?.onStatus(
             "llm_request",
-            "model=${effectiveModel.value}, messages=${tramaiMessages.size}, tools=${request.tools?.size ?: 0}",
+            "model=${effectiveModel.value}, messages=${tramaiMessages.size}, source_messages=${messages.size}, tools=${request.tools?.size ?: 0}",
         )
         // Notify observer about LLM call
         observer?.onLlmCall(effectiveModel.value, provider.providerId())
         val response = provider.complete(request)
-        observer?.onLlmResult(effectiveModel.value, provider.providerId(), response.inputTokens, response.outputTokens)
+        observer?.onLlmResult(
+            effectiveModel.value,
+            provider.providerId(),
+            response.inputTokens,
+            response.outputTokens,
+            response.extractThinkingTokens(),
+        )
 
         return response
     }
@@ -288,9 +358,59 @@ class SpolaAgent(
     /** Returns the current conversation for inspection/testing. */
     fun getConversation(): List<ChatMessage> = conversation.toList()
 
+    fun getCumulativeTokens(): TokenUsage = TokenUsage(
+        inputTokens = cumulativeInputTokens,
+        outputTokens = cumulativeOutputTokens,
+        thinkingTokens = cumulativeThinkingTokens,
+    )
+
+    fun setCumulativeTokens(tokens: TokenUsage) {
+        cumulativeInputTokens = tokens.inputTokens
+        cumulativeOutputTokens = tokens.outputTokens
+        cumulativeThinkingTokens = tokens.thinkingTokens
+    }
+
+    fun getTokenSummary(): String {
+        val tokens = getCumulativeTokens()
+        return "Tokens: ${tokens.inputTokens.grouped()} in / ${tokens.outputTokens.grouped()} out / ${tokens.thinkingTokens.grouped()} think"
+    }
+
+    fun resetTokenCounters() {
+        cumulativeInputTokens = 0
+        cumulativeOutputTokens = 0
+        cumulativeThinkingTokens = 0
+    }
+
     fun clearConversation() {
         conversation.clear()
+        pinnedMessageIds.clear()
+        resetTokenCounters()
     }
+}
+
+data class TokenUsage(
+    val inputTokens: Long,
+    val outputTokens: Long,
+    val thinkingTokens: Long,
+)
+
+private fun Long.grouped(): String = java.lang.String.format("%,d", this)
+
+private fun ModelResponse.extractThinkingTokens(): Int? {
+    val methodNames = listOf("getThinkingTokens", "thinkingTokens")
+    for (methodName in methodNames) {
+        val value = runCatching {
+            javaClass.methods
+                .firstOrNull { it.name == methodName && it.parameterCount == 0 }
+                ?.invoke(this)
+        }.getOrNull()
+        when (value) {
+            is Int -> return value
+            is Long -> return value.toInt()
+            is Number -> return value.toInt()
+        }
+    }
+    return null
 }
 
 internal fun maybeCompressToolResult(
@@ -322,7 +442,13 @@ interface AgentRunObserver {
 
     suspend fun onLlmCall(model: String, provider: String) {}
 
-    suspend fun onLlmResult(model: String, provider: String, inputTokens: Int? = null, outputTokens: Int? = null) {}
+    suspend fun onLlmResult(
+        model: String,
+        provider: String,
+        inputTokens: Int? = null,
+        outputTokens: Int? = null,
+        thinkingTokens: Int? = null,
+    ) {}
 
     suspend fun onError(error: Throwable) {}
 }

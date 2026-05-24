@@ -15,6 +15,7 @@ import dev.spola.app.models.MessageRole
 import dev.spola.app.models.ModelInfo
 import dev.spola.app.models.StreamEvent
 import dev.spola.app.models.StreamEventType
+import dev.spola.app.models.TokenUsageData
 import dev.spola.app.state.currentTimeMillis
 
 @Immutable
@@ -32,6 +33,8 @@ data class ChatPageState(
     val finalResponse: String,
     val toolEvents: List<StreamEvent>,
     val visibleMessages: List<Message>,
+    val turnTokens: String?,
+    val cumulativeTokens: String?,
 ) {
     val selectedModelId: String
         get() = sessions.find { it.id == selectedSessionId }?.modelId.orEmpty()
@@ -78,6 +81,7 @@ fun rememberChatViewModel(component: DashboardComponent): ChatViewModel {
     val isRunning by component.agentRun.isRunning.collectAsState()
     val status by component.agentRun.status.subscribeAsState()
     val finalResponse by component.agentRun.finalResponse.subscribeAsState()
+    val tokenUsage by component.agentRun.tokenUsage.collectAsState()
 
     LaunchedEffect(selectedSessionId) {
         component.agentRun.setSession(selectedSessionId)
@@ -114,6 +118,20 @@ fun rememberChatViewModel(component: DashboardComponent): ChatViewModel {
             events.filter { it.type == StreamEventType.tool_call || it.type == StreamEventType.tool_result }
         }
     }
+    val turnTokens by remember(tokenUsage) {
+        derivedStateOf {
+            tokenUsage?.let { tu ->
+                "Turn: ${formatNumber(tu.inputTokens)} in | ${formatNumber(tu.outputTokens)} out | ${formatNumber(tu.thinkingTokens)} think"
+            }
+        }
+    }
+    val cumulativeTokens by remember(tokenUsage) {
+        derivedStateOf {
+            tokenUsage?.let { tu ->
+                "Total: ${formatNumber(tu.cumulativeInput)} in | ${formatNumber(tu.cumulativeOutput)} out | ${formatNumber(tu.cumulativeThinking)} think"
+            }
+        }
+    }
 
     val state = remember(
         sessions,
@@ -129,6 +147,8 @@ fun rememberChatViewModel(component: DashboardComponent): ChatViewModel {
         finalResponse,
         toolEvents,
         visibleMessages,
+        turnTokens,
+        cumulativeTokens,
     ) {
         ChatPageState(
             sessions = sessions,
@@ -144,10 +164,29 @@ fun rememberChatViewModel(component: DashboardComponent): ChatViewModel {
             finalResponse = finalResponse,
             toolEvents = toolEvents,
             visibleMessages = visibleMessages,
+            turnTokens = turnTokens,
+            cumulativeTokens = cumulativeTokens,
         )
     }
 
     return remember(state, component) {
         ChatViewModel(state = state, component = component)
     }
+}
+
+/**
+ * Format a number with locale-aware comma grouping.
+ * Works cross-platform (no java.text dependency).
+ */
+private fun formatNumber(value: Number): String {
+    val num = value.toLong()
+    if (num < 1000) return num.toString()
+    val groups = buildList {
+        var remaining = num
+        while (remaining > 0) {
+            add((remaining % 1000).toString().padStart(3, '0'))
+            remaining /= 1000
+        }
+    }
+    return groups.reversed().joinToString(",").trimStart('0').ifEmpty { "0" }
 }

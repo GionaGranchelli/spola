@@ -21,6 +21,9 @@ val SLASH_COMMANDS: Map<String, SlashCommand> = listOf(
     HelpCommand,
     ExitCommand,
     ClearCommand,
+    PinCommand,
+    UnpinCommand,
+    PinsCommand,
     ToolsCommand,
     MemoryCommand,
     PersonaCommand,
@@ -49,6 +52,9 @@ object HelpCommand : SlashCommand {
         println("${ANSI_GREEN}Session:${ANSI_RESET}")
         println("  ${ANSI_YELLOW}/history${ANSI_RESET}     Show current conversation history")
         println("  ${ANSI_YELLOW}/clear${ANSI_RESET}       Clear conversation")
+        println("  ${ANSI_YELLOW}/pin <id>|last${ANSI_RESET} Pin a message by transcript index")
+        println("  ${ANSI_YELLOW}/unpin <id>${ANSI_RESET}   Remove a pinned message")
+        println("  ${ANSI_YELLOW}/pins${ANSI_RESET}         List pinned message IDs")
         println("  ${ANSI_YELLOW}/session list|save|load <id>|delete <id>|new${ANSI_RESET} Manage sessions")
         println()
         println("${ANSI_GREEN}Info:${ANSI_RESET}")
@@ -113,6 +119,76 @@ object ToolsCommand : SlashCommand {
     }
 }
 
+object PinCommand : SlashCommand {
+    override val name = "pin"
+    override val description = "Pin a message by transcript index or pin the last assistant message"
+    override val usage = "/pin <id>|last"
+
+    override suspend fun execute(args: String, session: ReplSession): Boolean {
+        val target = args.trim()
+        if (target.isBlank()) {
+            println("${ANSI_YELLOW}Usage: /pin <id>|last${ANSI_RESET}")
+            return true
+        }
+
+        val conversation = session.getConversation()
+        if (conversation.isEmpty()) {
+            println("${ANSI_DIM}No conversation history to pin.${ANSI_RESET}")
+            return true
+        }
+
+        val messageId = if (target == "last") {
+            conversation.indexOfLast { it.role == "assistant" }
+        } else {
+            target.toIntOrNull() ?: -1
+        }
+
+        if (messageId !in conversation.indices) {
+            println("${ANSI_RED}Message not found: $target${ANSI_RESET}")
+            return true
+        }
+
+        session.pinMessageId(messageId)
+        println("${ANSI_GREEN}Pinned message ${ANSI_BOLD}$messageId${ANSI_RESET}")
+        return true
+    }
+}
+
+object UnpinCommand : SlashCommand {
+    override val name = "unpin"
+    override val description = "Remove a pinned message"
+    override val usage = "/unpin <id>"
+
+    override suspend fun execute(args: String, session: ReplSession): Boolean {
+        val messageId = args.trim().toIntOrNull()
+        if (messageId == null) {
+            println("${ANSI_YELLOW}Usage: /unpin <id>${ANSI_RESET}")
+            return true
+        }
+
+        session.unpinMessageId(messageId)
+        println("${ANSI_GREEN}Unpinned message ${ANSI_BOLD}$messageId${ANSI_RESET}")
+        return true
+    }
+}
+
+object PinsCommand : SlashCommand {
+    override val name = "pins"
+    override val description = "List pinned message IDs"
+    override val usage = "/pins"
+
+    override suspend fun execute(args: String, session: ReplSession): Boolean {
+        val pins = session.getPinnedMessageIds().sorted()
+        if (pins.isEmpty()) {
+            println("${ANSI_DIM}No pinned messages.${ANSI_RESET}")
+            return true
+        }
+
+        println("${ANSI_BOLD}Pinned messages:${ANSI_RESET} ${pins.joinToString(", ")}")
+        return true
+    }
+}
+
 object MemoryCommand : SlashCommand {
     override val name = "memory"
     override val description = "Show stored memory entries"
@@ -157,7 +233,8 @@ object HistoryCommand : SlashCommand {
             return true
         }
         println("${ANSI_BOLD}Conversation history (${conv.size} messages):${ANSI_RESET}")
-        for (msg in conv) {
+        val pins = session.getPinnedMessageIds()
+        for ((index, msg) in conv.withIndex()) {
             val roleTag = when (msg.role) {
                 "system" -> "${ANSI_YELLOW}system${ANSI_RESET}"
                 "user" -> "${ANSI_GREEN}user${ANSI_RESET}"
@@ -165,8 +242,9 @@ object HistoryCommand : SlashCommand {
                 "tool" -> "${ANSI_DIM}tool${ANSI_RESET}"
                 else -> msg.role
             }
+            val pinTag = if (index in pins) " ${ANSI_YELLOW}[PIN]${ANSI_RESET}" else ""
             val preview = msg.content.replace("\n", "\\n").take(200)
-            println("  [$roleTag] ${ANSI_DIM}$preview${ANSI_RESET}")
+            println("  #$index [$roleTag]$pinTag ${ANSI_DIM}$preview${ANSI_RESET}")
         }
         return true
     }
@@ -179,6 +257,7 @@ object StatusCommand : SlashCommand {
 
     override suspend fun execute(args: String, session: ReplSession): Boolean {
         val cfg = session.instance.config
+        val tokens = session.getCumulativeTokenUsage()
         println("${ANSI_BOLD}Status:${ANSI_RESET}")
         println("  ${ANSI_CYAN}Provider:${ANSI_RESET}  ${cfg.provider}")
         println("  ${ANSI_CYAN}Model:${ANSI_RESET}     ${cfg.model}")
@@ -186,6 +265,12 @@ object StatusCommand : SlashCommand {
         println("  ${ANSI_CYAN}Workdir:${ANSI_RESET}   ${cfg.workingDirectory}")
         println("  ${ANSI_CYAN}Turns:${ANSI_RESET}     ${session.turnNumber}")
         println("  ${ANSI_CYAN}Messages:${ANSI_RESET}  ${session.getConversation().size}")
+        println("  ${ANSI_CYAN}Pins:${ANSI_RESET}      ${session.getPinnedMessageIds().sorted().joinToString(", ").ifBlank { "none" }}")
+        println(
+            "  ${ANSI_CYAN}Tokens:${ANSI_RESET}    " +
+                "${formatTokenCount(tokens.inputTokens)} in | ${formatTokenCount(tokens.outputTokens)} out | " +
+                "${formatTokenCount(tokens.thinkingTokens)} think",
+        )
         return true
     }
 }
